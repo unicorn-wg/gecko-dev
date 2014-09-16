@@ -493,6 +493,24 @@ var commandsPeerConnection = [
     }
   ],
   [
+    'PC_LOCAL_CHECK_ICE_CONNECTIONS',
+    function (test) {
+      test.pcLocal.getStats(null, function(stats) {
+        test.pcLocal.checkRtcpIceConnections(stats, test._offer_constraints, test._offer_options);
+        test.next();
+      });
+    }
+  ],
+  [
+    'PC_REMOTE_CHECK_ICE_CONNECTIONS',
+    function (test) {
+      test.pcRemote.getStats(null, function(stats) {
+        test.pcRemote.checkRtcpIceConnections(stats, test._answer_constraints, test._offer_options);
+        test.next();
+      });
+    }
+  ],
+  [
     'PC_LOCAL_CHECK_GETSTATS_AUDIOTRACK_OUTBOUND',
     function (test) {
       var pc = test.pcLocal;

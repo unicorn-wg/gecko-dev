@@ -2564,6 +2564,36 @@ PeerConnectionWrapper.prototype = {
     }
   },
 
+  checkRtcpIceConnections : function PCW_checkRtcpIceConnections(stats, constraints, offerOptions) {
+    var iceConnections = 0;
+    Object.keys(stats).forEach(function(name) {
+      if ((stats[name].type === "candidatepair") &&
+         (stats[name].state === "succeeded")) {
+        iceConnections += 1;
+      }
+    });
+    info("ICE connections according to RTCP: " + iceConnections);
+    //FIXME: flip this once we have bundle support
+    var bundle = false;
+    if (bundle) {
+      is(iceConnections, 1, "RTCP reports exactly 1 ICE connection");
+    } else {
+      var audioTracks = this.countAudioTracksInMediaConstraint(constraints);
+      if (constraints.length === 0) {
+        audioTracks = this.audioInOfferOptions(offerOptions);
+      }
+      info("expected audio tracks: " + audioTracks);
+      var videoTracks = this.countVideoTracksInMediaConstraint(constraints);
+      if (constraints.length === 0) {
+        videoTracks = this.videoInOfferOptions(offerOptions);
+      }
+      info("expected video tracks: " + videoTracks);
+      var audioVideoTracks = audioTracks + videoTracks;
+      info("expected audio + video tracks: " + audioVideoTracks);
+      is(audioVideoTracks, iceConnections, "RTCP ICE connections matches expected A/V tracks");
+    }
+  },
+
   /**
    * Property-matching function for finding a certain stat in passed-in stats
    *
