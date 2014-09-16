@@ -4071,7 +4071,7 @@ sdp_result_e sdp_parse_attr_group (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                    const char *ptr)
 {
     sdp_result_e  result;
-    char  tmp[10];
+    char tmp[64];
     int i=0;
 
     if (sdp_p->debug_flag[SDP_DEBUG_TRACE]) {
@@ -4112,11 +4112,18 @@ sdp_result_e sdp_parse_attr_group (sdp_t *sdp_p, sdp_attr_t *attr_p,
     attr_p->attr.stream_data.num_group_id =0;
 
     for (i=0; i<SDP_MAX_GROUP_STREAM_ID; i++) {
-        attr_p->attr.stream_data.group_id_arr[i] =
-            (u16)sdp_getnextnumtok(ptr,&ptr," \t", &result);
+        ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
+
         if (result != SDP_SUCCESS) {
             break;
         }
+        attr_p->attr.stream_data.group_ids[i] = SDP_MALLOC(strlen(tmp) + 1);
+        if (attr_p->attr.stream_data.group_ids[i]) {
+            strcpy(attr_p->attr.stream_data.group_ids[i], tmp);
+        } else {
+            break;
+        }
+
         attr_p->attr.stream_data.num_group_id++;
     }
 
@@ -4125,8 +4132,8 @@ sdp_result_e sdp_parse_attr_group (sdp_t *sdp_p, sdp_attr_t *attr_p,
                   sdp_get_attr_name(attr_p->type),
                   sdp_get_group_attr_name (attr_p->attr.stream_data.group_attr));
         for (i=0; i < attr_p->attr.stream_data.num_group_id; i++) {
-            SDP_PRINT("%s Parsed group line id : %d\n", sdp_p->debug_str,
-                      attr_p->attr.stream_data.group_id_arr[i]);
+            SDP_PRINT("%s Parsed group line id : %s\n", sdp_p->debug_str,
+                      attr_p->attr.stream_data.group_ids[i]);
         }
     }
     return (SDP_SUCCESS);
@@ -4142,9 +4149,9 @@ sdp_result_e sdp_build_attr_group (sdp_t *sdp_p, sdp_attr_t *attr_p,
     sdp_get_group_attr_name(attr_p->attr.stream_data.group_attr));
 
   for (i=0; i < attr_p->attr.stream_data.num_group_id; i++) {
-    if (attr_p->attr.stream_data.group_id_arr[i] > 0) {
-      flex_string_sprintf(fs, " %u",
-        attr_p->attr.stream_data.group_id_arr[i]);
+    if (attr_p->attr.stream_data.group_ids[i]) {
+      flex_string_sprintf(fs, " %s",
+        attr_p->attr.stream_data.group_ids[i]);
     }
   }
 

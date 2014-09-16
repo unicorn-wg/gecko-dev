@@ -350,6 +350,7 @@ void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
     case SDP_ATTR_FRAMING:
     case SDP_ATTR_MAXPRATE:
     case SDP_ATTR_LABEL:
+    case SDP_ATTR_MID:
         sstrncpy(dst_attr_p->attr.string_val, src_attr_p->attr.string_val,
                  SDP_MAX_STRING_LEN+1);
         break;
@@ -366,7 +367,6 @@ void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
     case SDP_ATTR_TC2_PAYLOAD_BYTES:
     case SDP_ATTR_TC2_WINDOW_SIZE:
     case SDP_ATTR_RTCP:
-    case SDP_ATTR_MID:
     case SDP_ATTR_RTCP_UNICAST:
         dst_attr_p->attr.u32_val = src_attr_p->attr.u32_val;
         break;
@@ -591,8 +591,10 @@ void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
              src_attr_p->attr.stream_data.num_group_id;
 
         for (i=0; i < src_attr_p->attr.stream_data.num_group_id; i++) {
-            dst_attr_p->attr.stream_data.group_id_arr[i] =
-                src_attr_p->attr.stream_data.group_id_arr[i];
+            dst_attr_p->attr.stream_data.group_ids[i] =
+                SDP_MALLOC(strlen(src_attr_p->attr.stream_data.group_ids[i])+1);
+            strcpy(dst_attr_p->attr.stream_data.group_ids[i],
+                src_attr_p->attr.stream_data.group_ids[i]);
         }
         break;
 
@@ -758,6 +760,7 @@ sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
     case SDP_ATTR_FRAMING:
     case SDP_ATTR_MAXPRATE:
     case SDP_ATTR_LABEL:
+    case SDP_ATTR_MID:
         sstrncpy(new_attr_p->attr.string_val, src_attr_p->attr.string_val,
                  SDP_MAX_STRING_LEN+1);
         break;
@@ -774,7 +777,6 @@ sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
     case SDP_ATTR_TC2_PAYLOAD_BYTES:
     case SDP_ATTR_TC2_WINDOW_SIZE:
     case SDP_ATTR_RTCP:
-    case SDP_ATTR_MID:
     case SDP_ATTR_RTCP_UNICAST:
         new_attr_p->attr.u32_val = src_attr_p->attr.u32_val;
         break;
@@ -1003,8 +1005,10 @@ sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
             src_attr_p->attr.stream_data.num_group_id;
 
         for (i=0; i < src_attr_p->attr.stream_data.num_group_id; i++) {
-            new_attr_p->attr.stream_data.group_id_arr[i] =
-                src_attr_p->attr.stream_data.group_id_arr[i];
+            new_attr_p->attr.stream_data.group_ids[i] =
+                SDP_MALLOC(strlen(src_attr_p->attr.stream_data.group_ids[i])+1);
+            strcpy(new_attr_p->attr.stream_data.group_ids[i],
+                src_attr_p->attr.stream_data.group_ids[i]);
         }
         break;
 
@@ -1465,6 +1469,7 @@ void sdp_free_attr (sdp_attr_t *attr_p)
     sdp_mca_t   *cap_p;
     sdp_attr_t  *cpar_p;
     sdp_attr_t  *next_cpar_p;
+    int          i;
 
     /* If this is an X-cap/cdsc attr, free the cap_p structure and
      * all X-cpar/cpar attributes. */
@@ -1482,6 +1487,13 @@ void sdp_free_attr (sdp_attr_t *attr_p)
     } else if ((attr_p->type == SDP_ATTR_SDESCRIPTIONS) ||
               (attr_p->type == SDP_ATTR_SRTP_CONTEXT)) {
               SDP_FREE(attr_p->attr.srtp_context.session_parameters);
+    }
+
+
+    if (attr_p->type == SDP_ATTR_GROUP) {
+        for (i = 0; i < attr_p->attr.stream_data.num_group_id; i++) {
+            SDP_FREE(attr_p->attr.stream_data.group_ids[i]);
+        }
     }
 
     /* Now free the actual attribute memory. */
@@ -1955,6 +1967,7 @@ const char *sdp_attr_get_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_DIALED) &&
         (attr_type != SDP_ATTR_DIALING) &&
         (attr_type != SDP_ATTR_FRAMING) &&
+        (attr_type != SDP_ATTR_MID) &&
         (attr_type != SDP_ATTR_X_SIDIN) &&
         (attr_type != SDP_ATTR_X_SIDOUT)&&
         (attr_type != SDP_ATTR_X_CONFID) &&
@@ -2017,6 +2030,7 @@ sdp_result_e sdp_attr_set_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_DIALED) &&
         (attr_type != SDP_ATTR_DIALING) &&
         (attr_type != SDP_ATTR_FRAMING) &&
+        (attr_type != SDP_ATTR_MID) &&
         (attr_type != SDP_ATTR_X_SIDIN) &&
         (attr_type != SDP_ATTR_X_SIDOUT) &&
         (attr_type != SDP_ATTR_X_CONFID) &&
@@ -2089,7 +2103,6 @@ u32 sdp_attr_get_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
         (attr_type != SDP_ATTR_TC2_PAYLOAD_BYTES) &&
         (attr_type != SDP_ATTR_TC2_WINDOW_SIZE) &&
         (attr_type != SDP_ATTR_RTCP) &&
-        (attr_type != SDP_ATTR_MID) &&
         (attr_type != SDP_ATTR_FRAMERATE)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
             CSFLogError(logTag, "%s Attribute type is not a simple u32 (%s)",
@@ -2154,7 +2167,6 @@ sdp_result_e sdp_attr_set_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_TC2_PAYLOAD_BYTES) &&
         (attr_type != SDP_ATTR_TC2_WINDOW_SIZE) &&
         (attr_type != SDP_ATTR_RTCP) &&
-        (attr_type != SDP_ATTR_MID) &&
         (attr_type != SDP_ATTR_FRAMERATE)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
             CSFLogError(logTag, "%s Attribute type is not a simple u32 (%s)",
@@ -10597,22 +10609,22 @@ sdp_result_e sdp_set_group_num_id (void *sdp_ptr, u16 level,
 }
 
 /* Function:    sdp_get_group_id
- * Description: Returns the number of ids from the a=group:<>  line.
+ * Description: Returns the group id from the a=group:<>  line.
  * Parameters:  sdp_ptr     The SDP handle returned by sdp_init_description.
  *              level       SDP_SESSION_LEVEL
  *              id_num      Number of the id to retrieve. The range is (1 -
  *                          SDP_MAX_GROUP_STREAM_ID)
  * Returns:    Value of the group id at the index specified or
- *             SDP_INVALID_VALUE if an error
+ *             NULL if an error
  */
-int32 sdp_get_group_id (void *sdp_ptr, u16 level,
+char* sdp_get_group_id (void *sdp_ptr, u16 level,
                         u8 cap_num, u16 inst_num, u16 id_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
 
     if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
-        return (SDP_INVALID_VALUE);
+        return (NULL);
     }
 
     attr_p = sdp_find_attr(sdp_p, level, cap_num,
@@ -10623,7 +10635,7 @@ int32 sdp_get_group_id (void *sdp_ptr, u16 level,
                       "not found.", sdp_p->debug_str, level, inst_num);
         }
         sdp_p->conf_p->num_invalid_param++;
-        return (SDP_INVALID_VALUE);
+        return (NULL);
     } else {
         if (sdp_p->debug_flag[SDP_DEBUG_TRACE]) {
             SDP_PRINT("%s Stream data group attr - num of ids is :%d ",
@@ -10631,15 +10643,14 @@ int32 sdp_get_group_id (void *sdp_ptr, u16 level,
                       attr_p->attr.stream_data.num_group_id);
         }
         if ((id_num < 1) || (id_num > attr_p->attr.stream_data.num_group_id)) {
-            return (SDP_INVALID_VALUE);
+            return (NULL);
         }
     }
-    return (attr_p->attr.stream_data.group_id_arr[id_num-1]);
+    return (attr_p->attr.stream_data.group_ids[id_num-1]);
 }
 
 /* Function:    sdp_set_group_id
- * Description: Sets the number og group ids that would be added on
- *              a=group:<val> <id> <id> ...line.
+ * Description: Adds a group ID to the a=group:<val> <id> <id> ...line.
  * Parameters:  sdp_ptr     The SDP handle returned by sdp_init_description.
  *              level       SDP_SESSION_LEVEL
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER/SDP_INVALID_SDP_PTR
@@ -10647,7 +10658,7 @@ int32 sdp_get_group_id (void *sdp_ptr, u16 level,
 
 sdp_result_e sdp_set_group_id (void *sdp_ptr, u16 level,
                                u8 cap_num, u16 inst_num,
-                               u16 group_id)
+                               char* group_id)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10675,7 +10686,9 @@ sdp_result_e sdp_set_group_id (void *sdp_ptr, u16 level,
             sdp_p->conf_p->num_invalid_param++;
             return (SDP_INVALID_PARAMETER);
         }
-        attr_p->attr.stream_data.group_id_arr[num_group_id] = group_id;
+        attr_p->attr.stream_data.group_ids[num_group_id] =
+            SDP_MALLOC(strlen(group_id)+1);
+        strcpy(attr_p->attr.stream_data.group_ids[num_group_id], group_id);
         attr_p->attr.stream_data.num_group_id++;
         return (SDP_SUCCESS);
     }

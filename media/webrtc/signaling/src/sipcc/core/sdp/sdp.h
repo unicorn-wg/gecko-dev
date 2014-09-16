@@ -454,6 +454,7 @@ typedef enum {
     SDP_GROUP_ATTR_FID,
     SDP_GROUP_ATTR_LS,
     SDP_GROUP_ATTR_ANAT,
+    SDP_GROUP_ATTR_BUNDLE,
     SDP_MAX_GROUP_ATTR_VAL,
     SDP_GROUP_ATTR_UNSUPPORTED
 } sdp_group_attr_e;
@@ -823,7 +824,7 @@ typedef struct sdp_stream_data {
     char                      x_confid[SDP_MAX_STRING_LEN+1];
     sdp_group_attr_e          group_attr; /* FID or LS */
     u16                       num_group_id;
-    u16                       group_id_arr[SDP_MAX_GROUP_STREAM_ID];
+    char *                    group_ids[SDP_MAX_GROUP_STREAM_ID];
 } sdp_stream_data_t;
 
 /*
@@ -1892,10 +1893,10 @@ extern sdp_result_e sdp_set_group_num_id(void *sdp_ptr, u16 level,
                                          u8 cap_num, u16 inst_num,
                                          u16 group_num_id);
 
-extern int32 sdp_get_group_id(void *sdp_ptr, u16 level,
+extern char* sdp_get_group_id(void *sdp_ptr, u16 level,
                               u8 cap_num, u16 inst_num, u16 id_num);
 extern sdp_result_e sdp_set_group_id (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num, u16 group_id);
+                                      u8 cap_num, u16 inst_num, char* group_id);
 
 
 extern int32 sdp_get_mid_value(void *sdp_ptr, u16 level);
