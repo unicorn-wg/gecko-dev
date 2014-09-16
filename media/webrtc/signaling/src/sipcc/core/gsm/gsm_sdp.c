@@ -2586,15 +2586,16 @@ gsmsdp_add_default_video_formats_to_local_sdp (fsmdef_dcb_t *dcb_p,
 static void gsmsdp_set_mid_attr (void *src_sdp_p, uint16_t level)
 {
     uint16         inst_num;
+    char           tmp[11]; /* ceil(log10(2^32)) + 1 = 11 */
 
     if (platform_get_ip_address_mode() == CPR_IP_MODE_DUAL) {
         /*
          * add a=mid line
          */
         (void) sdp_add_new_attr(src_sdp_p, level, 0, SDP_ATTR_MID, &inst_num);
-
-        (void) sdp_attr_set_simple_u32(src_sdp_p, SDP_ATTR_MID, level, 0,
-                                       inst_num, level);
+        snprintf(tmp, sizeof(tmp), "%d", level);
+        (void) sdp_attr_set_simple_string(src_sdp_p, SDP_ATTR_MID, level, 0,
+                                          inst_num, tmp);
     }
 }
 
@@ -2615,10 +2616,11 @@ static void gsmsdp_set_anat_attr (fsmdef_dcb_t *dcb_p, fsmdef_media_t *media)
     uint16         inst_num;
     uint16_t       num_group_lines= 0;
     uint16_t       num_anat_lines = 0;
-    u32            group_id_1, group_id_2;
+    const char*    group_id_1;
+    const char*    group_id_2;
     uint16_t       i;
     fsmdef_media_t *group_media;
-
+    char           tmp[11]; /* ceil(log10(2^32)) + 1 = 11 */
 
     if (dest_sdp_p == NULL) {
         /* If this is our initial offer */
@@ -2633,8 +2635,10 @@ static void gsmsdp_set_anat_attr (fsmdef_dcb_t *dcb_p, fsmdef_media_t *media)
                  (void) sdp_set_group_attr(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, SDP_GROUP_ATTR_ANAT);
 
                  (void) sdp_set_group_num_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, 2);
-                 (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, group_media->level);
-                 (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, media->level);
+                 snprintf(tmp, sizeof(tmp), "%d", group_media->level);
+                 (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, tmp);
+                 snprintf(tmp, sizeof(tmp), "%d", media->level);
+                 (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, tmp);
             }
         }
     } else {
@@ -2652,7 +2656,7 @@ static void gsmsdp_set_anat_attr (fsmdef_dcb_t *dcb_p, fsmdef_media_t *media)
              group_id_1 = sdp_get_group_id(dest_sdp_p, SDP_SESSION_LEVEL, 0, i, 1);
              group_id_2 = sdp_get_group_id(dest_sdp_p, SDP_SESSION_LEVEL, 0, i, 2);
 
-             if ((media->level == group_id_1)  || (media->level == group_id_2)) {
+             if ((media->level == atoi(group_id_1))  || (media->level == atoi(group_id_2))) {
 
                  group_media = gsmsdp_find_anat_pair(dcb_p, media);
                  if (group_media != NULL) {
@@ -2665,8 +2669,10 @@ static void gsmsdp_set_anat_attr (fsmdef_dcb_t *dcb_p, fsmdef_media_t *media)
 
                      }
                      (void) sdp_set_group_num_id(src_sdp_p, SDP_SESSION_LEVEL, 0, i, 2);
-                     (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, i, group_media->level);
-                     (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, i, media->level);
+                     snprintf(tmp, sizeof(tmp), "%d", group_media->level);
+                     (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, i, tmp);
+                     snprintf(tmp, sizeof(tmp), "%d", media->level);
+                     (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, i, tmp);
 
                  } else {
                      /*
@@ -2676,7 +2682,8 @@ static void gsmsdp_set_anat_attr (fsmdef_dcb_t *dcb_p, fsmdef_media_t *media)
                      (void) sdp_set_group_attr(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, SDP_GROUP_ATTR_ANAT);
 
                      (void) sdp_set_group_num_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, 1);
-                     (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, media->level);
+                     snprintf(tmp, sizeof(tmp), "%d", media->level);
+                     (void) sdp_set_group_id(src_sdp_p, SDP_SESSION_LEVEL, 0, inst_num, tmp);
                  }
 
              }
@@ -3886,8 +3893,10 @@ static fsmdef_media_t*
 gsmsdp_find_anat_media_line (fsmdef_dcb_t *dcb_p, cc_sdp_t *sdp_p, uint16_t level)
 {
     fsmdef_media_t *anat_media = NULL;
-    u32            group_id_1, group_id_2;
-    u32            dst_mid, group_mid;
+    const char*    group_id_1;
+    const char*    group_id_2;
+    const char*    dst_mid;
+    const char*    group_mid;
     uint16_t       num_group_lines= 0;
     uint16_t       num_anat_lines = 0;
     uint16_t       i;
@@ -3906,24 +3915,24 @@ gsmsdp_find_anat_media_line (fsmdef_dcb_t *dcb_p, cc_sdp_t *sdp_p, uint16_t leve
 
     for (i = 1; i <= num_anat_lines; i++) {
 
-        dst_mid = sdp_attr_get_simple_u32(sdp_p->dest_sdp, SDP_ATTR_MID, level, 0, 1);
+        dst_mid = sdp_attr_get_simple_string(sdp_p->dest_sdp, SDP_ATTR_MID, level, 0, 1);
         group_id_1 = sdp_get_group_id(sdp_p->dest_sdp, SDP_SESSION_LEVEL, 0, i, 1);
         group_id_2 = sdp_get_group_id(sdp_p->dest_sdp, SDP_SESSION_LEVEL, 0, i, 2);
 
-        if (dst_mid == group_id_1) {
+        if (!strcmp(dst_mid, group_id_1)) {
             GSMSDP_FOR_ALL_MEDIA(anat_media, dcb_p) {
-                group_mid = sdp_attr_get_simple_u32(sdp_p->src_sdp,
+                group_mid = sdp_attr_get_simple_string(sdp_p->src_sdp,
                                                     SDP_ATTR_MID, (uint16_t) group_id_2, 0, 1);
-                if (group_mid == group_id_2) {
+                if (!strcmp(group_mid, group_id_2)) {
                     /* found a match */
                     return (anat_media);
                 }
             }
-        } else if (dst_mid == group_id_2) {
+        } else if (!strcmp(dst_mid, group_id_2)) {
             GSMSDP_FOR_ALL_MEDIA(anat_media, dcb_p) {
-                group_mid = sdp_attr_get_simple_u32(sdp_p->src_sdp,
+                group_mid = sdp_attr_get_simple_string(sdp_p->src_sdp,
                                                     SDP_ATTR_MID, (uint16_t) group_id_1, 0, 1);
-                if (group_mid == group_id_1) {
+                if (!strcmp(group_mid, group_id_1)) {
                     /* found a match */
                     return (anat_media);
                 }
@@ -3951,7 +3960,8 @@ static boolean
 gsmsdp_validate_anat (cc_sdp_t *sdp_p)
 {
     u16          i, num_group_id;
-    u32          group_id_1, group_id_2;
+    const char*  group_id_1;
+    const char*  group_id_2;
     sdp_media_e  media_type_gid1, media_type_gid2;
     uint16_t     num_group_lines= 0;
     uint16_t     num_anat_lines = 0;
@@ -3977,17 +3987,17 @@ gsmsdp_validate_anat (cc_sdp_t *sdp_p)
             /* Make sure that these anat groupings are not of same type */
             group_id_1 = sdp_get_group_id(sdp_p->dest_sdp, SDP_SESSION_LEVEL, 0, i, 1);
             group_id_2 = sdp_get_group_id(sdp_p->dest_sdp, SDP_SESSION_LEVEL, 0, i, 2);
-            media_type_gid1 = sdp_get_media_type(sdp_p->dest_sdp, (u16) group_id_1);
-            media_type_gid2 = sdp_get_media_type(sdp_p->dest_sdp, (u16) group_id_2);
+            media_type_gid1 = sdp_get_media_type(sdp_p->dest_sdp, (u16) atoi(group_id_1));
+            media_type_gid2 = sdp_get_media_type(sdp_p->dest_sdp, (u16) atoi(group_id_2));
             if (media_type_gid1 != media_type_gid2) {
                 /* Group id types do not match */
                 return (FALSE);
             }
-            if (group_id_1 != sdp_attr_get_simple_u32(sdp_p->dest_sdp, SDP_ATTR_MID, (u16) group_id_1, 0, 1)) {
+            if (strcmp(group_id_1, sdp_attr_get_simple_string(sdp_p->dest_sdp, SDP_ATTR_MID, (u16) group_id_1, 0, 1))) {
                 /* Group id does not match the mid at the corresponding line */
                 return (FALSE);
             }
-            if (group_id_2 != sdp_attr_get_simple_u32(sdp_p->dest_sdp, SDP_ATTR_MID, (u16) group_id_2, 0, 1)) {
+            if (strcmp(group_id_2, sdp_attr_get_simple_string(sdp_p->dest_sdp, SDP_ATTR_MID, (u16) group_id_2, 0, 1))) {
                 return (FALSE);
             }
          }
@@ -4014,7 +4024,8 @@ gsmsdp_validate_anat (cc_sdp_t *sdp_p)
 static boolean
 gsmsdp_validate_mid (cc_sdp_t *sdp_p, uint16_t level)
 {
-    int32     src_mid, dst_mid;
+    const char* src_mid;
+    const char* dst_mid;
     u16       i;
     uint16_t  num_group_lines= 0;
     uint16_t  num_anat_lines = 0;
@@ -4033,13 +4044,13 @@ gsmsdp_validate_mid (cc_sdp_t *sdp_p, uint16_t level)
 
 
     if (num_anat_lines > 0) {
-        dst_mid = sdp_attr_get_simple_u32(sdp_p->dest_sdp, SDP_ATTR_MID, level, 0, 1);
-        if (dst_mid == 0) {
+        dst_mid = sdp_attr_get_simple_string(sdp_p->dest_sdp, SDP_ATTR_MID, level, 0, 1);
+        if (!dst_mid) {
             return (FALSE);
         }
         if (sdp_get_group_attr(sdp_p->src_sdp, SDP_SESSION_LEVEL, 0, 1) == SDP_GROUP_ATTR_ANAT) {
-            src_mid = sdp_attr_get_simple_u32(sdp_p->src_sdp, SDP_ATTR_MID, level, 0, 1);
-            if (dst_mid != src_mid) {
+            src_mid = sdp_attr_get_simple_string(sdp_p->src_sdp, SDP_ATTR_MID, level, 0, 1);
+            if (strcmp(dst_mid, src_mid)) {
                 return (FALSE);
              }
         }
@@ -7589,16 +7600,14 @@ cc_causes_t
 gsmsdp_find_level_from_mid(fsmdef_dcb_t * dcb_p, const char * mid, uint16_t *level) {
 
     fsmdef_media_t  *media;
-    u32              mid_id;
-    char             buf[5];
+    const char*      mid_id;
 
     GSMSDP_FOR_ALL_MEDIA(media, dcb_p) {
         if (!GSMSDP_MEDIA_ENABLED(media))
             continue;
 
-        mid_id = sdp_attr_get_simple_u32(dcb_p->sdp->dest_sdp, SDP_ATTR_MID, media->level, 0, 1);
-        snprintf(buf, sizeof(buf), "%u", mid_id);
-        if (strcmp(mid, buf) == 0) {
+        mid_id = sdp_attr_get_simple_string(dcb_p->sdp->dest_sdp, SDP_ATTR_MID, media->level, 0, 1);
+        if (strcmp(mid, mid_id) == 0) {
         	*level = media->level;
         	return CC_CAUSE_OK;
         }
