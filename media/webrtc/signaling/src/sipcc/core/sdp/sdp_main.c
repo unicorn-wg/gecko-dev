@@ -137,7 +137,7 @@ const sdp_attrarray_t sdp_attr[SDP_MAX_ATTR_TYPES] =
     {"group", sizeof("group"),
       sdp_parse_attr_group, sdp_build_attr_group },
     {"mid", sizeof("mid"),
-      sdp_parse_attr_simple_u32, sdp_build_attr_simple_u32 },
+      sdp_parse_attr_simple_string, sdp_build_attr_simple_string },
     {"source-filter", sizeof("source-filter"),
       sdp_parse_attr_source_filter, sdp_build_source_filter},
     {"rtcp-unicast", sizeof("rtcp-unicast"),
@@ -427,7 +427,8 @@ const sdp_namearray_t sdp_group_attr_val[SDP_MAX_GROUP_ATTR_VAL] =
 {
     {"FID",                 sizeof("FID")},
     {"LS",                  sizeof("LS")},
-    {"ANAT",                sizeof("ANAT")}
+    {"ANAT",                sizeof("ANAT")},
+    {"BUNDLE",              sizeof("BUNDLE")}
 };
 
 const sdp_namearray_t sdp_srtp_context_crypto_suite[SDP_SRTP_MAX_NUM_CRYPTO_SUITES] =
