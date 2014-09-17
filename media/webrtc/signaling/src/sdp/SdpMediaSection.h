@@ -7,43 +7,51 @@
 #ifndef _SDPMEDIASECTION_H_
 #define _SDPMEDIASECTION_H_
 
+#include "mozilla/Maybe.h"
+
 namespace mozilla {
 
 class SdpAttributeList;
 
 class SdpConnection;
-class SdpBandwidth;
 
 class SdpMediaSection
 {
 public:
-  sdp::MediaType GetMediaType() const;
-  unsigned int GetPort() const;
-  unsigned int GetPortCount() const;
-  sdp::Protocol GetProtocol() const;
-  SdpConnection GetConnection() const;
-  SdpBandwidth GetBandwidth() const; // optional, may repeat
-  std::vector<std::string> GetFormats() const;
+  virtual sdp::MediaType GetMediaType() const;
+  virtual unsigned int GetPort() const;
+  virtual unsigned int GetPortCount() const;
+  virtual sdp::Protocol GetProtocol() const = 0;
+  virtual SdpConnection GetConnection() const = 0;
+  virtual Maybe<std::string> GetBandwidth(const std::string& type) const = 0;
+  virtual std::vector<std::string> GetFormats() const = 0;
 
-  const SdpAttributeList &GetAttributeList() const;
-  SdpAttributeList &GetAttributeList();
+  virtual const SdpAttributeList &GetAttributeList() const = 0;
+  virtual SdpAttributeList &GetAttributeList() = 0;
 };
 
 class SdpConnection
 {
 public:
-  sdp::NetType GetNetType() const;
-  sdp::AddrType GetAddrType() const;
-  std::string GetAddress() const;
-  int GetTtl() const;
-  int GetCount() const;
-};
+  SdpConnection(sdp::NetType netType, sdp::AddrType addrType,
+                std::string addr, int16_t ttl = -1,
+                uint32_t count = 1)
+      : mNetType(netType), mAddrType(addrType),
+      mAddr(addr), mTtl(ttl), mCount(count) {}
+  ~SdpConnection() {}
 
-class SdpBandwidth
-{
-public:
-  std::string GetBwtype() const;
-  int GetBandwidth() const;
+  sdp::NetType GetNetType() const { return mNetType; }
+  sdp::AddrType GetAddrType() const { return mAddrType; }
+  const std::string& GetAddress() const { return mAddr; }
+  int16_t GetTtl() const { return mTtl; }
+  uint32_t GetCount() const { return mCount; }
+
+private:
+  sdp::NetType mNetType;
+  sdp::AddrType mAddrType;
+  std::string mAddr;
+  int16_t mTtl; // 0-255; -1 for unset
+  uint32_t mCount;
 };
 
 }
