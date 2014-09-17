@@ -129,6 +129,17 @@
          './src/sdp/sipcc/sdp_private.h',
          './src/sdp/sipcc/sdp_utils.c',
          './src/sdp/sipcc/sdp_services_unix.c',
+
+         './src/sdp/Sdp.h',
+         './src/sdp/SdpAttribute.h',
+         './src/sdp/SdpEnum.h',
+         './src/sdp/SdpMediaSection.h',
+         './src/sdp/SipccSdp.h',
+         './src/sdp/SipccSdpMediaSection.h',
+         './src/sdp/SipccSdpParser.h',
+         './src/sdp/SipccSdp.cpp',
+         './src/sdp/SipccSdpMediaSection.cpp',
+         './src/sdp/SipccSdpParser.cpp',
       ],
 
       #
@@ -141,7 +152,7 @@
         'USE_SSLEAY',
         '_CPR_USE_EXTERNAL_LOGGER',
         'WEBRTC_RELATIVE_PATH',
-      	'HAVE_WEBRTC_VIDEO',
+        'HAVE_WEBRTC_VIDEO',
         'HAVE_WEBRTC_VOICE',
         'HAVE_STDINT_H=1',
         'HAVE_STDLIB_H=1',
