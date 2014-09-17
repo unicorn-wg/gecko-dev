@@ -7,7 +7,7 @@
 #ifndef _SDP_H_
 #define _SDP_H_
 
-#include "signaling/src/sdp/SdpAttribute.h"
+#include "signaling/src/sdp/SdpAttributeList.h"
 #include "signaling/src/sdp/SdpEnum.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Maybe.h"
@@ -30,7 +30,7 @@ public:
   virtual SdpOrigin GetOrigin() const = 0;
   virtual std::string GetSessionName() const = 0;
   // Note: connection information is always retrieved from media sections
-  virtual std::string GetBandwidth(std::string type) const = 0;
+  virtual Maybe<std::string> GetBandwidth(const std::string& type) const = 0;
 
   virtual const SdpAttributeList &GetAttributeList() const = 0;
   virtual SdpAttributeList &GetAttributeList() = 0;

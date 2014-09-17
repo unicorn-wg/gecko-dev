@@ -26,7 +26,7 @@ SipccSdpParser::Parse(const std::string& sdpText)
 
   sdp_t *sdp = sdp_init_description(sipcc_config);
   if (sdp) {
-    const char* rawString = sdpText.c_str()
+    const char* rawString = sdpText.c_str();
     sdp_result_e result = sdp_parse(sdp, &rawString, sdpText.length());
     if (result == SDP_SUCCESS) {
       SipccSdp* sipccSdp = new SipccSdp(sdp);
