@@ -21,6 +21,9 @@ public:
 private:
   SipccSdpAttributeList(sdp_t* sdp, uint16_t level)
   : mSdp(sdp), mLevel(level) {}
+
+  sdp_t* mSdp;
+  uint16_t mLevel;
 };
 
 }
