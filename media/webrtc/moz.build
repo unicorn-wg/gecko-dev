@@ -53,7 +53,6 @@ if CONFIG['MOZ_WEBRTC_SIGNALING']:
     GYP_DIRS['signaling'].sandbox_vars['FINAL_LIBRARY'] = 'xul'
     # These files cannot be built in unified mode because they force NSPR logging.
     signaling_non_unified_sources = [
-        'signaling/src/callcontrol/CallControlManagerImpl.cpp',
         'signaling/src/common/browser_logging/CSFLog.cpp',
         'signaling/src/media-conduit/AudioConduit.cpp',
         'signaling/src/media-conduit/CodecStatistics.cpp',
