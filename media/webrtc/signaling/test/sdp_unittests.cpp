@@ -1,3 +1,5 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -33,8 +35,9 @@ extern "C" {
 #include "sdp_private.h"
 }
 
-using mozilla::SdpParser;
-using mozilla::Sdp;
+using mozilla::sdp::SipccSdpParser;
+using mozilla::sdp::Sdp;
+using mozilla::sdp::AttributeType;
 
 namespace test {
 
@@ -842,8 +845,148 @@ TEST_F(NewSdpTest, ParseGarbage) {
 
 TEST_F(NewSdpTest, ParseMinimal) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE(mSdp);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << mParser.GetErrorsAsStream();
 }
+
+// SDP from a basic A/V apprtc call FFX/FFX
+const std::string kBasicAudioVideoOffer =
+"v=0\r\n"
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0\r\n"
+"s=SIP Call\r\n"
+"t=0 0\r\n"
+"a=ice-ufrag:4a799b2e\r\n"
+"a=ice-pwd:e4cc12a910f106a0a744719425510e17\r\n"
+"a=fingerprint:sha-256 DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C\r\n"
+"m=audio 9 RTP/SAVPF 109 9 0 8 101\r\n"
+"c=IN IP4 0.0.0.0\r\n"
+"a=rtpmap:109 opus/48000/2\r\n"
+"a=ptime:20\r\n"
+"a=rtpmap:9 G722/8000\r\n"
+"a=rtpmap:0 PCMU/8000\r\n"
+"a=rtpmap:8 PCMA/8000\r\n"
+"a=rtpmap:101 telephone-event/8000\r\n"
+"a=fmtp:101 0-15\r\n"
+"a=sendrecv\r\n"
+"a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\n"
+"a=setup:actpass\r\n"
+"a=rtcp-mux\r\n"
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 62453 typ host\r\n"
+"a=candidate:2 1 UDP 1694236671 24.6.134.204 62453 typ srflx raddr 10.0.0.36 rport 62453\r\n"
+"a=candidate:3 1 UDP 100401151 162.222.183.171 49761 typ relay raddr 162.222.183.171 rport 49761\r\n"
+"a=candidate:6 1 UDP 16515071 162.222.183.171 51858 typ relay raddr 162.222.183.171 rport 51858\r\n"
+"a=candidate:3 2 UDP 100401150 162.222.183.171 62454 typ relay raddr 162.222.183.171 rport 62454\r\n"
+"a=candidate:2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428\r\n"
+"a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340\r\n"
+"a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host\r\n"
+"m=video 9 RTP/SAVPF 120\r\n"
+"c=IN IP4 0.0.0.0\r\n"
+"a=rtpmap:120 VP8/90000\r\n"
+"a=sendrecv\r\n"
+"a=rtcp-fb:120 nack\r\n"
+"a=rtcp-fb:120 nack pli\r\n"
+"a=rtcp-fb:120 ccm fir\r\n"
+"a=setup:actpass\r\n"
+"a=rtcp-mux\r\n"
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 59530 typ host\r\n"
+"a=candidate:0 2 UDP 2130379006 10.0.0.36 64378 typ host\r\n"
+"a=candidate:2 2 UDP 1694236670 24.6.134.204 64378 typ srflx raddr 10.0.0.36 rport 64378\r\n"
+"a=candidate:6 2 UDP 16515070 162.222.183.171 64941 typ relay raddr 162.222.183.171 rport 64941\r\n"
+"a=candidate:6 1 UDP 16515071 162.222.183.171 64800 typ relay raddr 162.222.183.171 rport 64800\r\n"
+"a=candidate:2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530\r\n"
+"a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935\r\n"
+"a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026\r\n";
+
+TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << mParser.GetErrorsAsStream();
+}
+
+TEST_F(NewSdpTest, CheckIceUfrag) {
+  ParseSdp(kBasicAudioVideoOffer);
+  auto ice_ufrag = mSdp.GetIceUfrag();
+  ASSERT_TRUE(ice_ufrag) << "No ice-ufrag";
+  ASSERT_EQ("4a799b2e", ice_ufrag->Value()) << "Wrong ice-ufrag value";
+}
+
+TEST_F(NewSdpTest, CheckIcePwd) {
+  ParseSdp(kBasicAudioVideoOffer);
+  auto ice_ufrag = mSdp.GetIcePwd();
+  ASSERT_TRUE(ice_pwd) << "No ice-pwd";
+  ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd->Value()) << "Wrong ice-pwd value";
+}
+
+TEST_F(NewSdpTest, CheckFingerprint) {
+  ParseSdp(kBasicAudioVideoOffer);
+  auto fingerprint = mSdp.GetFingerprint();
+  ASSERT_TRUE(fingerprint) << "No fingerprint";
+  ASSERT_EQ("sha-256", ice_pwd->Algorithm()) << "Wrong algorithm";
+  ASSERT_EQ("DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C", ice_pwd->Fingerprint()) << "Wrong fingerprint";
+}
+
+TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(2, mSdp.GetMediaSectionCount()) << "Wrong number of media sections";
+}
+
+TEST_F(NewSdpTest, CheckMlines) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(2, mSdp.GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ("audio", mSdp.GetMediaSection(0).GetType())
+    << "Wrong type for first media section";
+  oSSERT_EQ("RTP/SAVPF", mSdp.GetMediaSection(0).GetProtocol())
+    << "Wrong protocol for audio";
+  auto audio_formats = mSdp.GetMediaSection(0).GetFormats();
+  ASSERT_EQ(5, audio_formats.size()) << "Wrong number of formats for audio";
+  ASSERT_EQ("109", audio_formats[0]);
+  ASSERT_EQ("9",   audio_formats[1]);
+  ASSERT_EQ("0",   audio_formats[2]);
+  ASSERT_EQ("8",   audio_formats[3]);
+  ASSERT_EQ("101", audio_formats[4]);
+
+  ASSERT_EQ("video", mSdp.GetMediaSection(1).GetType())
+    << "Wrong type for second media section";
+  oSSERT_EQ("RTP/SAVPF", mSdp.GetMediaSection(1).GetProtocol())
+    << "Wrong protocol for video";
+  auto video_formats = mSdp.GetMediaSection(1).GetFormats();
+  ASSERT_EQ(1, video_formats.size()) << "Wrong number of formats for video";
+  ASSERT_EQ("120", video_formats[0]);
+}
+
+TEST_F(NewSdpTest, CheckRtpmap) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(2, mSdp.GetMediaSectionCount())
+    << "Wrong number of media sections";
+
+  ASSERT_EQ(5, mSdp.GetMediaSection(0).GetNumRtpmap())
+    << "Wrong number of rtpmap attributes for audio";
+
+  // TODO: Write a CheckRtpmap(rtpmap, payloadType, encodingName, rate)
+  // Need to know name of type
+  // CheckRtpmap("109", "opus",           48000, mSdp.GetMediaSection(0).GetRtpmap(0));
+  // CheckRtpmap("9",   "G722",            8000, mSdp.GetMediaSection(0).GetRtpmap(1));
+  // CheckRtpmap("0",   "PCMU",            8000, mSdp.GetMediaSection(0).GetRtpmap(2));
+  // CheckRtpmap("8",   "PCMA",            8000, mSdp.GetMediaSection(0).GetRtpmap(3));
+  // CheckRtpmap("101", "telephone-event", 8000, mSdp.GetMediaSection(0).GetRtpmap(4));
+
+  // CheckRtpmap("120", "VP8",            90000, mSdp.GetMediaSection(0).GetRtpmap(0));
+}
+
+TEST_F(NewSdpTest, CheckFormatParameters) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(2, mSdp.GetMediaSectionCount())
+    << "Wrong number of media sections";
+
+  ASSERT_EQ(1, mSdp.GetMediaSection(0).GetAttributeList().Count(kFmtp));
+}
+
+// TODO: Tests that parse above SDP, and check various things
+// For media sections 1 and 2:
+//  Check fmtp
+//  Check direction (should be sendrecv)
+//  Check extmap
+//  Check setup
+//  Check rtcp-mux
+//  Check candidates
 
 } // End namespace test.
 
