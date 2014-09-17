@@ -21,6 +21,7 @@
 
     // TODO: Stop using old constraint-like RTCOptions soon (Bug 1064223).
     // Watch out for case-difference when fixing: { offerToReceiveAudio: true }
+    test.setMediaConstraints([], [{audio: true}]);
     test.setOfferOptions({ mandatory: { OfferToReceiveAudio: true } });
     test.run();
   });

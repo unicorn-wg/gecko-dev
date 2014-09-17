@@ -1526,6 +1526,8 @@ function PeerConnectionWrapper(label, configuration, h264) {
 
   this.constraints = [ ];
   this.offerOptions = {};
+  this.offerAVCounters = {};
+  this.answerAVCounters = {};
   this.streams = [ ];
   this.mediaCheckers = [ ];
 
@@ -2232,6 +2234,15 @@ PeerConnectionWrapper.prototype = {
     }
   },
 
+  setAudioVideoCounters: function PCW_setAudioVideoCounters(counters,
+      constraints, options, _dataTracks) {
+    counters.constraintsAudioTracks = this.countAudioTracksInMediaConstraint(constraints);
+    counters.constraintsVideoTracks = this.countVideoTracksInMediaConstraint(constraints);
+    counters.optionsAudioTracks = this.audioInOfferOptions(options);
+    counters.optionsVideoTracks = this.videoInOfferOptions(options);
+    counters.dataTracks = _dataTracks;
+  },
+
   /*
    * Counts the amount of audio tracks in a given set of streams.
    *
@@ -2274,37 +2285,33 @@ PeerConnectionWrapper.prototype = {
    * @param {object} constraintsRemote
    *        The media constraints of the local and remote peer connection object
    */
-  checkMediaTracks : function PCW_checkMediaTracks(constraintsRemote, onSuccess) {
+  checkMediaTracks : function PCW_checkMediaTracks(localCounters, remoteCounters, onSuccess) {
     var self = this;
     var addStreamTimeout = null;
 
-    function _checkMediaTracks(constraintsRemote, onSuccess) {
+    function _checkMediaTracks(onSuccess) {
       if (addStreamTimeout !== null) {
         clearTimeout(addStreamTimeout);
       }
 
-      var localConstraintAudioTracks =
-        self.countAudioTracksInMediaConstraint(self.constraints);
+      var localConstraintAudioTracks = localCounters.constraintsAudioTracks;
       var localStreams = self._pc.getLocalStreams();
       var localAudioTracks = self.countAudioTracksInStreams(localStreams, false);
       is(localAudioTracks, localConstraintAudioTracks, self + ' has ' +
         localAudioTracks + ' local audio tracks');
 
-      var localConstraintVideoTracks =
-        self.countVideoTracksInMediaConstraint(self.constraints);
+      var localConstraintVideoTracks = localCounters.constraintsVideoTracks;
       var localVideoTracks = self.countVideoTracksInStreams(localStreams, false);
       is(localVideoTracks, localConstraintVideoTracks, self + ' has ' +
         localVideoTracks + ' local video tracks');
 
-      var remoteConstraintAudioTracks =
-        self.countAudioTracksInMediaConstraint(constraintsRemote);
+      var remoteConstraintAudioTracks = remoteCounters.constraintsAudioTracks;
       var remoteStreams = self._pc.getRemoteStreams();
       var remoteAudioTracks = self.countAudioTracksInStreams(remoteStreams, false);
       is(remoteAudioTracks, remoteConstraintAudioTracks, self + ' has ' +
         remoteAudioTracks + ' remote audio tracks');
 
-      var remoteConstraintVideoTracks =
-        self.countVideoTracksInMediaConstraint(constraintsRemote);
+      var remoteConstraintVideoTracks = remoteCounters.constraintsVideoTracks;
       var remoteVideoTracks = self.countVideoTracksInStreams(remoteStreams, false);
       is(remoteVideoTracks, remoteConstraintVideoTracks, self + ' has ' +
         remoteVideoTracks + ' remote video tracks');
@@ -2314,19 +2321,18 @@ PeerConnectionWrapper.prototype = {
 
     // we have to do this check as the onaddstream never fires if the remote
     // stream has no track at all!
-    var expectedRemoteTracks =
-      self.countAudioTracksInMediaConstraint(constraintsRemote) +
-      self.countVideoTracksInMediaConstraint(constraintsRemote);
+    var expectedRemoteTracks = remoteCounters.constraintsAudioTracks +
+      remoteCounters.constraintsVideoTracks;
 
     // TODO: remove this once Bugs 998552 and 998546 are closed
     if ((self.onAddStreamFired) || (expectedRemoteTracks == 0)) {
-      _checkMediaTracks(constraintsRemote, onSuccess);
+      _checkMediaTracks(onSuccess);
     } else {
       info(self + " checkMediaTracks() got called before onAddStream fired");
       // we rely on the outer mochitest timeout to catch the case where
       // onaddstream never fires
       self.addStreamCallbacks.checkMediaTracks = function() {
-        _checkMediaTracks(constraintsRemote, onSuccess);
+        _checkMediaTracks(onSuccess);
       };
       addStreamTimeout = setTimeout(function () {
         ok(self.onAddStreamFired, self + " checkMediaTracks() timed out waiting for onaddstream event to fire");
@@ -2337,11 +2343,9 @@ PeerConnectionWrapper.prototype = {
     }
   },
 
-  verifySdp : function PCW_verifySdp(desc, expectedType, constraints,
-      offerOptions, trickleIceCallback) {
+  verifySdp : function PCW_verifySdp(desc, expectedType, counters,
+      trickleIceCallback) {
     info("Examining this SessionDescription: " + JSON.stringify(desc));
-    info("constraints: " + JSON.stringify(constraints));
-    info("offerOptions: " + JSON.stringify(offerOptions));
     ok(desc, "SessionDescription is not null");
     is(desc.type, expectedType, "SessionDescription type is " + expectedType);
     ok(desc.sdp.length > 10, "SessionDescription body length is plausible");
@@ -2360,10 +2364,7 @@ PeerConnectionWrapper.prototype = {
     //TODO: how can we check for absence/presence of m=application?
 
     //TODO: how to handle media contraints + offer options
-    var audioTracks = this.countAudioTracksInMediaConstraint(constraints);
-    if (constraints.length === 0) {
-      audioTracks = this.audioInOfferOptions(offerOptions);
-    }
+    var audioTracks = Math.max(counters.constraintsAudioTracks, counters.optionsAudioTracks);
     info("expected audio tracks: " + audioTracks);
     if (audioTracks == 0) {
       ok(!desc.sdp.contains("m=audio"), "audio m-line is absent from SDP");
@@ -2377,10 +2378,7 @@ PeerConnectionWrapper.prototype = {
     }
 
     //TODO: how to handle media contraints + offer options
-    var videoTracks = this.countVideoTracksInMediaConstraint(constraints);
-    if (constraints.length === 0) {
-      videoTracks = this.videoInOfferOptions(offerOptions);
-    }
+    var videoTracks = Math.max(counters.constraintsVideoTracks, counters.optionsVideoTracks);
     info("expected video tracks: " + videoTracks);
     if (videoTracks == 0) {
       ok(!desc.sdp.contains("m=video"), "video m-line is absent from SDP");
@@ -2561,6 +2559,40 @@ PeerConnectionWrapper.prototype = {
     } else {
       is(numLocalCandidates, 0, "Have no localcandidate stats");
       is(numRemoteCandidates, 0, "Have no remotecandidate stats");
+    }
+  },
+
+  /**
+   * Compares amount of established ICE connection according to ICE candidate
+   * pairs in the RTCP reporting with the expected amount of connection based
+   * on the constraints.
+   *
+   * @param {object} stats
+   *        The stats to check for ICE candidate pairs
+   * @param {object} counters
+   *        The counters for media and data tracks based on constraints
+   * @param {object} answer
+   *        The SDP answer to check for SDP bundle support
+   */
+  checkRtcpIceConnections : function PCW_checkRtcpIceConnections(stats,
+      counters, answer) {
+    var iceConnections = 0;
+    Object.keys(stats).forEach(function(name) {
+      if ((stats[name].type === "candidatepair") &&
+         (stats[name].state === "succeeded")) {
+        iceConnections += 1;
+      }
+    });
+    info("ICE connections according to RTCP: " + iceConnections);
+    if (answer.sdp.contains('a=group:BUNDLE')) {
+      is(iceConnections, 1, "RTCP reports exactly 1 ICE connection");
+    } else {
+      var audioTracks = Math.max(counters.constraintsAudioTracks, counters.optionsAudioTracks);
+      var videoTracks = Math.max(counters.constraintsVideoTracks, counters.optionsVideoTracks);
+      var dataTracks = counters.dataTracks;
+      var audioVideoDataTracks = audioTracks + videoTracks + dataTracks;
+      info("expected audio + video + data tracks: " + audioVideoDataTracks);
+      is(audioVideoDataTracks, iceConnections, "RTCP ICE connections matches expected A/V tracks");
     }
   },
 
