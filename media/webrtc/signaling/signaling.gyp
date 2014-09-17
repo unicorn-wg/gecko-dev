@@ -116,7 +116,6 @@
         './src/peerconnection/PeerConnectionImpl.h',
         './src/peerconnection/PeerConnectionMedia.cpp',
         './src/peerconnection/PeerConnectionMedia.h',
-
         # Media pipeline
         './src/mediapipeline/MediaPipeline.h',
         './src/mediapipeline/MediaPipeline.cpp',
@@ -269,295 +268,295 @@
       ],
     },
 
-    #
-    # SIPCC
-    #
-    {
-      'target_name': 'sipcc',
-      'type': 'static_library',
-
-      #
-      # INCLUDES
-      #
-      'include_dirs': [
-        './src/common/browser_logging',
-        './src/common/time_profiling',
-        './src/sipcc/include',
-        './src/sipcc/core/includes',
-        './src/sipcc/cpr/include',
-        './src/sipcc/core/common',
-        './src/sipcc/core/sipstack/h',
-        './src/sipcc/core/ccapp',
-        './src/sipcc/core/sdp',
-        './src/sipcc/core/gsm/h',
-        './src/sipcc/plat/common',
-        '../../../media/mtransport',
-        '../../../dom/base',
-        '../../../netwerk/sctp/datachannel',
-      ],
-
-      #
-      # DEPENDENCIES
-      #
-      'dependencies': [
-      ],
-
-
-      'export_dependent_settings': [
-      ],
-
-
-      #
-      # SOURCES
-      #
-      'sources': [
-        # CPR
-        './src/sipcc/cpr/include/cpr.h',
-        './src/sipcc/cpr/include/cpr_assert.h',
-        './src/sipcc/cpr/include/cpr_debug.h',
-        './src/sipcc/cpr/include/cpr_errno.h',
-        './src/sipcc/cpr/include/cpr_in.h',
-        './src/sipcc/cpr/include/cpr_ipc.h',
-        './src/sipcc/cpr/include/cpr_locks.h',
-        './src/sipcc/cpr/include/cpr_memory.h',
-        './src/sipcc/cpr/include/cpr_rand.h',
-        './src/sipcc/cpr/include/cpr_socket.h',
-        './src/sipcc/cpr/include/cpr_stddef.h',
-        './src/sipcc/cpr/include/cpr_stdio.h',
-        './src/sipcc/cpr/include/cpr_stdlib.h',
-        './src/sipcc/cpr/include/cpr_string.h',
-        './src/sipcc/cpr/include/cpr_strings.h',
-        './src/sipcc/cpr/include/cpr_threads.h',
-        './src/sipcc/cpr/include/cpr_time.h',
-        './src/sipcc/cpr/include/cpr_types.h',
-        './src/sipcc/cpr/common/cpr_string.c',
-
-        # SDP
-        './src/sipcc/core/sdp/ccsdp.c',
-        './src/sipcc/core/sdp/sdp_access.c',
-        './src/sipcc/core/sdp/sdp_attr.c',
-        './src/sipcc/core/sdp/sdp_attr_access.c',
-        './src/sipcc/core/sdp/sdp_base64.c',
-        './src/sipcc/core/sdp/sdp_config.c',
-        './src/sipcc/core/sdp/sdp_main.c',
-        './src/sipcc/core/sdp/sdp_token.c',
-        './src/sipcc/core/sdp/sdp.h',
-        './src/sipcc/core/sdp/sdp_base64.h',
-        './src/sipcc/core/sdp/sdp_os_defs.h',
-        './src/sipcc/core/sdp/sdp_private.h',
-        './src/sipcc/core/sdp/sdp_utils.c',
-        './src/sipcc/core/sdp/sdp_services_unix.c',
-      ],
-
-      #
-      # DEFINES
-      #
-
-      'defines' : [
-      # CPR timers are needed by SIP, but are disabled for now
-      # to avoid the extra timer thread and stale cleanup code
-      #    'CPR_TIMERS_ENABLED',
-      ],
-
-      'cflags_mozilla': [
-        '$(NSPR_CFLAGS)',
-      ],
-
-      #
-      # OS SPECIFIC
-      #
-      'conditions': [
-        ['(OS=="android") or (OS=="linux")', {
-          'include_dirs': [
-          ],
-
-          'defines' : [
-            'SIP_OS_LINUX',
-            '_GNU_SOURCE',
-            'CPR_MEMORY_LITTLE_ENDIAN',
-            'NO_SOCKET_POLLING',
-            'USE_TIMER_SELECT_BASED',
-            'FULL_BUILD',
-            'STUBBED_OUT',
-            'USE_PRINTF'
-            'LINUX',
-          ],
-
-          'cflags_mozilla': [
-          ],
-        }],
-        ['OS=="android"', {
-          'sources': [
-            # SIPSTACK
-            './src/sipcc/core/sipstack/sip_platform_task.c',
-
-            # PLAT
-            './src/sipcc/plat/common/dns_utils.c',
-
-            # CPR
-            './src/sipcc/cpr/android/cpr_android_errno.c',
-            './src/sipcc/cpr/android/cpr_android_init.c',
-            './src/sipcc/cpr/android/cpr_android_socket.c',
-            './src/sipcc/cpr/android/cpr_android_stdio.c',
-            './src/sipcc/cpr/android/cpr_android_string.c',
-            './src/sipcc/cpr/android/cpr_android_threads.c',
-            './src/sipcc/cpr/android/cpr_android_timers_using_select.c',
-
-            './src/sipcc/cpr/android/cpr_assert.h',
-            './src/sipcc/cpr/android/cpr_android_align.h',
-            './src/sipcc/cpr/android/cpr_android_assert.h',
-            './src/sipcc/cpr/android/cpr_android_errno.h',
-            './src/sipcc/cpr/android/cpr_android_in.h',
-            './src/sipcc/cpr/android/cpr_android_private.h',
-            './src/sipcc/cpr/android/cpr_android_rand.h',
-            './src/sipcc/cpr/android/cpr_android_socket.h',
-            './src/sipcc/cpr/android/cpr_android_stdio.h',
-            './src/sipcc/cpr/android/cpr_android_string.h',
-            './src/sipcc/cpr/android/cpr_android_strings.h',
-            './src/sipcc/cpr/android/cpr_android_time.h',
-            './src/sipcc/cpr/android/cpr_android_timers.h',
-            './src/sipcc/cpr/android/cpr_android_tst.h',
-            './src/sipcc/cpr/android/cpr_android_types.h',
-          ],
-        }],
-        ['OS=="linux"', {
-          'sources': [
-            # SIPSTACK
-            './src/sipcc/core/sipstack/sip_platform_task.c',
-
-            # PLAT
-            './src/sipcc/plat/common/dns_utils.c',
-
-            # CPR
-            './src/sipcc/cpr/linux/cpr_linux_errno.c',
-            './src/sipcc/cpr/linux/cpr_linux_init.c',
-            './src/sipcc/cpr/linux/cpr_linux_socket.c',
-            './src/sipcc/cpr/linux/cpr_linux_stdio.c',
-            './src/sipcc/cpr/linux/cpr_linux_string.c',
-            './src/sipcc/cpr/linux/cpr_linux_threads.c',
-            './src/sipcc/cpr/linux/cpr_linux_timers_using_select.c',
-
-            './src/sipcc/cpr/linux/cpr_assert.h',
-            './src/sipcc/cpr/linux/cpr_linux_align.h',
-            './src/sipcc/cpr/linux/cpr_linux_assert.h',
-            './src/sipcc/cpr/linux/cpr_linux_errno.h',
-            './src/sipcc/cpr/linux/cpr_linux_in.h',
-            './src/sipcc/cpr/linux/cpr_linux_private.h',
-            './src/sipcc/cpr/linux/cpr_linux_rand.h',
-            './src/sipcc/cpr/linux/cpr_linux_socket.h',
-            './src/sipcc/cpr/linux/cpr_linux_stdio.h',
-            './src/sipcc/cpr/linux/cpr_linux_string.h',
-            './src/sipcc/cpr/linux/cpr_linux_strings.h',
-            './src/sipcc/cpr/linux/cpr_linux_time.h',
-            './src/sipcc/cpr/linux/cpr_linux_timers.h',
-            './src/sipcc/cpr/linux/cpr_linux_tst.h',
-            './src/sipcc/cpr/linux/cpr_linux_types.h',
-
-          ],
-        }],
-        ['OS=="win"', {
-          'include_dirs': [
-          ],
-
-          'sources': [
-            # SIPSTACK
-            './src/sipcc/core/sipstack/sip_platform_win32_task.c',
-
-            # PLAT
-            './src/sipcc/plat/win32/dns_utils.c',
-            './src/sipcc/plat/win32/mystub.c',
-            './src/sipcc/plat/win32/plat_api_stub.c',
-            './src/sipcc/plat/win32/plat_api_win.c',
-            './src/sipcc/plat/win32/StdAfx.h',
-
-            # CPR
-            './src/sipcc/cpr/win32/cpr_win_assert.h',
-            './src/sipcc/cpr/win32/cpr_win_debug.c',
-            './src/sipcc/cpr/win32/cpr_win_debug.h',
-            './src/sipcc/cpr/win32/cpr_win_defines.h',
-            './src/sipcc/cpr/win32/cpr_win_errno.c',
-            './src/sipcc/cpr/win32/cpr_win_errno.h',
-            './src/sipcc/cpr/win32/cpr_win_in.h',
-            './src/sipcc/cpr/win32/cpr_win_init.c',
-            './src/sipcc/cpr/win32/cpr_win_locks.c',
-            './src/sipcc/cpr/win32/cpr_win_locks.h',
-            './src/sipcc/cpr/win32/cpr_win_rand.c',
-            './src/sipcc/cpr/win32/cpr_win_rand.h',
-            './src/sipcc/cpr/win32/cpr_win_socket.c',
-            './src/sipcc/cpr/win32/cpr_win_socket.h',
-            './src/sipcc/cpr/win32/cpr_win_stdio.c',
-            './src/sipcc/cpr/win32/cpr_win_stdio.h',
-            './src/sipcc/cpr/win32/cpr_win_string.c',
-            './src/sipcc/cpr/win32/cpr_win_string.h',
-            './src/sipcc/cpr/win32/cpr_win_strings.h',
-            './src/sipcc/cpr/win32/cpr_win_threads.c',
-            './src/sipcc/cpr/win32/cpr_win_time.h',
-            './src/sipcc/cpr/win32/cpr_win_timers.c',
-            './src/sipcc/cpr/win32/cpr_win_timers.h',
-            './src/sipcc/cpr/win32/cpr_win_types.h',
-
-          ],
-
-          'defines' : [
-            'SIP_OS_WINDOWS',
-            'WIN32',
-            'SIPCC_BUILD',
-            'SDP_WIN32',
-            'STUBBED_OUT',
-            'EXTERNAL_TICK_REQUIRED',
-            'GIPS_VER=3480',
-          ],
-
-          'cflags_mozilla': [
-          ],
-
-        }],
-        ['OS=="mac" or os_bsd==1', {
-
-          'include_dirs': [
-          ],
-
-          'sources': [
-             './src/sipcc/cpr/darwin/cpr_darwin_string.c',
-             './src/sipcc/cpr/darwin/cpr_darwin_string.h',
-             './src/sipcc/cpr/darwin/cpr_darwin_strings.h',
-          ],
-
-
-          'conditions': [
-            ['OS=="mac"', {
-              'defines' : [
-                'SIP_OS_OSX',
-                '_POSIX_SOURCE',
-                'CPR_MEMORY_LITTLE_ENDIAN',
-                'NO_SOCKET_POLLING',
-                'USE_TIMER_SELECT_BASED',
-                'FULL_BUILD',
-                'STUBBED_OUT',
-                'USE_PRINTF',
-                '_DARWIN_C_SOURCE',
-                'NO_NSPR_10_SUPPORT',
-              ],
-            }],
-            ['os_bsd==1', {
-              'defines' : [
-                'SIP_OS_OSX',
-                'CPR_MEMORY_LITTLE_ENDIAN',
-                'NO_SOCKET_POLLING',
-                'USE_TIMER_SELECT_BASED',
-                'FULL_BUILD',
-                'STUBBED_OUT',
-                'USE_PRINTF',
-                'NO_NSPR_10_SUPPORT',
-              ],
-            }],
-          ],
-          'cflags_mozilla': [
-          ],
-        }],
-      ],
-
-    },
+#    #
+#    # SIPCC
+#    #
+#    {
+#      'target_name': 'sipcc',
+#      'type': 'static_library',
+#
+#      #
+#      # INCLUDES
+#      #
+#      'include_dirs': [
+#        './src/common/browser_logging',
+#        './src/common/time_profiling',
+#        './src/sipcc/include',
+#        './src/sipcc/core/includes',
+#        './src/sipcc/cpr/include',
+#        './src/sipcc/core/common',
+#        './src/sipcc/core/sipstack/h',
+#        './src/sipcc/core/ccapp',
+#        './src/sipcc/core/sdp',
+#        './src/sipcc/core/gsm/h',
+#        './src/sipcc/plat/common',
+#        '../../../media/mtransport',
+#        '../../../dom/base',
+#        '../../../netwerk/sctp/datachannel',
+#      ],
+#
+#      #
+#      # DEPENDENCIES
+#      #
+#      'dependencies': [
+#      ],
+#
+#
+#      'export_dependent_settings': [
+#      ],
+#
+#
+#      #
+#      # SOURCES
+#      #
+#      'sources': [
+#        # CPR
+#        './src/sipcc/cpr/include/cpr.h',
+#        './src/sipcc/cpr/include/cpr_assert.h',
+#        './src/sipcc/cpr/include/cpr_debug.h',
+#        './src/sipcc/cpr/include/cpr_errno.h',
+#        './src/sipcc/cpr/include/cpr_in.h',
+#        './src/sipcc/cpr/include/cpr_ipc.h',
+#        './src/sipcc/cpr/include/cpr_locks.h',
+#        './src/sipcc/cpr/include/cpr_memory.h',
+#        './src/sipcc/cpr/include/cpr_rand.h',
+#        './src/sipcc/cpr/include/cpr_socket.h',
+#        './src/sipcc/cpr/include/cpr_stddef.h',
+#        './src/sipcc/cpr/include/cpr_stdio.h',
+#        './src/sipcc/cpr/include/cpr_stdlib.h',
+#        './src/sipcc/cpr/include/cpr_string.h',
+#        './src/sipcc/cpr/include/cpr_strings.h',
+#        './src/sipcc/cpr/include/cpr_threads.h',
+#        './src/sipcc/cpr/include/cpr_time.h',
+#        './src/sipcc/cpr/include/cpr_types.h',
+#        './src/sipcc/cpr/common/cpr_string.c',
+#
+#        # SDP
+#        './src/sipcc/core/sdp/ccsdp.c',
+#        './src/sipcc/core/sdp/sdp_access.c',
+#        './src/sipcc/core/sdp/sdp_attr.c',
+#        './src/sipcc/core/sdp/sdp_attr_access.c',
+#        './src/sipcc/core/sdp/sdp_base64.c',
+#        './src/sipcc/core/sdp/sdp_config.c',
+#        './src/sipcc/core/sdp/sdp_main.c',
+#        './src/sipcc/core/sdp/sdp_token.c',
+#        './src/sipcc/core/sdp/sdp.h',
+#        './src/sipcc/core/sdp/sdp_base64.h',
+#        './src/sipcc/core/sdp/sdp_os_defs.h',
+#        './src/sipcc/core/sdp/sdp_private.h',
+#        './src/sipcc/core/sdp/sdp_utils.c',
+#        './src/sipcc/core/sdp/sdp_services_unix.c',
+#      ],
+#
+#      #
+#      # DEFINES
+#      #
+#
+#      'defines' : [
+#      # CPR timers are needed by SIP, but are disabled for now
+#      # to avoid the extra timer thread and stale cleanup code
+#      #    'CPR_TIMERS_ENABLED',
+#      ],
+#
+#      'cflags_mozilla': [
+#        '$(NSPR_CFLAGS)',
+#      ],
+#
+#      #
+#      # OS SPECIFIC
+#      #
+#      'conditions': [
+#        ['(OS=="android") or (OS=="linux")', {
+#          'include_dirs': [
+#          ],
+#
+#          'defines' : [
+#            'SIP_OS_LINUX',
+#            '_GNU_SOURCE',
+#            'CPR_MEMORY_LITTLE_ENDIAN',
+#            'NO_SOCKET_POLLING',
+#            'USE_TIMER_SELECT_BASED',
+#            'FULL_BUILD',
+#            'STUBBED_OUT',
+#            'USE_PRINTF'
+#            'LINUX',
+#          ],
+#
+#          'cflags_mozilla': [
+#          ],
+#        }],
+#        ['OS=="android"', {
+#          'sources': [
+#            # SIPSTACK
+#            './src/sipcc/core/sipstack/sip_platform_task.c',
+#
+#            # PLAT
+#            './src/sipcc/plat/common/dns_utils.c',
+#
+#            # CPR
+#            './src/sipcc/cpr/android/cpr_android_errno.c',
+#            './src/sipcc/cpr/android/cpr_android_init.c',
+#            './src/sipcc/cpr/android/cpr_android_socket.c',
+#            './src/sipcc/cpr/android/cpr_android_stdio.c',
+#            './src/sipcc/cpr/android/cpr_android_string.c',
+#            './src/sipcc/cpr/android/cpr_android_threads.c',
+#            './src/sipcc/cpr/android/cpr_android_timers_using_select.c',
+#
+#            './src/sipcc/cpr/android/cpr_assert.h',
+#            './src/sipcc/cpr/android/cpr_android_align.h',
+#            './src/sipcc/cpr/android/cpr_android_assert.h',
+#            './src/sipcc/cpr/android/cpr_android_errno.h',
+#            './src/sipcc/cpr/android/cpr_android_in.h',
+#            './src/sipcc/cpr/android/cpr_android_private.h',
+#            './src/sipcc/cpr/android/cpr_android_rand.h',
+#            './src/sipcc/cpr/android/cpr_android_socket.h',
+#            './src/sipcc/cpr/android/cpr_android_stdio.h',
+#            './src/sipcc/cpr/android/cpr_android_string.h',
+#            './src/sipcc/cpr/android/cpr_android_strings.h',
+#            './src/sipcc/cpr/android/cpr_android_time.h',
+#            './src/sipcc/cpr/android/cpr_android_timers.h',
+#            './src/sipcc/cpr/android/cpr_android_tst.h',
+#            './src/sipcc/cpr/android/cpr_android_types.h',
+#          ],
+#        }],
+#        ['OS=="linux"', {
+#          'sources': [
+#            # SIPSTACK
+#            './src/sipcc/core/sipstack/sip_platform_task.c',
+#
+#            # PLAT
+#            './src/sipcc/plat/common/dns_utils.c',
+#
+#            # CPR
+#            './src/sipcc/cpr/linux/cpr_linux_errno.c',
+#            './src/sipcc/cpr/linux/cpr_linux_init.c',
+#            './src/sipcc/cpr/linux/cpr_linux_socket.c',
+#            './src/sipcc/cpr/linux/cpr_linux_stdio.c',
+#            './src/sipcc/cpr/linux/cpr_linux_string.c',
+#            './src/sipcc/cpr/linux/cpr_linux_threads.c',
+#            './src/sipcc/cpr/linux/cpr_linux_timers_using_select.c',
+#
+#            './src/sipcc/cpr/linux/cpr_assert.h',
+#            './src/sipcc/cpr/linux/cpr_linux_align.h',
+#            './src/sipcc/cpr/linux/cpr_linux_assert.h',
+#            './src/sipcc/cpr/linux/cpr_linux_errno.h',
+#            './src/sipcc/cpr/linux/cpr_linux_in.h',
+#            './src/sipcc/cpr/linux/cpr_linux_private.h',
+#            './src/sipcc/cpr/linux/cpr_linux_rand.h',
+#            './src/sipcc/cpr/linux/cpr_linux_socket.h',
+#            './src/sipcc/cpr/linux/cpr_linux_stdio.h',
+#            './src/sipcc/cpr/linux/cpr_linux_string.h',
+#            './src/sipcc/cpr/linux/cpr_linux_strings.h',
+#            './src/sipcc/cpr/linux/cpr_linux_time.h',
+#            './src/sipcc/cpr/linux/cpr_linux_timers.h',
+#            './src/sipcc/cpr/linux/cpr_linux_tst.h',
+#            './src/sipcc/cpr/linux/cpr_linux_types.h',
+#
+#          ],
+#        }],
+#        ['OS=="win"', {
+#          'include_dirs': [
+#          ],
+#
+#          'sources': [
+#            # SIPSTACK
+#            './src/sipcc/core/sipstack/sip_platform_win32_task.c',
+#
+#            # PLAT
+#            './src/sipcc/plat/win32/dns_utils.c',
+#            './src/sipcc/plat/win32/mystub.c',
+#            './src/sipcc/plat/win32/plat_api_stub.c',
+#            './src/sipcc/plat/win32/plat_api_win.c',
+#            './src/sipcc/plat/win32/StdAfx.h',
+#
+#            # CPR
+#            './src/sipcc/cpr/win32/cpr_win_assert.h',
+#            './src/sipcc/cpr/win32/cpr_win_debug.c',
+#            './src/sipcc/cpr/win32/cpr_win_debug.h',
+#            './src/sipcc/cpr/win32/cpr_win_defines.h',
+#            './src/sipcc/cpr/win32/cpr_win_errno.c',
+#            './src/sipcc/cpr/win32/cpr_win_errno.h',
+#            './src/sipcc/cpr/win32/cpr_win_in.h',
+#            './src/sipcc/cpr/win32/cpr_win_init.c',
+#            './src/sipcc/cpr/win32/cpr_win_locks.c',
+#            './src/sipcc/cpr/win32/cpr_win_locks.h',
+#            './src/sipcc/cpr/win32/cpr_win_rand.c',
+#            './src/sipcc/cpr/win32/cpr_win_rand.h',
+#            './src/sipcc/cpr/win32/cpr_win_socket.c',
+#            './src/sipcc/cpr/win32/cpr_win_socket.h',
+#            './src/sipcc/cpr/win32/cpr_win_stdio.c',
+#            './src/sipcc/cpr/win32/cpr_win_stdio.h',
+#            './src/sipcc/cpr/win32/cpr_win_string.c',
+#            './src/sipcc/cpr/win32/cpr_win_string.h',
+#            './src/sipcc/cpr/win32/cpr_win_strings.h',
+#            './src/sipcc/cpr/win32/cpr_win_threads.c',
+#            './src/sipcc/cpr/win32/cpr_win_time.h',
+#            './src/sipcc/cpr/win32/cpr_win_timers.c',
+#            './src/sipcc/cpr/win32/cpr_win_timers.h',
+#            './src/sipcc/cpr/win32/cpr_win_types.h',
+#
+#          ],
+#
+#          'defines' : [
+#            'SIP_OS_WINDOWS',
+#            'WIN32',
+#            'SIPCC_BUILD',
+#            'SDP_WIN32',
+#            'STUBBED_OUT',
+#            'EXTERNAL_TICK_REQUIRED',
+#            'GIPS_VER=3480',
+#          ],
+#
+#          'cflags_mozilla': [
+#          ],
+#
+#        }],
+#        ['OS=="mac" or os_bsd==1', {
+#
+#          'include_dirs': [
+#          ],
+#
+#          'sources': [
+#             './src/sipcc/cpr/darwin/cpr_darwin_string.c',
+#             './src/sipcc/cpr/darwin/cpr_darwin_string.h',
+#             './src/sipcc/cpr/darwin/cpr_darwin_strings.h',
+#          ],
+#
+#
+#          'conditions': [
+#            ['OS=="mac"', {
+#              'defines' : [
+#                'SIP_OS_OSX',
+#                '_POSIX_SOURCE',
+#                'CPR_MEMORY_LITTLE_ENDIAN',
+#                'NO_SOCKET_POLLING',
+#                'USE_TIMER_SELECT_BASED',
+#                'FULL_BUILD',
+#                'STUBBED_OUT',
+#                'USE_PRINTF',
+#                '_DARWIN_C_SOURCE',
+#                'NO_NSPR_10_SUPPORT',
+#              ],
+#            }],
+#            ['os_bsd==1', {
+#              'defines' : [
+#                'SIP_OS_OSX',
+#                'CPR_MEMORY_LITTLE_ENDIAN',
+#                'NO_SOCKET_POLLING',
+#                'USE_TIMER_SELECT_BASED',
+#                'FULL_BUILD',
+#                'STUBBED_OUT',
+#                'USE_PRINTF',
+#                'NO_NSPR_10_SUPPORT',
+#              ],
+#            }],
+#          ],
+#          'cflags_mozilla': [
+#          ],
+#        }],
+#      ],
+#
+#    },
   ],
 }
 
