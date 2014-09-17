@@ -5,7 +5,6 @@
 #include "sdp_os_defs.h"
 #include "sdp.h"
 #include "sdp_private.h"
-#include "vcm.h"
 #include "CSFLog.h"
 
 static const char* logTag = "sdp_main";
@@ -811,8 +810,6 @@ sdp_t *sdp_init_description (const char *peerconnection, void *config_p)
         return (NULL);
     }
 
-    sstrncpy(sdp_p->peerconnection, peerconnection, sizeof(sdp_p->peerconnection));
-
     /* Initialize magic number. */
     sdp_p->magic_num = SDP_MAGIC_NUM;
 
@@ -915,7 +912,7 @@ sdp_result_e sdp_validate_sdp (sdp_t *sdp_p)
         num_media_levels = sdp_get_num_media_lines((void *)sdp_p);
         for (i=1; i <= num_media_levels; i++) {
             if (sdp_connection_valid((void *)sdp_p, (unsigned short)i) == FALSE) {
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                     "%s c= connection line not specified for "
                     "every media level, validation failed.",
                     sdp_p->debug_str);
@@ -927,7 +924,7 @@ sdp_result_e sdp_validate_sdp (sdp_t *sdp_p)
     /* Validate required lines were specified */
     if ((sdp_owner_valid((void *)sdp_p) == FALSE) &&
         (sdp_p->conf_p->owner_reqd == TRUE)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s o= owner line not specified, validation failed.",
             sdp_p->debug_str);
         return (SDP_FAILURE);
@@ -935,7 +932,7 @@ sdp_result_e sdp_validate_sdp (sdp_t *sdp_p)
 
     if ((sdp_session_name_valid((void *)sdp_p) == FALSE) &&
         (sdp_p->conf_p->session_name_reqd == TRUE)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s s= session name line not specified, validation failed.",
             sdp_p->debug_str);
         return (SDP_FAILURE);
@@ -943,7 +940,7 @@ sdp_result_e sdp_validate_sdp (sdp_t *sdp_p)
 
     if ((sdp_timespec_valid((void *)sdp_p) == FALSE) &&
         (sdp_p->conf_p->timespec_reqd == TRUE)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s t= timespec line not specified, validation failed.",
             sdp_p->debug_str);
         return (SDP_FAILURE);
@@ -1006,7 +1003,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, u16 len)
         ptr = next_ptr;
         line_end = sdp_findchar(ptr, "\n");
         if (line_end >= (*bufp + len)) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s End of line beyond end of buffer.",
                 sdp_p->debug_str);
             CSFLogError(logTag, "SDP: Invalid SDP, no \\n (len %u): %*s", len, len, *bufp);
@@ -1036,7 +1033,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, u16 len)
                 unrec_token = TRUE;
             }
             if (first_line == TRUE) {
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                     "%s Attempt to parse text not recognized as "
                     "SDP text, parse fails.", sdp_p->debug_str);
                     /* If we haven't already printed out the line we
@@ -1079,7 +1076,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, u16 len)
                 (i != SDP_TOKEN_B) && (i != SDP_TOKEN_K) &&
                 (i != SDP_TOKEN_A) && (i != SDP_TOKEN_M)) {
                 sdp_p->conf_p->num_invalid_token_order++;
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                     "%s Warning: Invalid token %s found at media level",
                     sdp_p->debug_str, sdp_token[i].name);
                 continue;
@@ -1090,7 +1087,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, u16 len)
         if (first_line == TRUE) {
             if (i != SDP_TOKEN_V) {
                 if (sdp_p->conf_p->version_reqd == TRUE) {
-                    sdp_parse_error(sdp_p->peerconnection,
+                    sdp_parse_error(sdp_p,
                         "%s First line not v=, parse fails",
                         sdp_p->debug_str);
                     sdp_p->conf_p->num_invalid_token_order++;
@@ -1106,7 +1103,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, u16 len)
         } else {
             if (i < last_token) {
                 sdp_p->conf_p->num_invalid_token_order++;
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                     "%s Warning: Invalid token ordering detected, "
                     "token %s found after token %s", sdp_p->debug_str,
                     sdp_token[i].name, sdp_token[last_token].name);
@@ -1307,7 +1304,7 @@ sdp_result_e sdp_free_description (sdp_t *sdp_p)
  * sdp_parse_error
  * Send SDP parsing errors to log and up to peerconnection
  */
-void sdp_parse_error(const char *peerconnection, const char *format, ...) {
+void sdp_parse_error(sdp_t* sdp, const char *format, ...) {
     flex_string fs;
     va_list ap;
 
@@ -1317,8 +1314,7 @@ void sdp_parse_error(const char *peerconnection, const char *format, ...) {
     flex_string_vsprintf(&fs, format, ap);
     va_end(ap);
 
-    CSFLogError("SDP Parse", "SDP Parse Error %s, pc %s", fs.buffer, peerconnection);
-    vcmOnSdpParseError(peerconnection, fs.buffer);
+    CSFLogError("SDP Parse", "SDP Parse Error %s", fs.buffer);
 
     flex_string_free(&fs);
 }
