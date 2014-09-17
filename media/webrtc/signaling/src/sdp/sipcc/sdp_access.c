@@ -5,11 +5,34 @@
 #include "sdp_os_defs.h"
 #include "sdp.h"
 #include "sdp_private.h"
-#include "ccsip_sdp.h"
-#include "rtp_defs.h"
+// EKR #include "ccsip_sdp.h"
+// EKR #include "rtp_defs.h"
 #include "CSFLog.h"
 
 static const char* logTag = "sdp_access";
+
+/* Pulled in from ccsip_sdp.h */
+/* Possible encoding names of static payload types*/
+#define SIPSDP_ATTR_ENCNAME_PCMU      "PCMU"
+#define SIPSDP_ATTR_ENCNAME_PCMA      "PCMA"
+#define SIPSDP_ATTR_ENCNAME_G729      "G729"
+#define SIPSDP_ATTR_ENCNAME_G723      "G723"
+#define SIPSDP_ATTR_ENCNAME_G726      "G726-32"
+#define SIPSDP_ATTR_ENCNAME_G728      "G728"
+#define SIPSDP_ATTR_ENCNAME_GSM       "GSM"
+#define SIPSDP_ATTR_ENCNAME_CN        "CN"
+#define SIPSDP_ATTR_ENCNAME_G722      "G722"
+#define SIPSDP_ATTR_ENCNAME_ILBC      "iLBC"
+#define SIPSDP_ATTR_ENCNAME_H263v2    "H263-1998"
+#define SIPSDP_ATTR_ENCNAME_H264      "H264"
+#define SIPSDP_ATTR_ENCNAME_VP8       "VP8"
+#define SIPSDP_ATTR_ENCNAME_L16_256K  "L16"
+#define SIPSDP_ATTR_ENCNAME_ISAC      "ISAC"
+#define SIPSDP_ATTR_ENCNAME_OPUS      "opus"
+
+/* Pulled in from rtp_defs.h. We may not need these */
+#define GET_DYN_PAYLOAD_TYPE_VALUE(a) ((a & 0XFF00) ? ((a & 0XFF00) >> 8) : a)
+#define SET_PAYLOAD_TYPE_WITH_DYNAMIC(a,b) ((a << 8) | b)
 
 /* Function:    sdp_find_media_level
  * Description: Find and return a pointer to the specified media level,
