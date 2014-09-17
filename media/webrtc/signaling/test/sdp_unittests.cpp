@@ -26,7 +26,7 @@
 MtransportTestUtils *test_utils;
 nsCOMPtr<nsIThread> gThread;
 
-#include "signaling/src/sdp/SdpParser.h"
+#include "signaling/src/sdp/SipccSdpParser.h"
 
 extern "C" {
 #include "sdp.h"
@@ -819,10 +819,30 @@ class NewSdpTest : public ::testing::Test {
   public:
     NewSdpTest() {}
 
-    SdpParser mParser;
+    void ParseSdp(const std::string &sdp) {
+      mSdp = mozilla::Move(mParser.Parse(sdp));
+    }
+
+    SipccSdpParser mParser;
+    mozilla::UniquePtr<Sdp> mSdp;
 };
 
 TEST_F(NewSdpTest, CreateDestroy) {
+}
+
+TEST_F(NewSdpTest, ParseEmpty) {
+  ParseSdp("");
+  ASSERT_FALSE(mSdp);
+}
+
+TEST_F(NewSdpTest, ParseGarbage) {
+  ParseSdp("foobajooba");
+  ASSERT_FALSE(mSdp);
+}
+
+TEST_F(NewSdpTest, ParseMinimal) {
+  ParseSdp(kVideoSdp);
+  ASSERT_TRUE(mSdp);
 }
 
 } // End namespace test.
