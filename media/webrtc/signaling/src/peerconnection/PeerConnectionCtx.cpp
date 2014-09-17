@@ -32,6 +32,7 @@ namespace mozilla {
 using namespace dom;
 
 // Convert constraints to C structures
+#ifdef KEEP_SIPCC
 
 #ifdef MOZILLA_INTERNAL_API
 static void
@@ -51,7 +52,6 @@ Apply(const Optional<int32_t> &aSrc, cc_int32_option_t *aDst) {
 }
 #endif
 
-#ifdef KEEP_SIPCC
 SipccOfferOptions::SipccOfferOptions() {
   memset(&mOptions, 0, sizeof(mOptions));
 }
