@@ -81,10 +81,14 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level)
   default:
     mProtocol = kUnknownProtocol;
   }
+
+  mAttributeList.Load(sdp, level);
+
+  LoadConnection(sdp, level);
 }
 
-void SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level)
-{
+void
+SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
   // TODO
 }
 
