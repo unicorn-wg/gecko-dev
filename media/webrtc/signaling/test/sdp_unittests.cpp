@@ -9,6 +9,7 @@
 #include "CSFLog.h"
 
 #include <string>
+#include <sstream>
 
 #define GTEST_HAS_RTTI 0
 #include "gtest/gtest.h"
@@ -31,8 +32,8 @@ nsCOMPtr<nsIThread> gThread;
 #include "signaling/src/sdp/SipccSdpParser.h"
 
 extern "C" {
-#include "sdp.h"
-#include "sdp_private.h"
+#include "signaling/src/sdp/sipcc/sdp.h"
+#include "signaling/src/sdp/sipcc/sdp_private.h"
 }
 
 using mozilla::SipccSdpParser;
@@ -826,6 +827,17 @@ class NewSdpTest : public ::testing::Test {
       mSdp = mozilla::Move(mParser.Parse(sdp));
     }
 
+    // For streaming parse errors
+    std::string GetParseErrors() {
+      std::stringstream output;
+      for (auto e = mParser.GetParseErrors().begin();
+           e != mParser.GetParseErrors().end();
+           ++e) {
+        output << e->first << ": " << e->second << std::endl;
+      }
+      return output.str();
+    }
+
     SipccSdpParser mParser;
     mozilla::UniquePtr<Sdp> mSdp;
 };
@@ -836,22 +848,22 @@ TEST_F(NewSdpTest, CreateDestroy) {
 TEST_F(NewSdpTest, ParseEmpty) {
   ParseSdp("");
   ASSERT_FALSE(mSdp);
-  ASSERT_NE(0, mParser.GetParseErrors().size())
+  ASSERT_NE(0U, mParser.GetParseErrors().size())
     << "Expected at least one parse error.";
 }
 
 TEST_F(NewSdpTest, ParseGarbage) {
   ParseSdp("foobajooba");
   ASSERT_FALSE(mSdp);
-  ASSERT_NE(0, mParser.GetParseErrors().size())
+  ASSERT_NE(0U, mParser.GetParseErrors().size())
     << "Expected at least one parse error.";
 }
 
 TEST_F(NewSdpTest, ParseMinimal) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << mParser.GetParseErrorsAsStream();
-  ASSERT_EQ(0, mParser.GetParseErrors().size()) <<
-    "Got parse errors: " << mParser.GetParseErrors();
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(0U, mParser.GetParseErrors().size()) <<
+    "Got parse errors: " << GetParseErrors();
 }
 
 // SDP from a basic A/V apprtc call FFX/FFX
@@ -904,7 +916,7 @@ const std::string kBasicAudioVideoOffer =
 
 TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << mParser.GetParseErrorsAsStream();
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
 }
 
 //TEST_F(NewSdpTest, CheckIceUfrag) {
@@ -936,13 +948,13 @@ TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
 
 //TEST_F(NewSdpTest, CheckMlines) {
 //  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2, mSdp.GetMediaSectionCount()) << "Wrong number of media sections";
+//  ASSERT_EQ(2U, mSdp.GetMediaSectionCount()) << "Wrong number of media sections";
 //  ASSERT_EQ("audio", mSdp.GetMediaSection(0).GetType())
 //    << "Wrong type for first media section";
 //  oSSERT_EQ("RTP/SAVPF", mSdp.GetMediaSection(0).GetProtocol())
 //    << "Wrong protocol for audio";
 //  auto audio_formats = mSdp.GetMediaSection(0).GetFormats();
-//  ASSERT_EQ(5, audio_formats.size()) << "Wrong number of formats for audio";
+//  ASSERT_EQ(5U, audio_formats.size()) << "Wrong number of formats for audio";
 //  ASSERT_EQ("109", audio_formats[0]);
 //  ASSERT_EQ("9",   audio_formats[1]);
 //  ASSERT_EQ("0",   audio_formats[2]);
@@ -954,16 +966,16 @@ TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
 //  oSSERT_EQ("RTP/SAVPF", mSdp.GetMediaSection(1).GetProtocol())
 //    << "Wrong protocol for video";
 //  auto video_formats = mSdp.GetMediaSection(1).GetFormats();
-//  ASSERT_EQ(1, video_formats.size()) << "Wrong number of formats for video";
+//  ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
 //  ASSERT_EQ("120", video_formats[0]);
 //}
 
 //TEST_F(NewSdpTest, CheckRtpmap) {
 //  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2, mSdp.GetMediaSectionCount())
+//  ASSERT_EQ(2U, mSdp.GetMediaSectionCount())
 //    << "Wrong number of media sections";
 //
-//  ASSERT_EQ(5, mSdp.GetMediaSection(0).GetNumRtpmap())
+//  ASSERT_EQ(5U, mSdp.GetMediaSection(0).GetNumRtpmap())
 //    << "Wrong number of rtpmap attributes for audio";
 //
   // TODO: Write a CheckRtpmap(rtpmap, payloadType, encodingName, rate)
@@ -979,10 +991,10 @@ TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
 
 //TEST_F(NewSdpTest, CheckFormatParameters) {
 //  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2, mSdp.GetMediaSectionCount())
+//  ASSERT_EQ(2U, mSdp.GetMediaSectionCount())
 //    << "Wrong number of media sections";
 //
-//  ASSERT_EQ(1, mSdp.GetMediaSection(0).GetAttributeList().Count(kFmtp));
+//  ASSERT_EQ(1U, mSdp.GetMediaSection(0).GetAttributeList().Count(kFmtp));
 //}
 
 // TODO: Tests that parse above SDP, and check various things
