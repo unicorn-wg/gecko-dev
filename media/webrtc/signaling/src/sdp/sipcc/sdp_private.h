@@ -2,8 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef _SDP_PRIVATE_H_
-#define _SDP_PRIVATE_H_
+#ifndef _SIPCC_SDP_PRIVATE_H_
+#define _SIPCC_SDP_PRIVATE_H_
 
 
 #include "sdp.h"
@@ -94,9 +94,9 @@ extern sdp_result_e sdp_parse_attr_conf(sdp_t *sdp_p, sdp_attr_t *attr_p,
 extern sdp_result_e sdp_build_attr_conf (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                      flex_string *fs);
 extern sdp_result_e sdp_parse_attr_transport_map(sdp_t *sdp_p,
-				     sdp_attr_t *attr_p, const char *ptr);
+                                     sdp_attr_t *attr_p, const char *ptr);
 extern sdp_result_e sdp_build_attr_transport_map(sdp_t *sdp_p,
-				     sdp_attr_t *attr_p, flex_string *fs);
+                                     sdp_attr_t *attr_p, flex_string *fs);
 extern sdp_result_e sdp_parse_attr_subnet(sdp_t *sdp_p, sdp_attr_t *attr_p,
                                      const char *ptr);
 extern sdp_result_e sdp_build_attr_subnet(sdp_t *sdp_p, sdp_attr_t *attr_p,
@@ -208,9 +208,9 @@ extern sdp_result_e sdp_build_attr_rtcp_unicast(
     sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs);
 
 extern sdp_result_e sdp_build_attr_ice_attr (
-	sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs);
+        sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs);
 extern sdp_result_e sdp_parse_attr_ice_attr (
-	sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr);
+        sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr);
 
 extern sdp_result_e sdp_build_attr_simple_flag (
     sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs);
@@ -218,9 +218,9 @@ extern sdp_result_e sdp_parse_attr_simple_flag (
     sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr);
 
 extern sdp_result_e sdp_build_attr_rtcp_mux_attr (
-	sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs);
+        sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs);
 extern sdp_result_e sdp_parse_attr_rtcp_mux_attr (
-	sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr);
+        sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr);
 extern sdp_result_e sdp_parse_attr_fingerprint_attr (
     sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr);
 
