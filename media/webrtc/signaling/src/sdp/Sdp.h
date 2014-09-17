@@ -27,14 +27,15 @@ public:
   unsigned int GetVersion() const;
   SdpOriginator GetOriginator() const;
   std::string GetSessionName() const;
-  SdpConnection GetConnection() const; // optional
-  SdpBandwidth GetBandwidth() const; // optional, may repeat
+  // Note: connection information is always retrieved from media sections
+  std::string GetBandwidth(std::string type) const;
 
   const SdpAttributeList &GetAttributeList() const;
   SdpAttributeList &GetAttributeList();
 
-  const SdpMediaSection &GetMediaSection(unsigned int level) const;
-  SdpMediaSection &GetMediaSection(unsigned int level);
+  uint16_t GetMediaSectionCount() const;
+  const SdpMediaSection &GetMediaSection(uint16_t level) const;
+  SdpMediaSection &GetMediaSection(uint16_t level);
 
 protected:
   virtual ~Sdp() {};
