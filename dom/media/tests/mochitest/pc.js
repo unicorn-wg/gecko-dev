@@ -2567,7 +2567,7 @@ PeerConnectionWrapper.prototype = {
   /**
    * Compares amount of established ICE connection according to ICE candidate
    * pairs in the RTCP reporting with the expected amount of connection based
-   * on the contraints.
+   * on the constraints.
    *
    * @param {object} stats
    *        The stats to check for ICE candidate pairs
