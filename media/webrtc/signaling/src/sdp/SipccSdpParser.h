@@ -7,9 +7,8 @@
 
 #include <vector>
 #include <string>
-#include <streams>
 
-#include "UniquePtr.h"
+#include "mozilla/UniquePtr.h"
 
 #include "signaling/src/sdp/Sdp.h"
 
@@ -35,8 +34,6 @@ public:
    */
   const std::vector<std::pair<uint32_t, const std::string> >&
   GetParseErrors() const { return mErrors; }
-
-  void DumpToStream(std::ostream& output) const;
 
 private:
   std::vector<std::pair<uint32_t, const std::string> > mErrors;

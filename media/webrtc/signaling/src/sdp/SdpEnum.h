@@ -23,7 +23,7 @@ enum MediaType {
   kText,
   kApplication,
   kMessage,
-  kUnknown
+  kUnknownMediaType
 };
 
 enum Protocol {
@@ -61,46 +61,46 @@ enum Protocol {
   kTcpTlsMrcpv2,       // TCP/TLS/MRCPv2 [RFC6787]
   kPstn,               // PSTN [RFC7195]
   kUdpTlsUdptl,        // UDP/TLS/UDPTL [RFC7345]
-  kUnknown
+  kUnknownProtocol
 };
 
 enum AttributeType {
-  kBundleOnly,
-  kCandidate,
-  kConnection,
-  kDtlsFingerprint,
-  kExtmap,
-  kFingerprint,
-  kFmtp,
-  kGroup,
-  kIceLite,
-  kIceMismatch,
-  kIceOptions,
-  kIcePwd,
-  kIceUfrag,
-  kIdentity,
-  kImageattr,
-  kInactive,
-  kLabel,
-  kMaxprate,
-  kMaxptime,
-  kMid,
-  kMsid,
-  kPtime,
-  kRecvonly,
-  kRemoteCandidates,
-  kRtcp,
-  kRtcpFb,
-  kRtcpMux,
-  kRtcpRsize,
-  kRtpmap,
-  kSctpmap,
-  kSendonly,
-  kSendrecv,
-  kSetup,
-  kSsrc,
-  kSsrcGroup,
-  kOther
+  kBundleOnlyAttribute,
+  kCandidateAttribute,
+  kConnectionAttribute,
+  kDtlsFingerprintAttribute,
+  kExtmapAttribute,
+  kFingerprintAttribute,
+  kFmtpAttribute,
+  kGroupAttribute,
+  kIceLiteAttribute,
+  kIceMismatchAttribute,
+  kIceOptionsAttribute,
+  kIcePwdAttribute,
+  kIceUfragAttribute,
+  kIdentityAttribute,
+  kImageattrAttribute,
+  kInactiveAttribute,
+  kLabelAttribute,
+  kMaxprateAttribute,
+  kMaxptimeAttribute,
+  kMidAttribute,
+  kMsidAttribute,
+  kPtimeAttribute,
+  kRecvonlyAttribute,
+  kRemoteCandidatesAttribute,
+  kRtcpAttribute,
+  kRtcpFbAttribute,
+  kRtcpMuxAttribute,
+  kRtcpRsizeAttribute,
+  kRtpmapAttribute,
+  kSctpmapAttribute,
+  kSendonlyAttribute,
+  kSendrecvAttribute,
+  kSetupAttribute,
+  kSsrcAttribute,
+  kSsrcGroupAttribute,
+  kOtherAttribute
 };
 
 }
