@@ -25,7 +25,7 @@ class Sdp
 public:
   Sdp();
 
-  virtual SdpOrigin GetOriginator() const = 0;
+  virtual SdpOrigin GetOrigin() const = 0;
   virtual std::string GetSessionName() const = 0;
   // Note: connection information is always retrieved from media sections
   virtual std::string GetBandwidth(std::string type) const = 0;

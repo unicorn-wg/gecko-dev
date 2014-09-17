@@ -132,9 +132,11 @@
 
          './src/sdp/Sdp.h',
          './src/sdp/SdpAttribute.h',
+         './src/sdp/SdpAttributeList.h',
          './src/sdp/SdpEnum.h',
          './src/sdp/SdpMediaSection.h',
          './src/sdp/SipccSdp.h',
+         './src/sdp/SipccSdpAttributeList.h',
          './src/sdp/SipccSdpMediaSection.h',
          './src/sdp/SipccSdpParser.h',
          './src/sdp/SipccSdp.cpp',
