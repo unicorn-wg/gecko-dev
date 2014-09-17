@@ -6,34 +6,28 @@
 
 namespace mozilla {
 
-sdp::MediaType
-SipccSdpMediaSection::GetMediaType() const
-{
-  return *mMediaType;
-}
-
 void
 SipccSdpMediaSection::Load()
 {
   switch (sdp_get_media_type(mSdp, mLevel)) {
   case SDP_MEDIA_AUDIO:
-    mMediaType = kAudio;
+    mMediaType = sdp::kAudio;
     break;
   case SDP_MEDIA_VIDEO:
-    mMediaType = kVideo;
+    mMediaType = sdp::kVideo;
     break;
   case SDP_MEDIA_APPLICATION:
-    mMediaType = kApplication;
+    mMediaType = sdp::kApplication;
     break;
   case SDP_MEDIA_TEXT:
-    mMediaType = kText;
+    mMediaType = sdp::kText;
     break;
   case SDP_MEDIA_DATA:
-    mMediaType = kMessage;
+    mMediaType = sdp::kMessage;
     break;
   default:
     // TODO: log this
-    mMediaType = kUnknown;
+    mMediaType = sdp::kUnknownMediaType;
     break;
   }
 
@@ -43,7 +37,7 @@ SipccSdpMediaSection::Load()
   switch (sdp_get_media_transport(mSdp, mLevel)) {
     // TODO add right protocols to sipcc
   default:
-    mProtocol = kUnknown;
+    mProtocol = sdp::kUnknownProtocol;
   }
 }
 
