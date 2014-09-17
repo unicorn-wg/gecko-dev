@@ -12,7 +12,9 @@
 #include "sdp_base64.h"
 #include "mozilla/Assertions.h"
 #include "CSFLog.h"
-#include "DataChannelProtocol.h"
+
+// TODO(ekr@rtfm.com): Somehow make sure this matches DataChannelProtocol.h
+#define MAX_SCTP_NUM_STREAMS 2048
 
 static const char* logTag = "sdp_attr";
 
@@ -2171,11 +2173,11 @@ sdp_result_e sdp_parse_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
         return SDP_INVALID_PARAMETER;
     }
 
-    /* streams value should be kept in the range 1..MAX_NUM_STREAMS */
+    /* streams value should be kept in the range 1..MAX_SCTP_NUM_STREAMS */
     if (streams < 1) {
         streams = 1;
-    } else if (streams > MAX_NUM_STREAMS) {
-        streams = MAX_NUM_STREAMS;
+    } else if (streams > MAX_SCTP_NUM_STREAMS) {
+        streams = MAX_SCTP_NUM_STREAMS;
     }
     attr_p->attr.sctpmap.streams = streams;
 
