@@ -17,8 +17,8 @@ class JsepSessionTest : public ::testing::Test {
   public:
     JsepSessionTest() {}
 
-    JsepSession session_;
-    SdpParser parser_;
+    JsepSession mSession;
+    SdpParser mParser;
 };
 
 TEST_F(JsepSessionTest, CreateDestroy) {
