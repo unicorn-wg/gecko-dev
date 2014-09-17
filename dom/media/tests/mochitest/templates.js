@@ -530,7 +530,7 @@ var commandsPeerConnection = [
     'PC_LOCAL_CHECK_ICE_CONNECTIONS',
     function (test) {
       test.pcLocal.getStats(null, function(stats) {
-        test.pcLocal.checkRtcpIceConnections(stats, test.pcLocal.offerAVCounters);
+        test.pcLocal.checkRtcpIceConnections(stats, test.pcLocal.offerAVCounters, test.originalAnswer);
         test.next();
       });
     }
@@ -539,7 +539,7 @@ var commandsPeerConnection = [
     'PC_REMOTE_CHECK_ICE_CONNECTIONS',
     function (test) {
       test.pcRemote.getStats(null, function(stats) {
-        test.pcRemote.checkRtcpIceConnections(stats, test.pcRemote.answerAVCounters);
+        test.pcRemote.checkRtcpIceConnections(stats, test.pcRemote.answerAVCounters, test.originalAnswer);
         test.next();
       });
     }
@@ -1189,7 +1189,7 @@ var commandsDataChannel = [
     'PC_LOCAL_CHECK_ICE_CONNECTIONS',
     function (test) {
       test.pcLocal.getStats(null, function(stats) {
-        test.pcLocal.checkRtcpIceConnections(stats, test.pcLocal.offerAVCounters);
+        test.pcLocal.checkRtcpIceConnections(stats, test.pcLocal.offerAVCounters, test.originalAnswer);
         test.next();
       });
     }
@@ -1198,7 +1198,7 @@ var commandsDataChannel = [
     'PC_REMOTE_CHECK_ICE_CONNECTIONS',
     function (test) {
       test.pcRemote.getStats(null, function(stats) {
-        test.pcRemote.checkRtcpIceConnections(stats, test.pcRemote.answerAVCounters);
+        test.pcRemote.checkRtcpIceConnections(stats, test.pcRemote.answerAVCounters, test.originalAnswer);
         test.next();
       });
     }
