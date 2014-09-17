@@ -7,13 +7,13 @@
 namespace mozilla {
 
 const SdpMediaSection &
-SipccSdp::GetMediaSection(unsigned int level) const
+SipccSdp::GetMediaSection(uint16_t level) const
 {
   BuildMediaSections();
   return mMediaSections[level];
 }
 SdpMediaSection &
-SipccSdp::GetMediaSection(unsigned int level)
+SipccSdp::GetMediaSection(uint16_t level)
 {
   BuildMediaSections();
   return mMediaSections[level];
