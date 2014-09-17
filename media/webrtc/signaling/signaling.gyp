@@ -121,6 +121,21 @@
         './src/mediapipeline/MediaPipeline.cpp',
         './src/mediapipeline/MediaPipelineFilter.h',
         './src/mediapipeline/MediaPipelineFilter.cpp',
+         # SDP
+         './src/sdp/sipcc/ccsdp.c',
+         './src/sdp/sipcc/sdp_access.c',
+         './src/sdp/sipcc/sdp_attr.c',
+         './src/sdp/sipcc/sdp_attr_access.c',
+         './src/sdp/sipcc/sdp_base64.c',
+         './src/sdp/sipcc/sdp_config.c',
+         './src/sdp/sipcc/sdp_main.c',
+         './src/sdp/sipcc/sdp_token.c',
+         './src/sdp/sipcc/sdp.h',
+         './src/sdp/sipcc/sdp_base64.h',
+         './src/sdp/sipcc/sdp_os_defs.h',
+         './src/sdp/sipcc/sdp_private.h',
+         './src/sdp/sipcc/sdp_utils.c',
+         './src/sdp/sipcc/sdp_services_unix.c',
       ],
 
       #
