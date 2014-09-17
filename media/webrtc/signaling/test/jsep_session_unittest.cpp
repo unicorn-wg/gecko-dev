@@ -11,7 +11,7 @@
 #include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
 
-using mozilla::JsepSession;
+//using mozilla::sdp::JsepSession;
 using mozilla::SipccSdpParser;
 
 namespace test {
@@ -19,7 +19,7 @@ class JsepSessionTest : public ::testing::Test {
   public:
     JsepSessionTest() {}
 
-    JsepSession mSession;
+//    JsepSession mSession;
     SipccSdpParser mParser;
 };
 
