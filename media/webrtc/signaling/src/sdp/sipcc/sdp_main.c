@@ -795,11 +795,10 @@ inline tinybool sdp_verify_sdp_ptr (sdp_t *sdp_p)
  * Parameters:  config_p     The config handle returned by sdp_init_config
  * Returns:     A handle for a new SDP structure as a void ptr.
 */
-sdp_t *sdp_init_description (const char *peerconnection, void *config_p)
+sdp_t *sdp_init_description (sdp_conf_options_t *conf_p)
 {
     int i;
     sdp_t *sdp_p;
-    sdp_conf_options_t *conf_p = (sdp_conf_options_t *)config_p;
 
     if (sdp_verify_conf_ptr(conf_p) == FALSE) {
         return (NULL);
@@ -959,7 +958,7 @@ sdp_result_e sdp_validate_sdp (sdp_t *sdp_p)
  *              if not, what type of error was encountered.  The
  *              information from the parse is stored in the sdp_p structure.
  */
-sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, u16 len)
+sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, size_t len)
 {
     u8           i;
     u16          cur_level = SDP_SESSION_LEVEL;

@@ -5,15 +5,26 @@
 #ifndef _SIPCCSDPMEDIASECTION_H_
 #define _SIPCCSDPMEDIASECTION_H_
 
+#include "mozilla/Attributes.h"
+#include "signaling/src/sdp/SdpMediaSection.h"
+extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
+}
 
 namespace mozilla {
 
 class SipccSdp;
 
-class SipccSdpMediaSection : public SdpMediaSection
+class SipccSdpMediaSection MOZ_FINAL : public SdpMediaSection
 {
   friend class SipccSdp;
+public:
+  virtual sdp::MediaType
+  GetMediaType() const MOZ_OVERRIDE
+  {
+    return mMediaType;
+  }
+
 private:
   SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
     : mSdp(sdp), mLevel(level) {}

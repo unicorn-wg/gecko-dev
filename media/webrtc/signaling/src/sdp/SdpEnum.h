@@ -23,7 +23,7 @@ enum MediaType {
   kText,
   kApplication,
   kMessage,
-  kUnknown
+  kUnknownMediaType
 };
 
 enum Protocol {
@@ -61,7 +61,7 @@ enum Protocol {
   kTcpTlsMrcpv2,       // TCP/TLS/MRCPv2 [RFC6787]
   kPstn,               // PSTN [RFC7195]
   kUdpTlsUdptl,        // UDP/TLS/UDPTL [RFC7345]
-  kUnknown
+  kUnknownProtocol
 };
 
 enum AttributeType {
