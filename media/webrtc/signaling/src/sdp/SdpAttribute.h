@@ -7,61 +7,30 @@
 
 #include "mozilla/UniquePtr.h"
 
+#include "signaling/src/sdp/SdpEnum.h"
+
+namespace mozilla {
+
 class SdpAttribute
 {
-  public:
-    Type GetType () const;
-    std::string GetTypeName() const;
+public:
+  sdp::AttributeType GetType () const;
+  std::string GetTypeName() const;
 
-    enum Type {
-      kBundleOnly,
-      kCandidate,
-      kConnection,
-      kDtlsFingerprint,
-      kExtmap,
-      kFingerprint,
-      kFmtp,
-      kGroup,
-      kIceCandidate,
-      kIceLite,
-      kIceOptions,
-      kIcePasswd,
-      kIceUfrag,
-      kIdentity,
-      kImageattr,
-      kInactive,
-      kLabel,
-      kMaxprate,
-      kMaxptime,
-      kMid,
-      kMsid,
-      kPtime,
-      kRecvonly,
-      kRtcp,
-      kRtcpFb,
-      kRtcpMux,
-      kRtcpRsize,
-      kRtpmap,
-      kSctpmap,
-      kSendonly,
-      kSendrecv,
-      kSetup,
-      kSsrc,
-      kSsrcGroup,
-      kOther
-    };
-  protected:
-    virtual ~SdpAttribute();
+protected:
+  virtual ~SdpAttribute();
 };
 
 class SdpAttributeList
 {
-  public:
-    bool HasAttribute(SdpAttributeType type,
-                      unsigned int instance = 0);
+public:
+  bool HasAttribute(SdpAttributeType type,
+                    unsigned int instance = 0);
 
-    UniquePtr<SdpAttribute> GetAttibute(SdpAttributeType type,
-                                        unsigned int instance = 0);
+  UniquePtr<SdpAttribute> GetAttibute(sdp::AttributeType type,
+                                      unsigned int instance = 0);
+}
+
 }
 
 #endif

@@ -17,15 +17,20 @@ SipccSdpParser::Parse(const std::string& sdpText)
     return nullptr;
   }
 
-  UniquePtr<sdp_t> sdp = sdp_init_description(sipcc_config);
+  // XXX - capture errors properly
+  // sdp_config_set_error_handler(sipcc_sdp_parser_error_handler, this);
+
+  sdp_t *sdp = sdp_init_description(sipcc_config);
   if (sdp) {
-    sdp_result_e result = sdp_parse(sdp.get(), &sdpText.c_str(), &sdpText.length());
+    sdp_result_e result = sdp_parse(sdp, &sdpText.c_str(), &sdpText.length());
     if (result == SDP_SUCCESS) {
-      return sdp;
+      return UniquePtr<Sdp>(new SipccSdp(sdp));
     }
+
+    sdp_free_description(sdp);
   }
 
-  SDP_FREE(sipcc_config); // fixme: need a proper release for this
+  SDP_FREE(sipcc_config); // FIXME: need a proper release for this
   return nullptr;
 }
 
@@ -41,10 +46,18 @@ void
 sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message)
 {
   SipccSdpParser* parser = static_cast<SipccSdpParser>(context);
-
-  parser->AddParseError(uint32_t line, std::string(message));
+  std::string err(message)
+  parser->AddParseError(line, err);
 }
 
+}
+
+void
+SipccSdpParser::DumpToStream(std::ostream& output) const
+{
+  for (auto e = mErrors.begin(); e != mErrors.end(); ++e) {
+    output << e.first() << ": " << e.second() << endl;
+  }
 }
 
 } // namespace
