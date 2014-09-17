@@ -20,7 +20,7 @@ public:
   unsigned int GetPortCount() const;
   sdp::Protocol GetProtocol const;
   SdpConnection GetConnection() const;
-  std::string GetBandwidth(std::string type) const;
+  SdpBandwidth GetBandwidth() const; // optional, may repeat
   std::vector<std::string> GetFormats() const;
 
   const SdpAttributeList &GetAttributeList() const;
