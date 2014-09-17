@@ -2,4 +2,49 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "signaling/src/sdp/SipccSdp.h"
+#include "signaling/src/sdp/SipccSdpParser.h"
+
+#include <utility>
+#include "signaling/src/sdp/sipcc/sdp.h"
+
+namespace mozilla {
+
+UniquePtr<Sdp>
+SipccSdpParser::Parse(const std::string& sdpText)
+{
+  sdp_conf_options_t *sipcc_config = sdp_init_config();
+  if (!sipcc_config) {
+    return nullptr;
+  }
+
+  UniquePtr<sdp_t> sdp = sdp_init_description(sipcc_config);
+  if (sdp) {
+    sdp_result_e result = sdp_parse(sdp.get(), &sdpText.c_str(), &sdpText.length());
+    if (result == SDP_SUCCESS) {
+      return sdp;
+    }
+  }
+
+  SDP_FREE(sipcc_config); // fixme: need a proper release for this
+  return nullptr;
+}
+
+void
+SipccSdpParser::AddParseError(uint32_t line, const std::string& message)
+{
+  mErrors.push_back(std::make_pair(line, message));
+}
+
+extern "C" {
+
+void
+sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message)
+{
+  SipccSdpParser* parser = static_cast<SipccSdpParser>(context);
+
+  parser->AddParseError(uint32_t line, std::string(message));
+}
+
+}
+
+} // namespace

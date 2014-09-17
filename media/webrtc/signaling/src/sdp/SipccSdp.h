@@ -8,8 +8,8 @@
 #include "Attributes.h"
 #include "UniquePtr.h"
 
-#include "signaling/src/sdp/sipcc/sdp.h"
 #include "signaling/src/sdp/Sdp.h"
+#include "signaling/src/sdp/sipcc/sdp.h"
 
 namespace mozilla {
 
@@ -19,10 +19,13 @@ class SipccSdp MOZ_FINAL : public Sdp
 {
   friend class SipccSdpParser;
 private:
-  SipccSdp(sdp_t* aSdp) : mSdp(aSdp) {}
-  ~SipccSdp() {}
+  SipccSdp(sdp_t* sdp) : mSdp(sdp) {}
+  ~SipccSdp()
+  {
+    sdp_free_description(mSdp);
+  }
 
-  UniquePtr<sdp_t> mSdp;
+  sdp_t *mSdp;
 };
 
 } // namespace mozilla
