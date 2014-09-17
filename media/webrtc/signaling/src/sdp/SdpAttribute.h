@@ -56,7 +56,13 @@ public:
 class SdpConnectionAttribute : public SdpAttribute
 {
 public:
-  SdpConnectionAttribute(ConnValue value) : mValue(value) {}
+  enum ConnValue {
+    kNew,
+    kExisting
+  };
+
+  SdpConnectionAttribute(SdpConnectionAttribute::ConnValue value) :
+    mValue(value) {}
 
   virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
   {
@@ -68,11 +74,7 @@ public:
     return "connection";
   }
 
-  enum ConnValue {
-    kNew,
-    kExisting
-  } mValue;
-
+  enum ConnValue mValue;
 };
 
 // RFC5285
@@ -320,7 +322,7 @@ class SdpRemoteCandidatesAttribute : public SdpAttribute
 public:
   virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
   {
-    return sdp::kRemoteCandidates;
+    return sdp::kRemoteCandidatesAttribute;
   }
 
   virtual std::string GetTypeName() const MOZ_OVERRIDE
