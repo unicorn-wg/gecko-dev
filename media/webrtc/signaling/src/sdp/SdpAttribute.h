@@ -6,6 +6,7 @@
 #define _SDP_ATTRIBUTE_H_
 
 #include "mozilla/UniquePtr.h"
+#include "mozilla/Attributes.h"
 
 #include "signaling/src/sdp/SdpEnum.h"
 
@@ -14,12 +15,13 @@ namespace mozilla {
 class SdpAttribute
 {
 public:
-  sdp::AttributeType GetType () const;
-  std::string GetTypeName() const;
+  virtual sdp::AttributeType GetType () const = 0;
+  virtual std::string GetTypeName() const = 0;
 
 protected:
-  virtual ~SdpAttribute();
+  virtual ~SdpAttribute() {}
 };
+
 
 // RFC5245
 // candidate-attribute   = "candidate" ":" foundation SP component-id SP
@@ -32,15 +34,43 @@ protected:
 //                          [SP rel-port]
 //                          *(SP extension-att-name SP
 //                               extension-att-value)
-class SdpCandidateAttribute
+class SdpCandidateAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kCandidateAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "candidate";
+  }
 };
 
 // RFC4145
 //         connection-attr        = "a=connection:" conn-value
 //         conn-value             = "new" / "existing"
-class SdpConnectionAttribute
+class SdpConnectionAttribute : public SdpAttribute
 {
+public:
+  SdpConnectionAttribute(ConnValue value) : mValue(value) {}
+
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kConnectionAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "connection";
+  }
+
+  enum ConnValue {
+    kNew,
+    kExisting
+  } mValue;
+
 };
 
 // RFC5285
@@ -61,8 +91,18 @@ class SdpConnectionAttribute
 //        SP = <Defined in RFC 5234>
 //
 //        DIGIT = <Defined in RFC 5234>
-class SdpExtmapAttribute
+class SdpExtmapAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kExtmapAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "extmap";
+  }
 };
 
 
@@ -80,14 +120,34 @@ class SdpExtmapAttribute
 //                             ; by colons.
 //
 //   UHEX                   =  DIGIT / %x41-46 ; A-F uppercase
-class SdpFingerprintAttribute
+class SdpFingerprintAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kFingerprintAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "fingerprint";
+  }
 };
 
 // RFC4566, RFC5576
 //       a=fmtp:<format> <format specific parameters>
-class SdpFmtpAttribute
+class SdpFmtpAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kFmtpAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "fmtp";
+  }
 };
 
 // RFC5888
@@ -95,16 +155,36 @@ class SdpFmtpAttribute
 //                               *(SP identification-tag)
 //         semantics           = "LS" / "FID" / semantics-extension
 //         semantics-extension = token
-class SdpGroupAttribute
+class SdpGroupAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kGroupAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "group";
+  }
 };
 
 // RFC5245
 // ice-options           = "ice-options" ":" ice-option-tag
 //                           0*(SP ice-option-tag)
 // ice-option-tag        = 1*ice-char
-class SdpIceOptionsAttribute
+class SdpIceOptionsAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kGroupAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "group";
+  }
 };
 
 // draft-ietf-rtcweb-security-arch
@@ -117,8 +197,18 @@ class SdpIceOptionsAttribute
 //   extension-att-name  = token
 //   extension-att-value = 1*(%x01-09 / %x0b-0c / %x0e-3a / %x3c-ff)
 //                         ; byte-string from [RFC4566] omitting ";"
-class SdpIdentityAttribute
+class SdpIdentityAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kIdentityAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "identity";
+  }
 };
 
 // RFC6236
@@ -187,31 +277,71 @@ class SdpIdentityAttribute
 //     qvalue  = ( "0" "." 1*2DIGIT )
 //             / ( "1" "." 1*2("0") )
 //                ; Values between 0.00 and 1.00
-class SdpImageattrAttribute
+class SdpImageattrAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kImageattrAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "imageattr";
+  }
 };
 
 // draft-ietf-mmusic-msid
 //   msid-attr = "msid:" identifier [ SP appdata ]
 //   identifier = 1*64token-char ; see RFC 4566
 //   appdata = 1*64token-char  ; see RFC 4566
-class SdpMsidAttribute
+class SdpMsidAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kMsidAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "msid";
+  }
 };
 
 // RFC5245
 //   remote-candidate-att = "remote-candidates" ":" remote-candidate
 //                           0*(SP remote-candidate)
 //   remote-candidate = component-ID SP connection-address SP port
-class SdpRemoteCandidatesAttribute
+class SdpRemoteCandidatesAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kRemoteCandidates;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "remote-candidates";
+  }
 };
 
 // RFC3605
 //   rtcp-attribute =  "a=rtcp:" port  [nettype space addrtype space
 //                         connection-address] CRLF
-class SdpRtcpAttribute
+class SdpRtcpAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kRtcpAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "rtcp";
+  }
 };
 
 // RFC4585
@@ -242,14 +372,34 @@ class SdpRtcpAttribute
 //                       / SP "app" [SP byte-string]
 //                       / SP token [SP byte-string]
 //                       / ; empty
-class SdpRtcpFbAttribute
+class SdpRtcpFbAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kRtcpFbAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "rtcp-fb";
+  }
 };
 
 // RFC4566
 // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]
-class SdpRtpmapAttribute
+class SdpRtpmapAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kRtpmapAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "rtpmap";
+  }
 };
 
 // draft-ietf-mmusic-sctp-sdp-06
@@ -261,15 +411,35 @@ class SdpRtpmapAttribute
 //         streams             =  "streams" EQUALS 1*DIGIT"
 // (draft-07 appears to have done something really funky here, but I
 // don't beleive it).
-class SdpSctpmapAttribute
+class SdpSctpmapAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kSctpmapAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "sctpmap";
+  }
 };
 
 // RFC4145
 //       setup-attr           =  "a=setup:" role
 //       role                 =  "active" / "passive" / "actpass" / "holdconn"
-class SdpSetupAttribute
+class SdpSetupAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kSetupAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "setup";
+  }
 };
 
 // RFC5576
@@ -278,8 +448,18 @@ class SdpSetupAttribute
 // ; (It is the content of "a=" lines.)
 //
 // ssrc-id = integer ; 0 .. 2**32 - 1
-class SdpSsrcAttribute
+class SdpSsrcAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kSsrcAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "ssrc";
+  }
 };
 
 // RFC5576
@@ -288,44 +468,84 @@ class SdpSsrcAttribute
 // semantics       = "FEC" / "FID" / token
 //
 // ssrc-id = integer ; 0 .. 2**32 - 1
-class SdpSsrcGroupAttribute
+class SdpSsrcGroupAttribute : public SdpAttribute
 {
+public:
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kSsrcAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return "ssrc";
+  }
+};
+
+// Used for any other kind of attribute not otherwise specialized
+class SdpOtherAttribute : public SdpAttribute
+{
+public:
+  SdpOtherAttribute(std::string typeName, std::string value = "") :
+    mTypeName(typeName), mValue(value) {}
+
+  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
+  {
+    return sdp::kOtherAttribute;
+  }
+
+  virtual std::string GetTypeName() const MOZ_OVERRIDE
+  {
+    return mTypeName;
+  }
+
+  std::string const getValue()
+  {
+    return mValue;
+  }
+
+private:
+  std::string mTypeName;
+  std::string mValue;
 };
 
 class SdpAttributeList
 {
 public:
-  unsigned int CountAttributes(SdpAttributeType type);
-  bool HasAttribute(SdpAttributeType type);
+  virtual unsigned int CountAttributes(SdpAttributeType type) const = 0;
+  virtual bool HasAttribute(SdpAttributeType type) const = 0;
 
-  UniquePtr<SdpAttribute> GetAttribute(sdp::AttributeType type);
+  virtual UniquePtr<SdpAttribute>
+    GetAttribute(sdp::AttributeType type) const = 0;
 
-  UniquePtr<SdpCandidateAttribute> GetCandidate();
-  UniquePtr<SdpConnectionAttribute> GetConnection();
-  UniquePtr<SdpExtmapAttribute> GetExtmap();
-  UniquePtr<SdpFingerprintAttribute> GetFingerprint();
-  UniquePtr<SdpFmtpAttribute> GetFmtp();
-  UniquePtr<SdpGroupAttribute> GetGroup();
-  UniquePtr<SdpIceOptionsAttribute> GetIceOptions();
-  std::string GetIcePwd();
-  std::string GetIceUfrag();
-  UniquePtr<SdpIdentityAttribute> GetIdentity();
-  UniquePtr<SdpImageattrAttribute> GetImageattr();
-  std::string GetLabel();
-  unsigned int GetMaxprate();
-  unsigned int GetMaxptime();
-  std::string GetMid();
-  UniquePtr<SdpMsidAttribute> GetMsid();
-  unsigned int GetPtime();
-  UniquePtr<SdpRtcpAttribute> GetRtcp();
-  UniquePtr<SdpRtcpFbAttribute> GetRtcpFb();
-  UniquePtr<SdpRtcpRemoteCandidates> GetRemoteCandidates();
-  UniquePtr<SdpRtpmapAttribute> GetRtpmap();
-  UniquePtr<SdpSctpmapAttribute> GetSctpmap();
-  UniquePtr<SdpSetupAttribute> GetSetup();
-  UniquePtr<SdpSsrcAttribute> GetSsrc();
-  UniquePtr<SdpSsrcGroupAttribute> GetSsrcGroup();
-}
+  virtual UniquePtr<SdpCandidateAttribute> GetCandidate() const = 0;
+  virtual UniquePtr<SdpConnectionAttribute> GetConnection() const = 0;
+  virtual UniquePtr<SdpExtmapAttribute> GetExtmap() const = 0;
+  virtual UniquePtr<SdpFingerprintAttribute> GetFingerprint() const = 0;
+  virtual UniquePtr<SdpFmtpAttribute> GetFmtp() const = 0;
+  virtual UniquePtr<SdpGroupAttribute> GetGroup() const = 0;
+  virtual UniquePtr<SdpIceOptionsAttribute> GetIceOptions() const = 0;
+  virtual std::string GetIcePwd() const = 0;
+  virtual std::string GetIceUfrag() const = 0;
+  virtual UniquePtr<SdpIdentityAttribute> GetIdentity() const = 0;
+  virtual UniquePtr<SdpImageattrAttribute> GetImageattr() const = 0;
+  virtual std::string GetLabel() const = 0;
+  virtual unsigned int GetMaxprate() const = 0;
+  virtual unsigned int GetMaxptime() const = 0;
+  virtual std::string GetMid() const = 0;
+  virtual UniquePtr<SdpMsidAttribute> GetMsid() const = 0;
+  virtual unsigned int GetPtime() const = 0;
+  virtual UniquePtr<SdpRtcpAttribute> GetRtcp() const = 0;
+  virtual UniquePtr<SdpRtcpFbAttribute> GetRtcpFb() const = 0;
+  virtual UniquePtr<SdpRtcpRemoteCandidates> GetRemoteCandidates() const = 0;
+  virtual UniquePtr<SdpRtpmapAttribute> GetRtpmap() const = 0;
+  virtual UniquePtr<SdpSctpmapAttribute> GetSctpmap() const = 0;
+  virtual UniquePtr<SdpSetupAttribute> GetSetup() const = 0;
+  virtual UniquePtr<SdpSsrcAttribute> GetSsrc() const = 0;
+  virtual UniquePtr<SdpSsrcGroupAttribute> GetSsrcGroup() const = 0;
+
+  virtual SetAttribute(const SdpAttribute &) = 0;
+};
 
 }
 

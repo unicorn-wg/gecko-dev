@@ -27,14 +27,15 @@ public:
 
   virtual SdpOriginator GetOriginator() const = 0;
   virtual std::string GetSessionName() const = 0;
-  virtual Maybe<SdpBandwidth> GetBandwidth(const std::string& type) const = 0;
+  // Note: connection information is always retrieved from media sections
+  virtual std::string GetBandwidth(std::string type) const = 0;
 
-  const SdpAttributeList &GetAttributeList() const;
-  SdpAttributeList &GetAttributeList();
+  virtual const SdpAttributeList &GetAttributeList() const = 0;
+  virtual SdpAttributeList &GetAttributeList() = 0;
 
-  uint16_t GetMediaSectionCount() const;
-  const SdpMediaSection &GetMediaSection(uint16_t level) const;
-  SdpMediaSection &GetMediaSection(uint16_t level);
+  virtual uint16_t GetMediaSectionCount() const = 0;
+  virtual const SdpMediaSection &GetMediaSection(uint16_t level) const = 0;
+  virtual SdpMediaSection &GetMediaSection(uint16_t level) = 0;
 
 protected:
   virtual ~Sdp() {};
@@ -43,12 +44,12 @@ protected:
 class SdpOrigin
 {
 public:
-  std::string GetUsername() const;
-  uint64_t GetSessionId() const;
-  uint64_t GetSessionVersion() const;
-  sdp::NetType GetNetType() const;
-  sdp::AddrType GetAddrType() const;
-  std::string GetAddress() const;
+  virtual std::string GetUsername() const = 0;
+  virtual uint64_t GetSessionId() const = 0;
+  virtual uint64_t GetSessionVersion() const = 0;
+  virtual sdp::NetType GetNetType() const = 0;
+  virtual sdp::AddrType GetAddrType() const = 0;
+  virtual std::string GetAddress() const = 0;
 };
 
 }
