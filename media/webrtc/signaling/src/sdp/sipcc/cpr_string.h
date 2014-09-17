@@ -12,6 +12,9 @@
 
 __BEGIN_DECLS
 
+#if 0
+// TODO(ekr@rtfm.com): Uncomment this if we need these functions.
+
 #if defined SIP_OS_LINUX
 #include "../linux/cpr_linux_string.h"
 #elif defined SIP_OS_WINDOWS
@@ -20,6 +23,9 @@ __BEGIN_DECLS
 #elif defined SIP_OS_OSX
 #include "../darwin/cpr_darwin_string.h"
 #endif
+
+#endif
+
 
 /**
  * sstrncpy
