@@ -5,20 +5,9 @@
 #include "CSFLog.h"
 
 #include "base/histogram.h"
-#include "CallControlManager.h"
-#include "CC_Device.h"
-#include "CC_Call.h"
-#include "CC_Observer.h"
-#include "ccapi_call_info.h"
-#include "CC_SIPCCCallInfo.h"
-#include "ccapi_device_info.h"
-#include "CC_SIPCCDeviceInfo.h"
-#include "vcm.h"
-#include "VcmSIPCCBinding.h"
 #include "PeerConnectionImpl.h"
 #include "PeerConnectionCtx.h"
 #include "runnable_utils.h"
-#include "debug-psipcc-types.h"
 #include "prcvar.h"
 
 #include "mozilla/Telemetry.h"
@@ -62,6 +51,7 @@ Apply(const Optional<int32_t> &aSrc, cc_int32_option_t *aDst) {
 }
 #endif
 
+#ifdef KEEP_SIPCC
 SipccOfferOptions::SipccOfferOptions() {
   memset(&mOptions, 0, sizeof(mOptions));
 }
@@ -91,6 +81,7 @@ SipccOfferOptions::build() const {
   }
   return cc;
 }
+#endif
 
 class PeerConnectionCtxShutdown : public nsIObserver
 {
@@ -485,14 +476,6 @@ PeerConnectionCtx::~PeerConnectionCtx() {
 #endif
 };
 
-CSF::CC_CallPtr PeerConnectionCtx::createCall() {
-#ifdef KEEP_SIPCC
-  return mDevice->createCall();
-#else
-  return nullptr;
-#endif
-}
-
 void PeerConnectionCtx::queueJSEPOperation(nsRefPtr<nsIRunnable> aOperation) {
   mQueuedJSEPOperations.AppendElement(aOperation);
 }
@@ -503,39 +486,6 @@ void PeerConnectionCtx::onGMPReady() {
     mQueuedJSEPOperations[i]->Run();
   }
   mQueuedJSEPOperations.Clear();
-}
-
-void PeerConnectionCtx::onDeviceEvent(ccapi_device_event_e aDeviceEvent,
-                                      CSF::CC_DevicePtr aDevice,
-                                      CSF::CC_DeviceInfoPtr aInfo ) {
-#ifdef KEEP_SIPCC
-  cc_service_state_t state = aInfo->getServiceState();
-  // We are keeping this in a local var to avoid a data race
-  // with ChangeSipccState in the debug message and compound if below
-  dom::PCImplSipccState currentSipccState = mSipccState;
-
-  switch (aDeviceEvent) {
-    case CCAPI_DEVICE_EV_STATE:
-      CSFLogDebug(logTag, "%s - %d : %d", __FUNCTION__, state,
-                  static_cast<uint32_t>(currentSipccState));
-
-      if (CC_STATE_INS == state) {
-        // SIPCC is up
-        if (dom::PCImplSipccState::Starting == currentSipccState ||
-            dom::PCImplSipccState::Idle == currentSipccState) {
-          ChangeSipccState(dom::PCImplSipccState::Started);
-        } else {
-          CSFLogError(logTag, "%s PeerConnection already started", __FUNCTION__);
-        }
-      } else {
-        NS_NOTREACHED("Unsupported Signaling State Transition");
-      }
-      break;
-    default:
-      CSFLogDebug(logTag, "%s: Ignoring event: %s\n",__FUNCTION__,
-                  device_event_getname(aDeviceEvent));
-  }
-#endif
 }
 
 }  // namespace sipcc
