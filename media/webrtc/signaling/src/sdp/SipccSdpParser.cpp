@@ -5,7 +5,9 @@
 #include "signaling/src/sdp/SipccSdpParser.h"
 
 #include <utility>
+extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
+}
 
 namespace mozilla {
 
@@ -22,9 +24,12 @@ SipccSdpParser::Parse(const std::string& sdpText)
 
   sdp_t *sdp = sdp_init_description(sipcc_config);
   if (sdp) {
-    sdp_result_e result = sdp_parse(sdp, &sdpText.c_str(), &sdpText.length());
+    const char* rawString = sdpText.c_str()
+    sdp_result_e result = sdp_parse(sdp, &rawString, sdpText.length());
     if (result == SDP_SUCCESS) {
-      return UniquePtr<Sdp>(new SipccSdp(sdp));
+      SipccSdp* sipccSdp = new SipccSdp(sdp);
+      sipccSdp->Load();
+      return UniquePtr<Sdp>(sipccSdp);
     }
 
     sdp_free_description(sdp);
@@ -45,19 +50,11 @@ extern "C" {
 void
 sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message)
 {
-  SipccSdpParser* parser = static_cast<SipccSdpParser>(context);
-  std::string err(message)
+  SipccSdpParser* parser = static_cast<SipccSdpParser*>(context);
+  std::string err(message);
   parser->AddParseError(line, err);
 }
 
-}
-
-void
-SipccSdpParser::DumpToStream(std::ostream& output) const
-{
-  for (auto e = mErrors.begin(); e != mErrors.end(); ++e) {
-    output << e.first() << ": " << e.second() << endl;
-  }
 }
 
 } // namespace
