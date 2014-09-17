@@ -60,7 +60,8 @@ enum Protocol {
   kTcpMrcpv2,          // TCP/MRCPv2 [RFC6787]
   kTcpTlsMrcpv2,       // TCP/TLS/MRCPv2 [RFC6787]
   kPstn,               // PSTN [RFC7195]
-  kUdpTlsUdptl         // UDP/TLS/UDPTL [RFC7345]
+  kUdpTlsUdptl,        // UDP/TLS/UDPTL [RFC7345]
+  kUnknown
 };
 
 enum AttributeType {
