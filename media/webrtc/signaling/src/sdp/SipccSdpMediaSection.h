@@ -5,9 +5,35 @@
 #ifndef _SIPCCSDPMEDIASECTION_H_
 #define _SIPCCSDPMEDIASECTION_H_
 
+#include "signaling/src/sdp/sipcc/sdp.h"
+
+namespace mozilla {
+
+class SipccSdp;
+
 class SipccSdpMediaSection : public SdpMediaSection
 {
-public:
+  friend class SipccSdp;
+private:
+  SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
+    : mSdp(sdp), mLevel(level) {}
+  ~SipccSdpMediaSection() {}
+
+  void Load();
+
+  // this is just on loan, so we don't delete on destruct;
+  // this doesn't live beyond the SipccSdp instance that owns this
+  sdp_t* mSdp;
+  uint16_t mLevel;
+
+  // the following values are cached on first get
+  sdp::MediaType mMediaType;
+  uint16_t mPort;
+  uint16_t mPortCount;
+  sdp::Protocol mProtocol;
+  std::vector<std::string> mFormats;
+
+  SdpConnection mConnection;
 };
 
 }

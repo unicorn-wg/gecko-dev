@@ -8,6 +8,7 @@
 #include "signaling/src/sdp/SdpAttribute.h"
 #include "signaling/src/sdp/SdpEnum.h"
 #include "mozilla/UniquePtr.h"
+#include "mozilla/Maybe.h"
 #include <vector>
 
 namespace mozilla {
@@ -24,11 +25,11 @@ class Sdp
 public:
   Sdp();
 
-  unsigned int GetVersion() const;
-  SdpOriginator GetOriginator() const;
-  std::string GetSessionName() const;
+  unsigned int GetVersion() const = 0;
+  virtual SdpOriginator GetOriginator() const = 0;
   // Note: connection information is always retrieved from media sections
-  std::string GetBandwidth(std::string type) const;
+  virtual std::string GetSessionName() const = 0;
+  virtual Maybe<SdpBandwidth> GetBandwidth(const std::string& type) const = 0;
 
   const SdpAttributeList &GetAttributeList() const;
   SdpAttributeList &GetAttributeList();
