@@ -2364,8 +2364,7 @@ PeerConnectionWrapper.prototype = {
     //TODO: how can we check for absence/presence of m=application?
 
     //TODO: how to handle media contraints + offer options
-    var audioTracks = counters.constraintsAudioTracks > counters.optionsAudioTracks ?
-                      counters.constraintsAudioTracks : counters.optionsAudioTracks;
+    var audioTracks = Math.max(counters.constraintsAudioTracks, counters.optionsAudioTracks);
     info("expected audio tracks: " + audioTracks);
     if (audioTracks == 0) {
       ok(!desc.sdp.contains("m=audio"), "audio m-line is absent from SDP");
@@ -2379,8 +2378,7 @@ PeerConnectionWrapper.prototype = {
     }
 
     //TODO: how to handle media contraints + offer options
-    var videoTracks = counters.constraintsVideoTracks > counters.optionsVideoTracks ?
-                      counters.constraintsVideoTracks : counters.optionsVideoTracks;
+    var videoTracks = Math.max(counters.constraintsVideoTracks, counters.optionsVideoTracks);
     info("expected video tracks: " + videoTracks);
     if (videoTracks == 0) {
       ok(!desc.sdp.contains("m=video"), "video m-line is absent from SDP");
@@ -2589,10 +2587,8 @@ PeerConnectionWrapper.prototype = {
     if (answer.sdp.contains('a=group:BUNDLE')) {
       is(iceConnections, 1, "RTCP reports exactly 1 ICE connection");
     } else {
-      var audioTracks = counters.constraintsAudioTracks > counters.optionsAudioTracks ?
-                        counters.constraintsAudioTracks : counters.optionsAudioTracks;
-      var videoTracks = counters.constraintsVideoTracks > counters.optionsVideoTracks ?
-                        counters.constraintsVideoTracks : counters.optionsVideoTracks;
+      var audioTracks = Math.max(counters.constraintsAudioTracks, counters.optionsAudioTracks);
+      var videoTracks = Math.max(counters.constraintsVideoTracks, counters.optionsVideoTracks);
       var dataTracks = counters.dataTracks;
       var audioVideoDataTracks = audioTracks + videoTracks + dataTracks;
       info("expected audio + video + data tracks: " + audioVideoDataTracks);
