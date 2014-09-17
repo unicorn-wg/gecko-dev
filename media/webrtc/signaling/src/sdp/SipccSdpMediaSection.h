@@ -5,8 +5,6 @@
 #ifndef _SIPCCSDPMEDIASECTION_H_
 #define _SIPCCSDPMEDIASECTION_H_
 
-#include "Maybe.h"
-
 #include "signaling/src/sdp/sipcc/sdp.h"
 
 namespace mozilla {
@@ -20,6 +18,8 @@ private:
   SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
     : mSdp(sdp), mLevel(level) {}
   ~SipccSdpMediaSection() {}
+
+  void Load();
 
   // this is just on loan, so we don't delete on destruct;
   // this doesn't live beyond the SipccSdp instance that owns this

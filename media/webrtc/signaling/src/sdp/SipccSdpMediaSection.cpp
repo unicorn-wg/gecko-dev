@@ -13,7 +13,7 @@ SipccSdpMediaSection::GetMediaType() const
 }
 
 void
-LoadMediaSectionProperties()
+SipccSdpMediaSection::Load()
 {
   switch (sdp_get_media_type(mSdp, mLevel)) {
   case SDP_MEDIA_AUDIO:
@@ -41,6 +41,7 @@ LoadMediaSectionProperties()
   mPortCount = sdp_get_media_portcount(mSdp, mLevel);
 
   switch (sdp_get_media_transport(mSdp, mLevel)) {
+    // TODO add right protocols to sipcc
   default:
     mProtocol = kUnknown;
   }
