@@ -948,7 +948,12 @@ PeerConnectionImpl::NotifyDataChannel(already_AddRefed<DataChannel> aChannel)
 NS_IMETHODIMP
 PeerConnectionImpl::CreateOffer(const RTCOfferOptions& aOptions)
 {
+#ifdef KEEP_SIPCC
   return CreateOffer(SipccOfferOptions(aOptions));
+#else
+  MOZ_CRASH();
+  return NS_OK;
+#endif
 }
 
 static void DeferredCreateOffer(const std::string& aPcHandle,
