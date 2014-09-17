@@ -8,15 +8,9 @@
 #include <sstream>
 
 #include "base/histogram.h"
-#include "vcm.h"
 #include "CSFLog.h"
 #include "timecard.h"
-#include "ccapi_call_info.h"
-#include "CC_SIPCCCallInfo.h"
-#include "ccapi_device_info.h"
-#include "CC_SIPCCDeviceInfo.h"
 #include "cpr_string.h"
-#include "cpr_stdlib.h"
 
 #include "jsapi.h"
 #include "nspr.h"
@@ -1051,7 +1045,7 @@ PeerConnectionImpl::CreateAnswer()
 
 static void appendSdpParseErrors(const std::vector<std::string>& aErrors,
                                  std::string* aErrorString,
-                                 cc_int32_t* aErrorCode) {
+                                 int32_t* aErrorCode) {
    for (auto i = aErrors.begin(); i != aErrors.end(); ++i) {
      *aErrorString += " | SDP Parsing Error: " + *i;
    }
@@ -1329,6 +1323,8 @@ private:
 void PeerConnectionImpl::OnRemoteStreamAdded(const MediaStreamTable& aStream) {
   DOMMediaStream* stream = nullptr;
 
+#ifdef KEEP_SIPCC
+  // TODO(ekr@rtfm.com): No idea what to do here. 
   nsRefPtr<RemoteSourceStreamInfo> mRemoteStreamInfo =
     media()->GetRemoteStream(aStream.media_stream_id);
   MOZ_ASSERT(mRemoteStreamInfo);
@@ -1338,6 +1334,7 @@ void PeerConnectionImpl::OnRemoteStreamAdded(const MediaStreamTable& aStream) {
   } else {
     stream = mRemoteStreamInfo->GetMediaStream();
   }
+#endif
 
   if (!stream) {
     CSFLogError(logTag, "%s: GetMediaStream returned NULL", __FUNCTION__);

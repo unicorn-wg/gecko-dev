@@ -6,7 +6,6 @@
 #include "CSFLog.h"
 
 #include "nspr.h"
-#include "cc_constants.h"
 
 #include "nricectx.h"
 #include "nricemediastream.h"
