@@ -30,25 +30,27 @@ public:
     sdp_free_description(mSdp);
   }
 
-  const SdpAttributeList& GetAttributeList() const {
-    return mAttributeList;
+  virtual SdpOrigin GetOrigin() const MOZ_OVERRIDE;
+  virtual std::string GetSessionName() const MOZ_OVERRIDE;
+  // Note: connection information is always retrieved from media sections
+  virtual std::string GetBandwidth(std::string type) const MOZ_OVERRIDE;
+
+  virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
+    return static_cast<uint16_t>(mMediaSections.size());
   }
-  SdpAttributeList& GetAttributeList() {
+
+  virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE {
     return mAttributeList;
   }
 
-  const SdpMediaSection &GetMediaSection(uint16_t level) const {
-    if (level >= mMediaSections.length()) {
-      MOZ_CRASH();
-    }
-    return mMediaSections[level];
+  virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE {
+    return mAttributeList;
   }
-  SdpMediaSection &GetMediaSection(uint16_t level) {
-    if (level >= mMediaSections.length()) {
-      MOZ_CRASH();
-    }
-    return mMediaSections[level];
-  }
+
+  virtual const SdpMediaSection &GetMediaSection(
+      uint16_t level) const MOZ_OVERRIDE;
+
+  virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
 private:
   SipccSdp(sdp_t* sdp) : mSdp(sdp) {}

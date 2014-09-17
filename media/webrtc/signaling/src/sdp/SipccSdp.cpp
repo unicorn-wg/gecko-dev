@@ -8,14 +8,36 @@
 
 namespace mozilla {
 
+SdpOrigin
+SipccSdp::GetOrigin() const {
+  return SdpOrigin();
+}
+
+std::string
+SipccSdp::GetSessionName() const {
+  return "TODO";
+}
+
+std::string
+SipccSdp::GetBandwidth(std::string type) const {
+  return "TODO";
+}
+
 const SdpMediaSection &
 SipccSdp::GetMediaSection(uint16_t level) const
 {
+  if (level >= mMediaSections.size()) {
+    MOZ_CRASH();
+  }
   return mMediaSections[level];
 }
+
 SdpMediaSection &
 SipccSdp::GetMediaSection(uint16_t level)
 {
+  if (level >= mMediaSections.size()) {
+    MOZ_CRASH();
+  }
   return mMediaSections[level];
 }
 
