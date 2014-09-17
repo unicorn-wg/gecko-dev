@@ -9,6 +9,9 @@
 
 #include "mozilla/Attributes.h"
 #include "signaling/src/sdp/SdpMediaSection.h"
+#include "signaling/src/sdp/SdpEnum.h"
+#include "signaling/src/sdp/SipccSdpAttributeList.h"
+
 extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
 }
@@ -27,9 +30,21 @@ public:
     return mMediaType;
   }
 
+  virtual unsigned int GetPort() const MOZ_OVERRIDE;
+  virtual unsigned int GetPortCount() const MOZ_OVERRIDE;
+  virtual sdp::Protocol GetProtocol() const MOZ_OVERRIDE;
+  virtual SdpConnection GetConnection() const MOZ_OVERRIDE;
+  virtual Maybe<std::string> GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
+  virtual std::vector<std::string> GetFormats() const MOZ_OVERRIDE;
+
+  virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE;
+  virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
+
 private:
   SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
-    : mSdp(sdp), mLevel(level) {}
+    : mSdp(sdp),
+      mLevel(level),
+      mAttributes(sdp, level) {}
   ~SipccSdpMediaSection() {}
 
   void Load();
@@ -45,6 +60,7 @@ private:
   uint16_t mPortCount;
   sdp::Protocol mProtocol;
   std::vector<std::string> mFormats;
+  SipccSdpAttributeList mAttributes;
 
   SdpConnection mConnection;
 };

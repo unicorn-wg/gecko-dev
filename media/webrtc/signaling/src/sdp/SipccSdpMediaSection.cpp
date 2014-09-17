@@ -8,6 +8,46 @@
 
 namespace mozilla {
 
+unsigned int
+SipccSdpMediaSection::GetPort() const {
+  return mPort;
+}
+
+unsigned int
+SipccSdpMediaSection::GetPortCount() const {
+  return mPortCount;
+}
+
+sdp::Protocol
+SipccSdpMediaSection::GetProtocol() const {
+  return mProtocol;
+}
+
+SdpConnection
+SipccSdpMediaSection::GetConnection() const {
+  return SdpConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0");
+}
+
+Maybe<std::string>
+SipccSdpMediaSection::GetBandwidth(const std::string& type) const {
+  return Maybe<std::string>();
+}
+
+std::vector<std::string>
+SipccSdpMediaSection::GetFormats() const {
+  return mFormats;
+}
+
+const SdpAttributeList&
+SipccSdpMediaSection::GetAttributeList() const {
+  return mAttributes;
+}
+
+SdpAttributeList&
+SipccSdpMediaSection::GetAttributeList() {
+  return mAttributes;
+}
+
 void
 SipccSdpMediaSection::Load()
 {
@@ -45,4 +85,3 @@ SipccSdpMediaSection::Load()
 
 }
 
-#endif
