@@ -6,9 +6,10 @@
 
 if CONFIG['OS_TARGET'] != 'WINNT' and CONFIG['MOZ_WIDGET_TOOLKIT'] != 'gonk':
     CppUnitTests([
+        'jsep_session_unittest',
 #        'mediaconduit_unittests',
 #        'mediapipeline_unittest',
-#        'sdp_unittests',
+        'sdp_unittests',
 #        'signaling_unittests',
     ])
 
@@ -39,6 +40,7 @@ LOCAL_INCLUDES += [
     '/media/mtransport/third_party/nrappkit/src/stats',
     '/media/mtransport/third_party/nrappkit/src/util/libekr',
     '/media/webrtc/signaling/include',
+    '/media/webrtc/signaling/src',
     '/media/webrtc/signaling/src/common/browser_logging',
     '/media/webrtc/signaling/src/common/time_profiling',
     '/media/webrtc/signaling/src/media',

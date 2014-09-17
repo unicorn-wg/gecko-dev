@@ -26,6 +26,8 @@
 MtransportTestUtils *test_utils;
 nsCOMPtr<nsIThread> gThread;
 
+#include "signaling/src/sdp/SdpParser.h"
+
 extern "C" {
 #include "sdp.h"
 #include "sdp_private.h"
@@ -808,6 +810,16 @@ TEST_F(SdpTest, parseIceLite) {
   ParseSdp(sdp);
   ASSERT_TRUE(sdp_attr_is_present(sdp_ptr_, SDP_ATTR_ICE_LITE,
                                   SDP_SESSION_LEVEL, 0));
+}
+
+class NewSdpTest : public ::testing::Test {
+  public:
+    NewSdpTest() {}
+
+    mozilla::SdpParser parser_;
+};
+
+TEST_F(NewSdpTest, CreateDestroy) {
 }
 
 } // End namespace test.
