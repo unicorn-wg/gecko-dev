@@ -12,6 +12,9 @@
 
 __BEGIN_DECLS
 
+#if 0
+// TODO(ekr@rtfm.com): Uncomment this if we need these functions.
+
 #if defined SIP_OS_LINUX
 #include "../linux/cpr_linux_string.h"
 #elif defined SIP_OS_WINDOWS
@@ -20,6 +23,9 @@ __BEGIN_DECLS
 #elif defined SIP_OS_OSX
 #include "../darwin/cpr_darwin_string.h"
 #endif
+
+#endif
+
 
 /**
  * sstrncpy
@@ -64,6 +70,7 @@ sstrncpy(char *dst, const char *src, unsigned long max);
  */
 char *
 sstrncat(char *s1, const char *s2, unsigned long max);
+
 
 /*
  * flex_string
@@ -119,6 +126,24 @@ void flex_string_vsprintf(flex_string *fs, const char *format, va_list original_
  * Not thread-safe
  */
 void flex_string_sprintf(flex_string *fs, const char *format, ...);
+
+
+/* From cpr_linux_string.h */
+/* cpr_strdup
+ *
+ * @brief The CPR wrapper for strdup
+
+ * The cpr_strdup shall return a pointer to a new string, which is a duplicate
+ * of the string pointed to by "str" argument. A null pointer is returned if the
+ * new string cannot be created.
+ *
+ * @param[in] str  - The string that needs to be duplicated
+ *
+ * @return The duplicated string or NULL in case of no memory
+ *
+ */
+char *
+cpr_strdup(const char *str);
 
 __END_DECLS
 

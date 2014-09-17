@@ -5,8 +5,10 @@
 #include "sdp_os_defs.h"
 #include "sdp.h"
 #include "sdp_private.h"
-#include "fsm.h"
 #include "CSFLog.h"
+
+// TODO(ekr@rtfm.com): Harmonize this with DataChannelProtocol.h
+#define WEBRTC_DATACHANNEL_STREAMS_DEFAULT 16
 
 static const char* logTag = "sdp_attr_access";
 

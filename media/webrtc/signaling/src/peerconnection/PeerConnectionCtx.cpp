@@ -5,20 +5,9 @@
 #include "CSFLog.h"
 
 #include "base/histogram.h"
-#include "CallControlManager.h"
-#include "CC_Device.h"
-#include "CC_Call.h"
-#include "CC_Observer.h"
-#include "ccapi_call_info.h"
-#include "CC_SIPCCCallInfo.h"
-#include "ccapi_device_info.h"
-#include "CC_SIPCCDeviceInfo.h"
-#include "vcm.h"
-#include "VcmSIPCCBinding.h"
 #include "PeerConnectionImpl.h"
 #include "PeerConnectionCtx.h"
 #include "runnable_utils.h"
-#include "debug-psipcc-types.h"
 #include "prcvar.h"
 
 #include "mozilla/Telemetry.h"
@@ -43,6 +32,7 @@ namespace mozilla {
 using namespace dom;
 
 // Convert constraints to C structures
+#ifdef KEEP_SIPCC
 
 #ifdef MOZILLA_INTERNAL_API
 static void
@@ -91,6 +81,7 @@ SipccOfferOptions::build() const {
   }
   return cc;
 }
+#endif
 
 class PeerConnectionCtxShutdown : public nsIObserver
 {
@@ -162,8 +153,10 @@ StaticRefPtr<PeerConnectionCtxShutdown> PeerConnectionCtx::gPeerConnectionCtxShu
 nsresult PeerConnectionCtx::InitializeGlobal(nsIThread *mainThread,
   nsIEventTarget* stsThread) {
   if (!gMainThread) {
+#ifdef KEEP_SIPCC
     gMainThread = mainThread;
     CSF::VcmSIPCCBinding::setMainThread(gMainThread);
+#endif
   } else {
     MOZ_ASSERT(gMainThread == mainThread);
   }
@@ -362,7 +355,7 @@ PeerConnectionCtx::EverySecondTelemetryCallback_m(nsITimer* timer, void *closure
 
 nsresult PeerConnectionCtx::Initialize() {
   initGMP();
-
+#ifdef KEEP_SIPCC
   mCCM = CSF::CallControlManager::create();
 
   NS_ENSURE_TRUE(mCCM.get(), NS_ERROR_FAILURE);
@@ -384,6 +377,7 @@ nsresult PeerConnectionCtx::Initialize() {
   codecMask = 0;
   // Only adding codecs supported
   //codecMask |= VCM_CODEC_RESOURCE_H263;
+
 
 #ifdef MOZILLA_INTERNAL_API
 #ifdef MOZ_WEBRTC_OMX
@@ -419,6 +413,7 @@ nsresult PeerConnectionCtx::Initialize() {
   mTelemetryTimer->InitWithFuncCallback(EverySecondTelemetryCallback_m, this, 1000,
                                         nsITimer::TYPE_REPEATING_PRECISE_CAN_SKIP);
 #endif
+#endif  // KEEP_SIPCC
   return NS_OK;
 }
 
@@ -464,9 +459,10 @@ nsresult PeerConnectionCtx::Cleanup() {
 
   mQueuedJSEPOperations.Clear();
   mGMPService = nullptr;
-
+#ifdef KEEP_SIPCC
   mCCM->destroy();
   mCCM->removeCCObserver(this);
+#endif
   return NS_OK;
 }
 
@@ -480,10 +476,6 @@ PeerConnectionCtx::~PeerConnectionCtx() {
 #endif
 };
 
-CSF::CC_CallPtr PeerConnectionCtx::createCall() {
-  return mDevice->createCall();
-}
-
 void PeerConnectionCtx::queueJSEPOperation(nsRefPtr<nsIRunnable> aOperation) {
   mQueuedJSEPOperations.AppendElement(aOperation);
 }
@@ -494,37 +486,6 @@ void PeerConnectionCtx::onGMPReady() {
     mQueuedJSEPOperations[i]->Run();
   }
   mQueuedJSEPOperations.Clear();
-}
-
-void PeerConnectionCtx::onDeviceEvent(ccapi_device_event_e aDeviceEvent,
-                                      CSF::CC_DevicePtr aDevice,
-                                      CSF::CC_DeviceInfoPtr aInfo ) {
-  cc_service_state_t state = aInfo->getServiceState();
-  // We are keeping this in a local var to avoid a data race
-  // with ChangeSipccState in the debug message and compound if below
-  dom::PCImplSipccState currentSipccState = mSipccState;
-
-  switch (aDeviceEvent) {
-    case CCAPI_DEVICE_EV_STATE:
-      CSFLogDebug(logTag, "%s - %d : %d", __FUNCTION__, state,
-                  static_cast<uint32_t>(currentSipccState));
-
-      if (CC_STATE_INS == state) {
-        // SIPCC is up
-        if (dom::PCImplSipccState::Starting == currentSipccState ||
-            dom::PCImplSipccState::Idle == currentSipccState) {
-          ChangeSipccState(dom::PCImplSipccState::Started);
-        } else {
-          CSFLogError(logTag, "%s PeerConnection already started", __FUNCTION__);
-        }
-      } else {
-        NS_NOTREACHED("Unsupported Signaling State Transition");
-      }
-      break;
-    default:
-      CSFLogDebug(logTag, "%s: Ignoring event: %s\n",__FUNCTION__,
-                  device_event_getname(aDeviceEvent));
-  }
 }
 
 }  // namespace sipcc

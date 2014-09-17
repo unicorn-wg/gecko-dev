@@ -8,17 +8,6 @@
 #include <string>
 
 #include "mozilla/Attributes.h"
-#include "CallControlManager.h"
-#include "CC_Device.h"
-#include "CC_DeviceInfo.h"
-#include "CC_Call.h"
-#include "CC_CallInfo.h"
-#include "CC_Line.h"
-#include "CC_LineInfo.h"
-#include "CC_Observer.h"
-#include "CC_FeatureInfo.h"
-#include "cpr_stdlib.h"
-
 #include "StaticPtr.h"
 #include "PeerConnectionImpl.h"
 #include "mozIGeckoMediaPluginService.h"
@@ -37,14 +26,19 @@ class SipccOfferOptions {
 public:
   SipccOfferOptions();
   explicit SipccOfferOptions(const dom::RTCOfferOptions &aOther);
+#ifdef KEEP_SIPCC
   cc_media_options_t* build() const;
+#endif
 protected:
+#ifdef KEEP_SIPCC
   cc_media_options_t mOptions;
+#endif
 };
 }
 
 namespace sipcc {
 
+#ifdef KEEP_SIPCC
 class OnCallEventArgs {
 public:
   OnCallEventArgs(ccapi_call_event_e aCallEvent, CSF::CC_CallInfoPtr aInfo)
@@ -53,27 +47,19 @@ public:
   ccapi_call_event_e mCallEvent;
   CSF::CC_CallInfoPtr mInfo;
 };
+#endif
 
 // A class to hold some of the singleton objects we need:
 // * The global PeerConnectionImpl table and its associated lock.
 // * Currently SIPCC only allows a single stack instance to exist in a process
 //   at once. This class implements a singleton object that wraps that.
 // * The observer class that demuxes events onto individual PCs.
-class PeerConnectionCtx : public CSF::CC_Observer {
+class PeerConnectionCtx {
  public:
   static nsresult InitializeGlobal(nsIThread *mainThread, nsIEventTarget *stsThread);
   static PeerConnectionCtx* GetInstance();
   static bool isActive();
   static void Destroy();
-
-  // Implementations of CC_Observer methods
-  virtual void onDeviceEvent(ccapi_device_event_e deviceEvent, CSF::CC_DevicePtr device, CSF::CC_DeviceInfoPtr info);
-  virtual void onFeatureEvent(ccapi_device_event_e deviceEvent, CSF::CC_DevicePtr device, CSF::CC_FeatureInfoPtr feature_info) {}
-  virtual void onLineEvent(ccapi_line_event_e lineEvent, CSF::CC_LinePtr line, CSF::CC_LineInfoPtr info) {}
-  virtual void onCallEvent(ccapi_call_event_e callEvent, CSF::CC_CallPtr call, CSF::CC_CallInfoPtr info) {}
-
-  // Create a SIPCC Call
-  CSF::CC_CallPtr createCall();
 
   mozilla::dom::PCImplSipccState sipcc_state() { return mSipccState; }
 
@@ -105,7 +91,7 @@ class PeerConnectionCtx : public CSF::CC_Observer {
   std::map<const std::string, PeerConnectionImpl *> mPeerConnections;
 
   PeerConnectionCtx() :  mSipccState(mozilla::dom::PCImplSipccState::Idle),
-                         mCCM(nullptr), mDevice(nullptr), mGMPReady(false) {}
+                         mGMPReady(false) {}
   // This is a singleton, so don't copy construct it, etc.
   PeerConnectionCtx(const PeerConnectionCtx& other) MOZ_DELETE;
   void operator=(const PeerConnectionCtx& other) MOZ_DELETE;
@@ -138,8 +124,6 @@ private:
 
   // SIPCC objects
   mozilla::dom::PCImplSipccState mSipccState;  // TODO(ekr@rtfm.com): refactor this out? What does it do?
-  CSF::CallControlManagerPtr mCCM;
-  CSF::CC_DevicePtr mDevice;
 
   // We cannot form offers/answers properly until the Gecko Media Plugin stuff
   // has been initted, which is a complicated mess of thread dispatches,

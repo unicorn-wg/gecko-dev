@@ -12,7 +12,9 @@
 #include "sdp_base64.h"
 #include "mozilla/Assertions.h"
 #include "CSFLog.h"
-#include "DataChannelProtocol.h"
+
+// TODO(ekr@rtfm.com): Somehow make sure this matches DataChannelProtocol.h
+#define MAX_SCTP_NUM_STREAMS 2048
 
 static const char* logTag = "sdp_attr";
 
@@ -109,7 +111,7 @@ sdp_result_e sdp_parse_attribute (sdp_t *sdp_p, u16 level, const char *ptr)
     /* Find the attribute type. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), ": \t", &result);
     if (ptr == NULL) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
           "%s No attribute type specified, parse failed.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
@@ -119,7 +121,7 @@ sdp_result_e sdp_parse_attribute (sdp_t *sdp_p, u16 level, const char *ptr)
         ptr++;
     }
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
           "%s No attribute type specified, parse failed.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
@@ -139,7 +141,7 @@ sdp_result_e sdp_parse_attribute (sdp_t *sdp_p, u16 level, const char *ptr)
         }
     }
     if (attr_p->type == SDP_ATTR_INVALID) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
           "%s Warning: Unrecognized attribute (%s) ",
           sdp_p->debug_str, tmp);
         sdp_free_attr(attr_p);
@@ -253,7 +255,7 @@ sdp_result_e sdp_parse_attr_simple_string (sdp_t *sdp_p, sdp_attr_t *attr_p,
       sizeof(attr_p->attr.string_val), " \t", &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No string token found for %s attribute",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -285,7 +287,7 @@ sdp_result_e sdp_parse_attr_simple_u32 (sdp_t *sdp_p, sdp_attr_t *attr_p,
     attr_p->attr.u32_val = sdp_getnextnumtok(ptr, &ptr, " \t", &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Numeric token for %s attribute not found",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -320,7 +322,7 @@ sdp_result_e sdp_parse_attr_simple_bool (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Boolean token for %s attribute not found",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -372,14 +374,14 @@ sdp_result_e sdp_parse_attr_maxprate (sdp_t *sdp_p, sdp_attr_t *attr_p,
       sizeof(attr_p->attr.string_val), " \t", &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No string token found for %s attribute",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
     } else {
         if (!sdp_validate_maxprate(attr_p->attr.string_val)) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s is not a valid maxprate value.",
                 attr_p->attr.string_val);
             sdp_p->conf_p->num_invalid_param++;
@@ -403,7 +405,7 @@ sdp_result_e sdp_parse_attr_maxprate (sdp_t *sdp_p, sdp_attr_t *attr_p,
  */
 static void sdp_attr_fmtp_no_value(sdp_t *sdp, char *param_name)
 {
-  sdp_parse_error(sdp->peerconnection,
+  sdp_parse_error(sdp,
     "%s Warning: No %s value specified for fmtp attribute",
     sdp->debug_str, param_name);
   sdp->conf_p->num_invalid_param++;
@@ -419,7 +421,7 @@ static void sdp_attr_fmtp_no_value(sdp_t *sdp, char *param_name)
 static void sdp_attr_fmtp_invalid_value(sdp_t *sdp, char *param_name,
   char* param_value)
 {
-  sdp_parse_error(sdp->peerconnection,
+  sdp_parse_error(sdp,
     "%s Warning: Invalid %s: %s specified for fmtp attribute",
     sdp->debug_str, param_name, param_value);
   sdp->conf_p->num_invalid_param++;
@@ -1871,7 +1873,7 @@ sdp_result_e sdp_parse_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
 
         if ((result1 != SDP_SUCCESS) || (result2 != SDP_SUCCESS)) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Warning: Invalid named events specified for fmtp attribute.",
                 sdp_p->debug_str);
             sdp_p->conf_p->num_invalid_param++;
@@ -1890,7 +1892,7 @@ sdp_result_e sdp_parse_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (fmtp_p->maxval == 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No named events specified for fmtp attribute.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2145,7 +2147,7 @@ sdp_result_e sdp_parse_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
     attr_p->attr.sctpmap.port = (u16)sdp_getnextnumtok(ptr, &ptr,
                                                       " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: no sctpmap port number",
             sdp_p->debug_str);
         return SDP_INVALID_PARAMETER;
@@ -2153,7 +2155,7 @@ sdp_result_e sdp_parse_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
 
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No sctpmap protocol specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2164,18 +2166,18 @@ sdp_result_e sdp_parse_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
 
     streams = sdp_getnextnumtok(ptr, &ptr, " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No sctpmap streams specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return SDP_INVALID_PARAMETER;
     }
 
-    /* streams value should be kept in the range 1..MAX_NUM_STREAMS */
+    /* streams value should be kept in the range 1..MAX_SCTP_NUM_STREAMS */
     if (streams < 1) {
         streams = 1;
-    } else if (streams > MAX_NUM_STREAMS) {
-        streams = MAX_NUM_STREAMS;
+    } else if (streams > MAX_SCTP_NUM_STREAMS) {
+        streams = MAX_SCTP_NUM_STREAMS;
     }
     attr_p->attr.sctpmap.streams = streams;
 
@@ -2225,7 +2227,7 @@ sdp_result_e sdp_parse_attr_qos (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the strength tag. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No qos strength tag specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2239,7 +2241,7 @@ sdp_result_e sdp_parse_attr_qos (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.qos.strength == SDP_QOS_STRENGTH_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: QOS strength tag unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2249,7 +2251,7 @@ sdp_result_e sdp_parse_attr_qos (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the qos direction. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No qos direction specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2263,7 +2265,7 @@ sdp_result_e sdp_parse_attr_qos (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.qos.direction == SDP_QOS_DIR_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: QOS direction unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2278,7 +2280,7 @@ sdp_result_e sdp_parse_attr_qos (sdp_t *sdp_p, sdp_attr_t *attr_p,
             attr_p->attr.qos.confirm = TRUE;
         }
         if (attr_p->attr.qos.confirm == FALSE) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Warning: QOS confirm parameter invalid (%s)",
                 sdp_p->debug_str, tmp);
             sdp_p->conf_p->num_invalid_param++;
@@ -2317,7 +2319,7 @@ sdp_result_e sdp_parse_attr_curr (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the curr type tag. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No curr attr type specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2332,7 +2334,7 @@ sdp_result_e sdp_parse_attr_curr (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (attr_p->attr.curr.type != SDP_CURR_QOS_TYPE) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Unknown curr type.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2342,7 +2344,7 @@ sdp_result_e sdp_parse_attr_curr (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Check qos status type */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
      if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No curr attr type specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2360,7 +2362,7 @@ sdp_result_e sdp_parse_attr_curr (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the qos direction. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No qos direction specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2374,7 +2376,7 @@ sdp_result_e sdp_parse_attr_curr (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.curr.direction == SDP_QOS_DIR_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: QOS direction unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2413,7 +2415,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the curr type tag. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No des attr type specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2428,7 +2430,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (attr_p->attr.des.type != SDP_DES_QOS_TYPE) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Unknown conf type.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2438,7 +2440,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the strength tag. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No qos strength tag specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2452,7 +2454,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.des.strength == SDP_QOS_STRENGTH_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: QOS strength tag unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2462,7 +2464,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Check qos status type */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
      if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No des attr type specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2480,7 +2482,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the qos direction. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No qos direction specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2494,7 +2496,7 @@ sdp_result_e sdp_parse_attr_des (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.des.direction == SDP_QOS_DIR_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: QOS direction unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2536,7 +2538,7 @@ sdp_result_e sdp_parse_attr_conf (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the curr type tag. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No conf attr type specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2551,7 +2553,7 @@ sdp_result_e sdp_parse_attr_conf (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (attr_p->attr.conf.type != SDP_CONF_QOS_TYPE) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Unknown conf type.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2561,7 +2563,7 @@ sdp_result_e sdp_parse_attr_conf (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Check qos status type */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
      if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No conf attr type specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2579,7 +2581,7 @@ sdp_result_e sdp_parse_attr_conf (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the qos direction. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No qos direction specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2593,7 +2595,7 @@ sdp_result_e sdp_parse_attr_conf (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.conf.direction == SDP_QOS_DIR_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: QOS direction unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2641,7 +2643,7 @@ sdp_result_e sdp_parse_attr_transport_map (sdp_t *sdp_p, sdp_attr_t *attr_p,
     attr_p->attr.transport_map.payload_num =
     (u16)sdp_getnextnumtok(ptr, &ptr, " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid payload type specified for %s attribute.",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -2652,7 +2654,7 @@ sdp_result_e sdp_parse_attr_transport_map (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.transport_map.encname,
                             sizeof(attr_p->attr.transport_map.encname), "/ \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No encoding name specified in %s attribute.",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -2663,7 +2665,7 @@ sdp_result_e sdp_parse_attr_transport_map (sdp_t *sdp_p, sdp_attr_t *attr_p,
     attr_p->attr.transport_map.clockrate =
         sdp_getnextnumtok(ptr, &ptr, "/ \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No clockrate specified for "
             "%s attribute, set to default of 8000.",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
@@ -2676,7 +2678,7 @@ sdp_result_e sdp_parse_attr_transport_map (sdp_t *sdp_p, sdp_attr_t *attr_p,
         attr_p->attr.transport_map.num_chan =
             (u16)sdp_getnextnumtok(ptr, &ptr, "/ \t", &result);
         if (result != SDP_SUCCESS) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Warning: Invalid number of channels parameter"
                 " for rtpmap attribute.", sdp_p->debug_str);
             sdp_p->conf_p->num_invalid_param++;
@@ -2737,7 +2739,7 @@ sdp_result_e sdp_parse_attr_subnet (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the subnet network type. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No network type specified in subnet attribute.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2757,7 +2759,7 @@ sdp_result_e sdp_parse_attr_subnet (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.subnet.nettype == SDP_NT_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Subnet network type unsupported (%s).",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2767,7 +2769,7 @@ sdp_result_e sdp_parse_attr_subnet (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the subnet address type. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No address type specified in subnet attribute.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2787,7 +2789,7 @@ sdp_result_e sdp_parse_attr_subnet (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.subnet.addrtype == SDP_AT_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Subnet address type unsupported (%s).",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -2798,7 +2800,7 @@ sdp_result_e sdp_parse_attr_subnet (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.subnet.addr,
                             sizeof(attr_p->attr.subnet.addr), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No subnet address specified in "
             "subnet attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2812,7 +2814,7 @@ sdp_result_e sdp_parse_attr_subnet (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                                   (const char **)&slash_ptr,
                                                   " \t", &result);
         if (result != SDP_SUCCESS) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Warning: Invalid subnet prefix specified in "
                 "subnet attribute.", sdp_p->debug_str);
             sdp_p->conf_p->num_invalid_param++;
@@ -2867,7 +2869,7 @@ sdp_result_e sdp_parse_attr_t38_ratemgmt (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the rate mgmt. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No t38 rate management specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2910,7 +2912,7 @@ sdp_result_e sdp_parse_attr_t38_udpec (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the udpec. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No t38 udpEC specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -2959,7 +2961,7 @@ sdp_result_e sdp_parse_attr_pc_codec (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (attr_p->attr.pccodec.num_payloads == 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No payloads specified for %s attr.",
             sdp_p->debug_str, sdp_attr[attr_p->type].name);
         sdp_p->conf_p->num_invalid_param++;
@@ -3025,7 +3027,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
      * calculate it for ourselves as we need to. But it must be specified. */
     (void)sdp_getnextnumtok(ptr, &ptr, "/ \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Capability not specified for %s, "
             "unable to parse.", sdp_p->debug_str,
             sdp_get_attr_name(attr_p->type));
@@ -3037,7 +3039,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the media type. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s No media type specified for %s attribute, "
             "unable to parse.",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
@@ -3053,7 +3055,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (cap_p->media == SDP_MEDIA_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Media type unsupported (%s).",
             sdp_p->debug_str, tmp);
         SDP_FREE(cap_p);
@@ -3064,7 +3066,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the transport protocol type. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s No transport protocol type specified, "
             "unable to parse.", sdp_p->debug_str);
         SDP_FREE(cap_p);
@@ -3080,7 +3082,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (cap_p->transport == SDP_TRANSPORT_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Transport protocol type unsupported (%s).",
             sdp_p->debug_str, tmp);
         SDP_FREE(cap_p);
@@ -3096,7 +3098,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
         (cap_p->transport == SDP_TRANSPORT_AAL2_CUSTOM)) {
         /* Capability processing is not currently defined for AAL2 types
          * with multiple profiles. We don't process. */
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: AAL2 profiles unsupported with "
             "%s attributes.", sdp_p->debug_str,
             sdp_get_attr_name(attr_p->type));
@@ -3242,7 +3244,7 @@ sdp_result_e sdp_parse_attr_cpar (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if ((cap_attr_p == NULL) || (cap_attr_p->attr.cap_p == NULL)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: %s attribute specified with no "
             "prior %s attribute", sdp_p->debug_str,
                          sdp_get_attr_name(attr_p->type),
@@ -3261,7 +3263,7 @@ sdp_result_e sdp_parse_attr_cpar (sdp_t *sdp_p, sdp_attr_t *attr_p,
         (attr_p->type == SDP_ATTR_X_CPAR)) ||
         ( (cap_attr_p->type == SDP_ATTR_X_CAP) &&
           (attr_p->type == SDP_ATTR_CPAR)) ) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: %s attribute inconsistent with "
             "prior %s attribute", sdp_p->debug_str,
             sdp_get_attr_name(attr_p->type),
@@ -3275,7 +3277,7 @@ sdp_result_e sdp_parse_attr_cpar (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), "= \t", &result);
 
     if ((result != SDP_SUCCESS) || (tmp[0] != 'a') || (tmp[1] != '\0')) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid token type (%s) in %s "
             "attribute, unable to parse", sdp_p->debug_str, tmp,
             sdp_get_attr_name(attr_p->type));
@@ -3301,7 +3303,7 @@ sdp_result_e sdp_parse_attr_cpar (sdp_t *sdp_p, sdp_attr_t *attr_p,
         ptr++;
     }
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s No attribute type specified for %s attribute, unable to parse.",
             sdp_p->debug_str,
             sdp_get_attr_name(attr_p->type));
@@ -3319,7 +3321,7 @@ sdp_result_e sdp_parse_attr_cpar (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->type == SDP_ATTR_INVALID) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Unrecognized attribute (%s) for %s attribute, unable to parse.",
             sdp_p->debug_str, tmp,
             sdp_get_attr_name(attr_p->type));
@@ -3334,7 +3336,7 @@ sdp_result_e sdp_parse_attr_cpar (sdp_t *sdp_p, sdp_attr_t *attr_p,
         (attr_p->type == SDP_ATTR_SQN) ||
         (attr_p->type == SDP_ATTR_CDSC) ||
         (attr_p->type == SDP_ATTR_CPAR)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid attribute (%s) for %s"
             " attribute, unable to parse.", sdp_p->debug_str, tmp,
             sdp_get_attr_name(attr_p->type));
@@ -3426,7 +3428,7 @@ sdp_result_e sdp_parse_attr_rtr (sdp_t *sdp_p, sdp_attr_t *attr_p,
            attr_p->attr.rtr.confirm = TRUE;
        }
        if (attr_p->attr.rtr.confirm == FALSE) {
-          sdp_parse_error(sdp_p->peerconnection,
+          sdp_parse_error(sdp_p,
               "%s Warning: RTR confirm parameter invalid (%s)",
               sdp_p->debug_str, tmp);
            sdp_p->conf_p->num_invalid_param++;
@@ -3468,7 +3470,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), ": \t", &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No role parameter specified for "
             "comediadir attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3484,7 +3486,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.comediadir.role == SDP_MEDIADIR_ROLE_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid role type specified for "
             "comediadir attribute (%s).", sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -3504,7 +3506,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* parse to get the nettype */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No network type specified in comediadir "
             "attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3524,7 +3526,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.comediadir.conn_info.nettype == SDP_NT_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: ConnInfo in Comediadir: network type "
             "unsupported (%s).", sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -3533,7 +3535,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the comedia address type. */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No address type specified in comediadir"
             " attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3552,7 +3554,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.comediadir.conn_info.addrtype == SDP_AT_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Conninfo address type unsupported "
             "(%s).", sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -3562,7 +3564,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.comediadir.conn_info.conn_addr,
                             sizeof(attr_p->attr.comediadir.conn_info.conn_addr), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No conninfo address specified in "
             "comediadir attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3572,7 +3574,7 @@ sdp_result_e sdp_parse_attr_comediadir (sdp_t *sdp_p, sdp_attr_t *attr_p,
     attr_p->attr.comediadir.src_port  = sdp_getnextnumtok(ptr, &ptr, " \t",
                                                           &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No src port specified in "
             "comediadir attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3616,7 +3618,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s No silenceSupp enable value specified, parse failed.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3630,7 +3632,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     } else if (cpr_strncasecmp(tmp, "-", sizeof("-")) == 0) {
         attr_p->attr.silencesupp.enabled = FALSE;
     } else {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: silenceSuppEnable parameter invalid (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -3644,7 +3646,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                        &attr_p->attr.silencesupp.timer_null,
                                        &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid timer value specified for "
             "silenceSupp attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3654,7 +3656,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find suppPref */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No silenceSupp pref specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3668,7 +3670,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.silencesupp.pref == SDP_SILENCESUPP_PREF_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: silenceSupp pref unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -3678,7 +3680,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find sidUse */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No silenceSupp sidUse specified.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3692,7 +3694,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.silencesupp.siduse == SDP_SILENCESUPP_SIDUSE_UNKNOWN) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: silenceSupp sidUse unrecognized (%s)",
             sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -3706,7 +3708,7 @@ sdp_result_e sdp_parse_attr_silencesupp (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                       &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid fxnslevel value specified for "
             "silenceSupp attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3794,7 +3796,7 @@ tinybool sdp_parse_context_crypto_suite(char * str,  sdp_attr_t *attr_p, sdp_t *
          }
        }
        /* couldn't find a matching crypto suite */
-       sdp_parse_error(sdp_p->peerconnection,
+       sdp_parse_error(sdp_p,
             "%s No Matching crypto suite for SRTP Context(%s)-'X-crypto:v1' expected",
             sdp_p->debug_str, str);
 
@@ -3876,7 +3878,7 @@ sdp_result_e sdp_parse_attr_mptime (
      * and optionally log the failure.
      */
     if (attr_p->attr.mptime.num_intervals == 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No intervals specified for %s attr.",
             sdp_p->debug_str, sdp_attr[attr_p->type].name);
         sdp_p->conf_p->num_invalid_param++;
@@ -3952,7 +3954,7 @@ sdp_result_e sdp_parse_attr_x_sidin (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.stream_data.x_sidin,
                             sizeof(attr_p->attr.stream_data.x_sidin), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No Stream Id incoming specified for X-sidin attribute.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -3992,7 +3994,7 @@ sdp_result_e sdp_parse_attr_x_sidout (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.stream_data.x_sidout,
                             sizeof(attr_p->attr.stream_data.x_sidout), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No Stream Id outgoing specified for X-sidout attribute.",
             sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4033,7 +4035,7 @@ sdp_result_e sdp_parse_attr_x_confid (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.stream_data.x_confid,
                             sizeof(attr_p->attr.stream_data.x_confid), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No Conf Id incoming specified for "
             "X-confid attribute.", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4082,7 +4084,7 @@ sdp_result_e sdp_parse_attr_group (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the a=group:<attrib> <id1> < id2> ... values */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No group attribute value specified for "
             "a=group line", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4099,7 +4101,7 @@ sdp_result_e sdp_parse_attr_group (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 
     if (attr_p->attr.stream_data.group_attr == SDP_GROUP_ATTR_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Group attribute type unsupported (%s).",
             sdp_p->debug_str, tmp);
     }
@@ -4180,7 +4182,7 @@ sdp_result_e sdp_parse_attr_source_filter (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Find the filter mode */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No src filter attribute value specified for "
                      "a=source-filter line", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4195,7 +4197,7 @@ sdp_result_e sdp_parse_attr_source_filter (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
     if (attr_p->attr.source_filter.mode == SDP_FILTER_MODE_NOT_PRESENT) {
         /* No point continuing */
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid src filter mode for a=source-filter "
             "line", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4217,7 +4219,7 @@ sdp_result_e sdp_parse_attr_source_filter (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.source_filter.nettype == SDP_NT_UNSUPPORTED) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Network type unsupported "
             "(%s) for a=source-filter", sdp_p->debug_str, tmp);
         sdp_p->conf_p->num_invalid_param++;
@@ -4242,7 +4244,7 @@ sdp_result_e sdp_parse_attr_source_filter (sdp_t *sdp_p, sdp_attr_t *attr_p,
         if (strncmp(tmp, "*", 1) == 0) {
             attr_p->attr.source_filter.addrtype = SDP_AT_FQDN;
         } else {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Warning: Address type unsupported "
                 "(%s) for a=source-filter", sdp_p->debug_str, tmp);
             sdp_p->conf_p->num_invalid_param++;
@@ -4254,7 +4256,7 @@ sdp_result_e sdp_parse_attr_source_filter (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.source_filter.dest_addr,
                             sizeof(attr_p->attr.source_filter.dest_addr), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s No filter destination address specified for "
             "a=source-filter", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4271,7 +4273,7 @@ sdp_result_e sdp_parse_attr_source_filter (sdp_t *sdp_p, sdp_attr_t *attr_p,
         attr_p->attr.source_filter.num_src_addr++;
     }
     if (attr_p->attr.source_filter.num_src_addr == 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No source list provided "
             "for a=source-filter", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4319,7 +4321,7 @@ sdp_result_e sdp_parse_attr_rtcp_unicast (sdp_t *sdp_p, sdp_attr_t *attr_p,
 
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No rtcp unicast mode specified for "
             "a=rtcp-unicast line", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4333,7 +4335,7 @@ sdp_result_e sdp_parse_attr_rtcp_unicast (sdp_t *sdp_p, sdp_attr_t *attr_p,
         }
     }
     if (attr_p->attr.u32_val == SDP_RTCP_UNICAST_MODE_NOT_PRESENT) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid rtcp unicast mode for "
             "a=rtcp-unicast line", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4441,7 +4443,7 @@ sdp_parse_sdescriptions_key_param (const char *str, sdp_attr_t *attr_p,
 
     ptr = str;
     if (cpr_strncasecmp(ptr, "inline:", 7) != 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Could not find keyword inline", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return FALSE;
@@ -4462,7 +4464,7 @@ sdp_parse_sdescriptions_key_param (const char *str, sdp_attr_t *attr_p,
                                    (unsigned char *)base64decodeData, &len);
 
         if (status != BASE64_SUCCESS) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s key-salt error decoding buffer: %s",
                 sdp_p->debug_str, BASE64_RESULT_TO_STRING(status));
             return FALSE;
@@ -4472,7 +4474,7 @@ sdp_parse_sdescriptions_key_param (const char *str, sdp_attr_t *attr_p,
         saltSize = attr_p->attr.srtp_context.master_salt_size_bytes;
 
         if (len != keySize + saltSize) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s key-salt size doesn't match: (%d, %d, %d)",
                 sdp_p->debug_str, len, keySize, saltSize);
             return(FALSE);
@@ -4499,7 +4501,7 @@ sdp_parse_sdescriptions_key_param (const char *str, sdp_attr_t *attr_p,
 
     /* if we didn't find the key, error out */
     if (keyFound == FALSE) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Could not find sdescriptions key", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return FALSE;
@@ -4652,7 +4654,7 @@ sdp_parse_attr_srtp (sdp_t *sdp_p, sdp_attr_t *attr_p,
                 sdp_getnextnumtok(ptr, &ptr, " \t", &result);
 
         if (result != SDP_SUCCESS) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Could not find sdescriptions tag",
                 sdp_p->debug_str);
             sdp_p->conf_p->num_invalid_param++;
@@ -4664,28 +4666,28 @@ sdp_parse_attr_srtp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* get the crypto suite */
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Could not find sdescriptions crypto suite", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
     }
 
     if (!sdp_parse_context_crypto_suite(tmp, attr_p, sdp_p)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Unsupported crypto suite", sdp_p->debug_str);
             return (SDP_INVALID_PARAMETER);
     }
 
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Could not find sdescriptions key params", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
     }
 
     if (!sdp_parse_sdescriptions_key_param(tmp, attr_p, sdp_p)) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Failed to parse key-params", sdp_p->debug_str);
         return (SDP_INVALID_PARAMETER);
     }
@@ -4755,7 +4757,7 @@ sdp_result_e sdp_parse_attr_ice_attr (sdp_t *sdp_p, sdp_attr_t *attr_p, const ch
 
     ptr = sdp_getnextstrtok(ptr, tmp, sizeof(tmp), "\r\n", &result);
     if (result != SDP_SUCCESS){
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: problem parsing ice attribute ", sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
@@ -4801,7 +4803,7 @@ sdp_result_e sdp_parse_attr_fingerprint_attr (sdp_t *sdp_p, sdp_attr_t *attr_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.string_val, sizeof(attr_p->attr.string_val), "\r\n", &result);
 
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No string token found for %s attribute",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -4911,7 +4913,7 @@ static int find_token_enum(const char *attr_name,
 
     *ptr = sdp_getnextstrtok(*ptr, tmp, sizeof(tmp), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: problem parsing %s", sdp_p->debug_str, attr_name);
         sdp_p->conf_p->num_invalid_param++;
         return -1;
@@ -4953,7 +4955,7 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
         rtcp_fb_p->payload_num = (u16)sdp_getnextnumtok(ptr, &ptr,
                                                         " \t", &result);
         if (result != SDP_SUCCESS) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
               "%s Warning: could not parse payload type for rtcp-fb attribute",
               sdp_p->debug_str);
             sdp_p->conf_p->num_invalid_param++;
@@ -4966,7 +4968,7 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
     i = find_token_enum("rtcp-fb attribute", sdp_p, &ptr, sdp_rtcp_fb_type_val,
                         SDP_MAX_RTCP_FB, SDP_RTCP_FB_UNKNOWN);
     if (i < 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
           "%s Warning: could not parse feedback type for rtcp-fb attribute",
           sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -4980,7 +4982,7 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
                                 sdp_rtcp_fb_ack_type_val,
                                 SDP_MAX_RTCP_FB_ACK, SDP_RTCP_FB_ACK_UNKNOWN);
             if (i < 0) {
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                   "%s Warning: could not parse ack type for rtcp-fb attribute",
                   sdp_p->debug_str);
                 sdp_p->conf_p->num_invalid_param++;
@@ -4994,7 +4996,7 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
                                 sdp_rtcp_fb_ccm_type_val,
                                 SDP_MAX_RTCP_FB_CCM, SDP_RTCP_FB_CCM_UNKNOWN);
             if (i < 0) {
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                   "%s Warning: could not parse ccm type for rtcp-fb attribute",
                   sdp_p->debug_str);
                 sdp_p->conf_p->num_invalid_param++;
@@ -5023,7 +5025,7 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
                                 sdp_rtcp_fb_nack_type_val,
                                 SDP_MAX_RTCP_FB_NACK, SDP_RTCP_FB_NACK_UNKNOWN);
             if (i < 0) {
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                   "%s Warning: could not parse nack type for rtcp-fb attribute",
                   sdp_p->debug_str);
                 sdp_p->conf_p->num_invalid_param++;
@@ -5036,7 +5038,7 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
             rtcp_fb_p->param.trr_int = sdp_getnextnumtok(ptr, &ptr,
                                                          " \t", &result);
             if (result != SDP_SUCCESS) {
-                sdp_parse_error(sdp_p->peerconnection,
+                sdp_parse_error(sdp_p,
                   "%s Warning: could not parse trr-int value for rtcp-fb "
                   "attribute", sdp_p->debug_str);
                 sdp_p->conf_p->num_invalid_param++;
@@ -5099,7 +5101,7 @@ sdp_result_e sdp_parse_attr_setup(sdp_t *sdp_p,
         SDP_MAX_SETUP, SDP_SETUP_UNKNOWN);
 
     if (i < 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
           "%s Warning: could not parse setup attribute",
           sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -5116,7 +5118,7 @@ sdp_result_e sdp_parse_attr_setup(sdp_t *sdp_p,
         /* All these values are OK */
         break;
     case SDP_SETUP_UNKNOWN:
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Unknown setup attribute",
             sdp_p->debug_str);
         return SDP_INVALID_PARAMETER;
@@ -5161,7 +5163,7 @@ sdp_result_e sdp_parse_attr_connection(sdp_t *sdp_p,
         SDP_MAX_CONNECTION, SDP_CONNECTION_UNKNOWN);
 
     if (i < 0) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
           "%s Warning: could not parse connection attribute",
           sdp_p->debug_str);
         sdp_p->conf_p->num_invalid_param++;
@@ -5176,7 +5178,7 @@ sdp_result_e sdp_parse_attr_connection(sdp_t *sdp_p,
         /* All these values are OK */
         break;
     case SDP_CONNECTION_UNKNOWN:
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Unknown connection attribute",
             sdp_p->debug_str);
         return SDP_INVALID_PARAMETER;
@@ -5217,7 +5219,7 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
     attr_p->attr.extmap.id =
     (u16)sdp_getnextnumtok(ptr, &ptr, "/ \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: Invalid extmap id specified for %s attribute.",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
@@ -5230,7 +5232,7 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
         ptr = sdp_getnextstrtok(ptr, direction,
                                 sizeof(direction), " \t", &result);
         if (result != SDP_SUCCESS) {
-            sdp_parse_error(sdp_p->peerconnection,
+            sdp_parse_error(sdp_p,
                 "%s Warning: No uri specified in %s attribute.",
                 sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
             sdp_p->conf_p->num_invalid_param++;
@@ -5241,7 +5243,7 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.extmap.uri,
                             sizeof(attr_p->attr.extmap.uri), " \t", &result);
     if (result != SDP_SUCCESS) {
-        sdp_parse_error(sdp_p->peerconnection,
+        sdp_parse_error(sdp_p,
             "%s Warning: No uri specified in %s attribute.",
             sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
         sdp_p->conf_p->num_invalid_param++;
