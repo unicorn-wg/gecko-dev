@@ -5,6 +5,8 @@
 #ifndef _SIPCCSDPMEDIASECTION_H_
 #define _SIPCCSDPMEDIASECTION_H_
 
+#include "Maybe.h"
+
 #include "signaling/src/sdp/sipcc/sdp.h"
 
 namespace mozilla {
@@ -23,6 +25,15 @@ private:
   // this doesn't live beyond the SipccSdp instance that owns this
   sdp_t* mSdp;
   uint16_t mLevel;
+
+  // the following values are cached on first get
+  sdp::MediaType mMediaType;
+  uint16_t mPort;
+  uint16_t mPortCount;
+  sdp::Protocol mProtocol;
+  std::vector<std::string> mFormats;
+
+  SdpConnection mConnection;
 };
 
 }
