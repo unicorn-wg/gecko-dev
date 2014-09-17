@@ -5,7 +5,7 @@
 #ifndef _SDP_H_
 #define _SDP_H_
 
-#include "cc_constants.h"
+/* #include "cc_constants.h" */
 #include "sdp_os_defs.h"
 #include "ccsdp.h"
 
@@ -1031,7 +1031,6 @@ typedef struct sdp_conf_options {
 /* Elements here that can only be one of are included directly. Elements */
 /* that can be more than one are pointers.                               */
 typedef struct {
-    char                      peerconnection[PC_HANDLE_SIZE];
     u32                       magic_num;
     sdp_conf_options_t       *conf_p;
     tinybool                  debug_flag[SDP_MAX_DEBUG_TYPES];
@@ -1115,7 +1114,7 @@ extern void sdp_set_string_debug(sdp_t *sdp_ptr, const char *debug_str);
 extern sdp_result_e sdp_parse(sdp_t *sdp_ptr, char **bufp, u16 len);
 extern sdp_result_e sdp_build(sdp_t *sdp_ptr, flex_string *fs);
 extern sdp_result_e sdp_free_description(sdp_t *sdp_ptr);
-extern void sdp_parse_error(const char *peerconnection, const char *format, ...);
+extern void sdp_parse_error(sdp_t *sdp, const char *format, ...);
 
 extern const char *sdp_get_result_name(sdp_result_e rc);
 
