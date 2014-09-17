@@ -33,6 +33,9 @@ extern "C" {
 #include "sdp_private.h"
 }
 
+using mozilla::SdpParser;
+using mozilla::Sdp;
+
 namespace test {
 
 static bool SetupGlobalThread() {
@@ -816,7 +819,7 @@ class NewSdpTest : public ::testing::Test {
   public:
     NewSdpTest() {}
 
-    mozilla::SdpParser parser_;
+    SdpParser mParser;
 };
 
 TEST_F(NewSdpTest, CreateDestroy) {
