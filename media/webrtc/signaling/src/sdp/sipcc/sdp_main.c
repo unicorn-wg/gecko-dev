@@ -1005,7 +1005,8 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, size_t len)
             sdp_parse_error(sdp_p,
                 "%s End of line beyond end of buffer.",
                 sdp_p->debug_str);
-            CSFLogError(logTag, "SDP: Invalid SDP, no \\n (len %u): %*s", len, len, *bufp);
+            CSFLogError(logTag, "SDP: Invalid SDP, no \\n (len %z): %*s",
+                        len, (int)len, *bufp);
             end_found = TRUE;
             break;
         }
