@@ -2534,7 +2534,20 @@ PeerConnectionWrapper.prototype = {
     }
   },
 
-  checkRtcpIceConnections : function PCW_checkRtcpIceConnections(stats, counters) {
+  /**
+   * Compares amount of established ICE connection according to ICE candidate
+   * pairs in the RTCP reporting with the expected amount of connection based
+   * on the contraints.
+   *
+   * @param {object} stats
+   *        The stats to check for ICE candidate pairs
+   * @param {object} counters
+   *        The counters for media and data tracks based on constraints
+   * @param {object} answer
+   *        The SDP answer to check for SDP bundle support
+   */
+  checkRtcpIceConnections : function PCW_checkRtcpIceConnections(stats,
+      counters, answer) {
     var iceConnections = 0;
     Object.keys(stats).forEach(function(name) {
       if ((stats[name].type === "candidatepair") &&
@@ -2543,9 +2556,7 @@ PeerConnectionWrapper.prototype = {
       }
     });
     info("ICE connections according to RTCP: " + iceConnections);
-    //FIXME: set this depending on bundle support in offer/answer
-    var bundle = false;
-    if (bundle) {
+    if (answer.sdp.contains('a=group:BUNDLE')) {
       is(iceConnections, 1, "RTCP reports exactly 1 ICE connection");
     } else {
       var audioTracks = counters.constraintsAudioTracks > counters.optionsAudioTracks ?
