@@ -1343,6 +1343,7 @@ void PeerConnectionImpl::OnRemoteStreamAdded(const MediaStreamTable& aStream) {
       return;
     }
 
+#ifdef KEEP_SIPCC
 #ifdef MOZILLA_INTERNAL_API
     TracksAvailableCallback* tracksAvailableCallback =
       new TracksAvailableCallback(mRemoteStreamInfo->mTrackTypeHints, pco);
@@ -1351,6 +1352,7 @@ void PeerConnectionImpl::OnRemoteStreamAdded(const MediaStreamTable& aStream) {
 #else
     JSErrorResult rv;
     pco->OnAddStream(stream, rv);
+#endif
 #endif
   }
 }
