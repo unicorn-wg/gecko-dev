@@ -54,9 +54,9 @@ public:
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
 private:
-  SipccSdp(sdp_t* sdp) : mSdp(sdp) {}
+  SipccSdp() {}
 
-  void Load();
+  void Load(sdp_t* sdp);
 
   sdp_t *mSdp;
   std::vector<SipccSdpMediaSection> mMediaSections;

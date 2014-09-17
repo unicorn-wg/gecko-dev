@@ -19,15 +19,6 @@ enum AddrType {
   kIPv6
 };
 
-enum MediaType {
-  kAudio,
-  kVideo,
-  kText,
-  kApplication,
-  kMessage,
-  kUnknownMediaType
-};
-
 enum Protocol {
   kRtpAvp,             // RTP/AVP [RFC4566]
   kUdp,                // udp [RFC4566]
