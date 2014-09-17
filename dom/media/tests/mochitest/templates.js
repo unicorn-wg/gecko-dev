@@ -217,11 +217,28 @@ var commandsPeerConnection = [
     }
   ],
   [
+    'PC_LOCAL_SET_AUDIO_VIDEO_COUNTERS_OFFER',
+    function (test) {
+      test.pcLocal.setAudioVideoCounters(test.pcLocal.offerAVCounters,
+        test._offer_constraints, test._offer_options, 0);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
+    'PC_REMOTE_SET_AUDIO_VIDEO_COUNTERS_OFFER',
+    function (test) {
+      test.pcRemote.setAudioVideoCounters(test.pcRemote.offerAVCounters,
+        test._offer_constraints, test._offer_options, 0);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
     'PC_LOCAL_SANE_LOCAL_SDP',
     function (test) {
       test.pcLocal.verifySdp(test._local_offer, "offer",
-        test._offer_constraints, test._offer_options,
-        function(trickle) {
+        test.pcLocal.offerAVCounters, function(trickle) {
           test.pcLocal.localRequiresTrickleIce = trickle;
         });
       test.next();
@@ -231,8 +248,7 @@ var commandsPeerConnection = [
     'PC_REMOTE_SANE_REMOTE_SDP',
     function (test) {
       test.pcRemote.verifySdp(test._local_offer, "offer",
-        test._offer_constraints, test._offer_options,
-        function (trickle) {
+        test.pcRemote.offerAVCounters, function (trickle) {
           test.pcRemote.remoteRequiresTrickleIce = trickle;
         });
       test.next();
@@ -341,11 +357,28 @@ var commandsPeerConnection = [
     }
   ],
   [
+    'PC_LOCAL_SET_AUDIO_VIDEO_COUNTERS_ANSWER',
+    function (test) {
+      test.pcLocal.setAudioVideoCounters(test.pcLocal.answerAVCounters,
+        test._answer_constraints, test._offer_options, 0);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
+    'PC_REMOTE_SET_AUDIO_VIDEO_COUNTERS_ANSWER',
+    function (test) {
+      test.pcRemote.setAudioVideoCounters(test.pcRemote.answerAVCounters,
+        test._answer_constraints, test._offer_options, 0);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
     'PC_REMOTE_SANE_LOCAL_SDP',
     function (test) {
       test.pcRemote.verifySdp(test._remote_answer, "answer",
-        test._answer_constraints, test._offer_options,
-        function (trickle) {
+        test.pcRemote.answerAVCounters, function (trickle) {
           test.pcRemote.localRequiresTrickleIce = trickle;
         });
       test.next();
@@ -355,8 +388,7 @@ var commandsPeerConnection = [
     'PC_LOCAL_SANE_REMOTE_SDP',
     function (test) {
       test.pcLocal.verifySdp(test._remote_answer, "answer",
-        test._answer_constraints, test._offer_options,
-        function (trickle) {
+        test.pcLocal.answerAVCounters, function (trickle) {
           test.pcLocal.remoteRequiresTrickleIce = trickle;
         });
       test.next();
@@ -445,7 +477,8 @@ var commandsPeerConnection = [
   [
     'PC_LOCAL_CHECK_MEDIA_TRACKS',
     function (test) {
-      test.pcLocal.checkMediaTracks(test._answer_constraints, function () {
+      test.pcLocal.checkMediaTracks(test.pcLocal.offerAVCounters,
+          test.pcLocal.answerAVCounters, function () {
         test.next();
       });
     }
@@ -453,7 +486,8 @@ var commandsPeerConnection = [
   [
     'PC_REMOTE_CHECK_MEDIA_TRACKS',
     function (test) {
-      test.pcRemote.checkMediaTracks(test._offer_constraints, function () {
+      test.pcRemote.checkMediaTracks(test.pcRemote.answerAVCounters,
+          test.pcRemote.offerAVCounters, function () {
         test.next();
       });
     }
@@ -496,7 +530,7 @@ var commandsPeerConnection = [
     'PC_LOCAL_CHECK_ICE_CONNECTIONS',
     function (test) {
       test.pcLocal.getStats(null, function(stats) {
-        test.pcLocal.checkRtcpIceConnections(stats, test._offer_constraints, test._offer_options);
+        test.pcLocal.checkRtcpIceConnections(stats, test.pcLocal.offerAVCounters);
         test.next();
       });
     }
@@ -505,7 +539,7 @@ var commandsPeerConnection = [
     'PC_REMOTE_CHECK_ICE_CONNECTIONS',
     function (test) {
       test.pcRemote.getStats(null, function(stats) {
-        test.pcRemote.checkRtcpIceConnections(stats, test._answer_constraints, test._offer_options);
+        test.pcRemote.checkRtcpIceConnections(stats, test.pcRemote.answerAVCounters);
         test.next();
       });
     }
@@ -852,11 +886,28 @@ var commandsDataChannel = [
     }
   ],
   [
+    'PC_LOCAL_SET_AUDIO_VIDEO_COUNTERS_OFFER',
+    function (test) {
+      test.pcLocal.setAudioVideoCounters(test.pcLocal.offerAVCounters,
+        test._offer_constraints, test._offer_options, 1);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
+    'PC_REMOTE_SET_AUDIO_VIDEO_COUNTERS_OFFER',
+    function (test) {
+      test.pcRemote.setAudioVideoCounters(test.pcRemote.offerAVCounters,
+        test._offer_constraints, test._offer_options, 1);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
     'PC_LOCAL_SANE_LOCAL_SDP',
     function (test) {
       test.pcLocal.verifySdp(test._local_offer, "offer",
-        test._offer_constraints, test._offer_options,
-        function(trickle) {
+        test.pcLocal.offerAVCounters, function(trickle) {
           test.pcLocal.localRequiresTrickleIce = trickle;
         });
       test.next();
@@ -866,8 +917,7 @@ var commandsDataChannel = [
     'PC_REMOTE_SANE_REMOTE_SDP',
     function (test) {
       test.pcRemote.verifySdp(test._local_offer, "offer",
-        test._offer_constraints, test._offer_options,
-        function (trickle) {
+        test.pcRemote.offerAVCounters, function (trickle) {
           test.pcRemote.remoteRequiresTrickleIce = trickle;
         });
       test.next();
@@ -956,11 +1006,28 @@ var commandsDataChannel = [
     }
   ],
   [
+    'PC_LOCAL_SET_AUDIO_VIDEO_COUNTERS_ANSWER',
+    function (test) {
+      test.pcLocal.setAudioVideoCounters(test.pcLocal.answerAVCounters,
+        test._answer_constraints, test._offer_options, 1);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
+    'PC_REMOTE_SET_AUDIO_VIDEO_COUNTERS_ANSWER',
+    function (test) {
+      test.pcRemote.setAudioVideoCounters(test.pcRemote.answerAVCounters,
+        test._answer_constraints, test._offer_options, 1);
+      info("Audio/Video counters: " + JSON.stringify(test.pcLocal.offerAVCounters));
+      test.next();
+    }
+  ],
+  [
     'PC_REMOTE_SANE_LOCAL_SDP',
     function (test) {
       test.pcRemote.verifySdp(test._remote_answer, "answer",
-        test._answer_constraints, test._offer_options,
-        function (trickle) {
+        test.pcRemote.answerAVCounters, function (trickle) {
           test.pcRemote.localRequiresTrickleIce = trickle;
         });
       test.next();
@@ -970,8 +1037,7 @@ var commandsDataChannel = [
     'PC_LOCAL_SANE_REMOTE_SDP',
     function (test) {
       test.pcLocal.verifySdp(test._remote_answer, "answer",
-        test._answer_constraints, test._offer_options,
-        function (trickle) {
+        test.pcLocal.answerAVCounters, function (trickle) {
           test.pcLocal.remoteRequiresTrickleIce = trickle;
         });
       test.next();
@@ -1088,7 +1154,8 @@ var commandsDataChannel = [
   [
     'PC_LOCAL_CHECK_MEDIA_TRACKS',
     function (test) {
-      test.pcLocal.checkMediaTracks(test._answer_constraints, function () {
+      test.pcLocal.checkMediaTracks(test.pcLocal.offerAVCounters,
+          test.pcLocal.answerAVCounters, function () {
         test.next();
       });
     }
@@ -1096,7 +1163,8 @@ var commandsDataChannel = [
   [
     'PC_REMOTE_CHECK_MEDIA_TRACKS',
     function (test) {
-      test.pcRemote.checkMediaTracks(test._offer_constraints, function () {
+      test.pcRemote.checkMediaTracks(test.pcRemote.answerAVCounters,
+          test.pcRemote.offerAVCounters, function () {
         test.next();
       });
     }
@@ -1113,6 +1181,24 @@ var commandsDataChannel = [
     'PC_REMOTE_CHECK_MEDIA_FLOW_PRESENT',
     function (test) {
       test.pcRemote.checkMediaFlowPresent(function () {
+        test.next();
+      });
+    }
+  ],
+  [
+    'PC_LOCAL_CHECK_ICE_CONNECTIONS',
+    function (test) {
+      test.pcLocal.getStats(null, function(stats) {
+        test.pcLocal.checkRtcpIceConnections(stats, test.pcLocal.offerAVCounters);
+        test.next();
+      });
+    }
+  ],
+  [
+    'PC_REMOTE_CHECK_ICE_CONNECTIONS',
+    function (test) {
+      test.pcRemote.getStats(null, function(stats) {
+        test.pcRemote.checkRtcpIceConnections(stats, test.pcRemote.answerAVCounters);
         test.next();
       });
     }
