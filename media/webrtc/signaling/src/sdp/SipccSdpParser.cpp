@@ -29,8 +29,8 @@ SipccSdpParser::Parse(const std::string& sdpText)
     const char* rawString = sdpText.c_str();
     sdp_result_e result = sdp_parse(sdp, rawString, sdpText.length());
     if (result == SDP_SUCCESS) {
-      SipccSdp* sipccSdp = new SipccSdp(sdp);
-      sipccSdp->Load();
+      SipccSdp* sipccSdp = new SipccSdp();
+      sipccSdp->Load(sdp);
       return UniquePtr<Sdp>(sipccSdp);
     }
 
@@ -60,4 +60,3 @@ sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message
 }
 
 } // namespace mozilla
-

@@ -22,9 +22,18 @@ class SdpConnection;
 class SdpMediaSection
 {
 public:
-  virtual sdp::MediaType GetMediaType() const;
-  virtual unsigned int GetPort() const;
-  virtual unsigned int GetPortCount() const;
+  enum MediaType {
+    kAudio,
+    kVideo,
+    kText,
+    kApplication,
+    kMessage,
+    kUnknownMediaType
+  };
+
+  virtual MediaType GetMediaType() const = 0;
+  virtual unsigned int GetPort() const = 0;
+  virtual unsigned int GetPortCount() const = 0;
   virtual sdp::Protocol GetProtocol() const = 0;
   virtual SdpConnection GetConnection() const = 0;
   virtual Maybe<std::string> GetBandwidth(const std::string& type) const = 0;
