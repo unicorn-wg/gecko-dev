@@ -8,6 +8,7 @@
 #define _SIPCCSDPMEDIASECTION_H_
 
 #include "mozilla/Attributes.h"
+#include "mozilla/UniquePtr.h"
 #include "signaling/src/sdp/SdpMediaSection.h"
 #include "signaling/src/sdp/SdpEnum.h"
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
@@ -56,6 +57,8 @@ private:
   SipccSdpAttributeList mAttributes;
 
   UniquePtr<SdpConnection> mConnection;
+
+  SipccSdpAttributeList mAttributeList;
 };
 
 }
