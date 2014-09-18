@@ -29,7 +29,6 @@ public:
   virtual const SdpGroupAttribute& GetGroup() const = 0;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const = 0;
   virtual const SdpIdentityAttribute& GetIdentity() const = 0;
-  virtual const SdpMsidAttribute& GetMsid() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;
   virtual const SdpSetupAttribute& GetSetup() const = 0;
@@ -42,6 +41,7 @@ public:
   virtual const SdpExtmapAttributeList& GetExtmap() const = 0;
   virtual const SdpFmtpAttributeList& GetFmtp() const = 0;
   virtual const SdpImageattrAttributeList& GetImageattr() const = 0;
+  virtual const SdpMsidAttributeList& GetMsid() const = 0;
   virtual const SdpRtcpFbAttributeList& GetRtcpFb() const = 0;
   virtual const SdpRtpmapAttributeList& GetRtpmap() const = 0;
   virtual const SdpSctpmapAttributeList& GetSctpmap() const = 0;
