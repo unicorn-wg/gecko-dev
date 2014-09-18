@@ -11,8 +11,9 @@
 #include "FakeMediaStreams.h"
 #include "FakeMediaStreamsImpl.h"
 
-#include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
+#include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepTrack.h"
 
 //using mozilla::sdp::JsepSession;
 using mozilla::SipccSdpParser;
