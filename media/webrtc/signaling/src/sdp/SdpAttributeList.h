@@ -18,11 +18,11 @@ namespace mozilla {
 class SdpAttributeList
 {
 public:
-  virtual unsigned int CountAttributes(sdp::AttributeType type) const = 0;
-  virtual bool HasAttribute(sdp::AttributeType type) const = 0;
+  typedef SdpAttribute::AttributeType AttributeType;
 
-  virtual UniquePtr<SdpAttribute>
-    GetAttribute(sdp::AttributeType type) const = 0;
+  virtual size_t CountAttributes(AttributeType type) const = 0;
+  virtual bool HasAttribute(AttributeType type) const = 0;
+  virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const = 0;
 
   virtual const SdpCandidateAttribute& GetCandidate() const = 0;
   virtual const SdpConnectionAttribute& GetConnection() const = 0;
@@ -36,11 +36,11 @@ public:
   virtual const SdpIdentityAttribute& GetIdentity() const = 0;
   virtual const SdpImageattrAttribute& GetImageattr() const = 0;
   virtual std::string GetLabel() const = 0;
-  virtual unsigned int GetMaxprate() const = 0;
-  virtual unsigned int GetMaxptime() const = 0;
+  virtual uint32_t GetMaxprate() const = 0;
+  virtual uint32_t GetMaxptime() const = 0;
   virtual std::string GetMid() const = 0;
   virtual const SdpMsidAttribute& GetMsid() const = 0;
-  virtual unsigned int GetPtime() const = 0;
+  virtual uint32_t GetPtime() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRtcpFbAttribute& GetRtcpFb() const = 0;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;
