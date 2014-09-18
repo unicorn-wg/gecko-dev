@@ -105,13 +105,13 @@ class SdpTest : public ::testing::Test {
       if (!sdp_ptr_) {
         sdp_free_description(sdp_ptr_);
       }
-      sdp_ptr_ = sdp_init_description("BogusPeerConnectionId", config_p_);
+      sdp_ptr_ = sdp_init_description(config_p_);
     }
 
     void ParseSdp(const std::string &sdp_str) {
-      char *bufp = const_cast<char *>(sdp_str.data());
+      const char *buf = sdp_str.data();
       ResetSdp();
-      ASSERT_EQ(sdp_parse(sdp_ptr_, &bufp, sdp_str.size()), SDP_SUCCESS);
+      ASSERT_EQ(sdp_parse(sdp_ptr_, buf, sdp_str.size()), SDP_SUCCESS);
     }
 
     void InitLocalSdp() {
@@ -246,7 +246,7 @@ class SdpTest : public ::testing::Test {
 
   protected:
     int final_level_;
-    void *config_p_;
+    sdp_conf_options_t *config_p_;
     sdp_t *sdp_ptr_;
 };
 

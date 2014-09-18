@@ -54,7 +54,9 @@ public:
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
 private:
-  SipccSdp(sdp_t* sdp) : mSdp(sdp) {}
+  explicit SipccSdp(sdp_t* sdp) :
+      mSdp(sdp),
+      mAttributeList(sdp, 0) {}
 
   void Load();
 
