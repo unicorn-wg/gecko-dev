@@ -1743,7 +1743,7 @@ PeerConnectionWrapper.prototype = {
    * @param {function} onSuccess
    *        Callback to execute if all media has been requested successfully
    */
-  getAllUserMedia : function PCW_GetAllUserMedia(onSuccess) {
+  getAllUserMedia : function PCW_GetAllUserMedia(_constraints, onSuccess) {
     var self = this;
 
     function _getAllUserMedia(constraintsList, index) {
@@ -1770,13 +1770,13 @@ PeerConnectionWrapper.prototype = {
       }
     }
 
-    if (this.constraints.length === 0) {
+    if (_constraints.length === 0) {
       info("Skipping GUM: no UserMedia requested");
       onSuccess();
     }
     else {
-      info("Get " + this.constraints.length + " local streams");
-      _getAllUserMedia(this.constraints, 0);
+      info("Get " + _constraints.length + " local streams");
+      _getAllUserMedia(_constraints, 0);
     }
   },
 
