@@ -7,7 +7,9 @@
 #ifndef _SDP_H_
 #define _SDP_H_
 
+#include <ostream>
 #include <vector>
+#include <sstream>
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Maybe.h"
 #include "signaling/src/sdp/SdpMediaSection.h"
@@ -38,8 +40,25 @@ public:
   virtual const SdpMediaSection &GetMediaSection(uint16_t level) const = 0;
   virtual SdpMediaSection &GetMediaSection(uint16_t level) = 0;
 
+  virtual void Serialize(std::ostream&) const = 0;
+
+  std::string toString();
+
   virtual ~Sdp() {};
 };
+
+inline std::ostream& operator <<(std::ostream& os, const Sdp &sdp)
+{
+  sdp.Serialize(os);
+  return os;
+}
+
+inline std::string Sdp::toString() {
+  std::stringstream s;
+  s << *this;
+  return s.str();
+}
+
 
 class SdpOrigin
 {

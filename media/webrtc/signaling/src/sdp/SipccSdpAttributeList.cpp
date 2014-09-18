@@ -112,7 +112,7 @@ SipccSdpAttributeList::GetFingerprint() const {
     }
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kFingerprintAttribute);
-  return *static_cast<const SdpFingerprintAttribute*>(attr);
+  return *static_cast<const SdpFingerprintAttributeList*>(attr);
 }
 
 const SdpFmtpAttributeList&

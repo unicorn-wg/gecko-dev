@@ -62,5 +62,10 @@ SipccSdp::Load(sdp_t* sdp) {
   }
 }
 
+void
+SipccSdp::Serialize(std::ostream& os) const {
+  os << "THIS IS SPARTA\r\n";
+  MOZ_CRASH();
+}
 
 } // namespace mozilla
