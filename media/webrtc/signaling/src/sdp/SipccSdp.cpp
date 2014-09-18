@@ -14,12 +14,18 @@ SipccSdp::~SipccSdp() {
   }
 }
 
-const Maybe<std::string>&
+const SdpOrigin& SipccSdp::GetOrigin() const {
+  return *mOrigin;
+}
+
+const std::string&
 SipccSdp::GetBandwidth(const std::string& type) const {
-  if (mBandwidths.count(type) > 0) {
-    return Nothing();
+  static std::string emptyString("");
+  auto found = mBandwidths.find(type);
+  if (found == mBandwidths.end()) {
+    return emptyString;
   }
-  return Some(mBandwidths[type]);
+  return found->second;
 }
 
 const SdpMediaSection&
