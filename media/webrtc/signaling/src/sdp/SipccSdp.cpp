@@ -19,7 +19,7 @@ SipccSdp::GetSessionName() const {
 }
 
 Maybe<std::string>
-SipccSdp::GetBandwidth(std::string type) const {
+SipccSdp::GetBandwidth(const std::string& type) const {
   return Maybe<std::string>();
 }
 
