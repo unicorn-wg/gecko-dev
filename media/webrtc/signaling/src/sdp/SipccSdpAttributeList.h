@@ -26,17 +26,17 @@ public:
   virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
   virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const MOZ_OVERRIDE;
 
-  virtual const SdpCandidateAttribute& GetCandidate() const MOZ_OVERRIDE;
+  virtual const SdpCandidateAttributeList& GetCandidate() const MOZ_OVERRIDE;
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
-  virtual const SdpExtmapAttribute& GetExtmap() const MOZ_OVERRIDE;
+  virtual const SdpExtmapAttributeList& GetExtmap() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttribute& GetFingerprint() const MOZ_OVERRIDE;
-  virtual const SdpFmtpAttribute& GetFmtp() const MOZ_OVERRIDE;
+  virtual const SdpFmtpAttributeList& GetFmtp() const MOZ_OVERRIDE;
   virtual const SdpGroupAttribute& GetGroup() const MOZ_OVERRIDE;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const MOZ_OVERRIDE;
   virtual const std::string& GetIcePwd() const MOZ_OVERRIDE;
   virtual const std::string& GetIceUfrag() const MOZ_OVERRIDE;
   virtual const SdpIdentityAttribute& GetIdentity() const MOZ_OVERRIDE;
-  virtual const SdpImageattrAttribute& GetImageattr() const MOZ_OVERRIDE;
+  virtual const SdpImageattrAttributeList& GetImageattr() const MOZ_OVERRIDE;
   virtual const std::string& GetLabel() const MOZ_OVERRIDE;
   virtual uint32_t GetMaxprate() const MOZ_OVERRIDE;
   virtual uint32_t GetMaxptime() const MOZ_OVERRIDE;
@@ -44,10 +44,10 @@ public:
   virtual const SdpMsidAttribute& GetMsid() const MOZ_OVERRIDE;
   virtual uint32_t GetPtime() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
-  virtual const SdpRtcpFbAttribute& GetRtcpFb() const MOZ_OVERRIDE;
+  virtual const SdpRtcpFbAttributeList& GetRtcpFb() const MOZ_OVERRIDE;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const MOZ_OVERRIDE;
-  virtual const SdpRtpmapAttribute& GetRtpmap() const MOZ_OVERRIDE;
-  virtual const SdpSctpmapAttribute& GetSctpmap() const MOZ_OVERRIDE;
+  virtual const SdpRtpmapAttributeList& GetRtpmap() const MOZ_OVERRIDE;
+  virtual const SdpSctpmapAttributeList& GetSctpmap() const MOZ_OVERRIDE;
   virtual const SdpSetupAttribute& GetSetup() const MOZ_OVERRIDE;
   virtual const SdpSsrcAttribute& GetSsrc() const MOZ_OVERRIDE;
   virtual const SdpSsrcGroupAttribute& GetSsrcGroup() const MOZ_OVERRIDE;

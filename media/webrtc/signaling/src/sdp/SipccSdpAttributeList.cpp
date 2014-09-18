@@ -25,7 +25,7 @@ SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
   MOZ_CRASH();
 }
 
-const SdpCandidateAttribute&
+const SdpCandidateAttributeList&
 SipccSdpAttributeList::GetCandidate() const {
   MOZ_CRASH();
 }
@@ -35,7 +35,7 @@ SipccSdpAttributeList::GetConnection() const {
   MOZ_CRASH();
 }
 
-const SdpExtmapAttribute&
+const SdpExtmapAttributeList&
 SipccSdpAttributeList::GetExtmap() const {
   MOZ_CRASH();
 }
@@ -45,7 +45,7 @@ SipccSdpAttributeList::GetFingerprint() const {
   MOZ_CRASH();
 }
 
-const SdpFmtpAttribute&
+const SdpFmtpAttributeList&
 SipccSdpAttributeList::GetFmtp() const {
   MOZ_CRASH();
 }
@@ -75,7 +75,7 @@ SipccSdpAttributeList::GetIdentity() const {
   MOZ_CRASH();;
 }
 
-const SdpImageattrAttribute&
+const SdpImageattrAttributeList&
 SipccSdpAttributeList::GetImageattr() const {
   MOZ_CRASH();;
 }
@@ -115,7 +115,7 @@ SipccSdpAttributeList::GetRtcp() const {
   MOZ_CRASH();;
 }
 
-const SdpRtcpFbAttribute&
+const SdpRtcpFbAttributeList&
 SipccSdpAttributeList::GetRtcpFb() const {
   MOZ_CRASH();;
 }
@@ -125,12 +125,12 @@ SipccSdpAttributeList::GetRemoteCandidates() const {
   MOZ_CRASH();;
 }
 
-const SdpRtpmapAttribute&
+const SdpRtpmapAttributeList&
 SipccSdpAttributeList::GetRtpmap() const {
   MOZ_CRASH();;
 }
 
-const SdpSctpmapAttribute&
+const SdpSctpmapAttributeList&
 SipccSdpAttributeList::GetSctpmap() const {
   MOZ_CRASH();;
 }
