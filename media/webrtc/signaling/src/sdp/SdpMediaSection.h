@@ -84,7 +84,7 @@ class SdpConnection
 {
 public:
   enum NetType {
-    kInternet
+    kInternet // the only valid net
   };
 
   enum AddrType {
@@ -100,14 +100,13 @@ public:
   ~SdpConnection() {}
 
 
-  NetType GetNetType() const { return mNetType; }
+  NetType GetNetType() const { return kInternet; }
   AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
   int16_t GetTtl() const { return mTtl; }
   uint32_t GetCount() const { return mCount; }
 
 private:
-  NetType mNetType;
   AddrType mAddrType;
   const std::string mAddr;
   int16_t mTtl; // 0-255; -1 for unset

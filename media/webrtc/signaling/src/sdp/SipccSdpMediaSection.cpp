@@ -96,7 +96,8 @@ void
 SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
   sdp_nettype_e type = sdp_get_conn_nettype(sdp, level);
   if (type != SDP_NT_INTERNET) {
-    level = 0; // hop up to the session level and see if that works out better
+    // hop up to the session level and see if that works out better
+    level = SDP_SESSION_LEVEL;
     type = sdp_get_conn_nettype(sdp, level);
   }
 
