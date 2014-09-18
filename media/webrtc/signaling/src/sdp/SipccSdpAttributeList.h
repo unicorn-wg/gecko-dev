@@ -14,6 +14,7 @@ extern "C" {
 
 namespace mozilla {
 
+class SipccSdp;
 class SipccSdpMediaSection;
 
 class SipccSdpAttributeList : public SdpAttributeList
@@ -26,36 +27,39 @@ public:
   virtual UniquePtr<SdpAttribute>
     GetAttribute(sdp::AttributeType type) const MOZ_OVERRIDE;
 
-  virtual UniquePtr<SdpCandidateAttribute> GetCandidate() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpConnectionAttribute> GetConnection() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpExtmapAttribute> GetExtmap() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpFingerprintAttribute> GetFingerprint() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpFmtpAttribute> GetFmtp() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpGroupAttribute> GetGroup() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpIceOptionsAttribute> GetIceOptions() const MOZ_OVERRIDE;
-  virtual std::string GetIcePwd() const MOZ_OVERRIDE;
-  virtual std::string GetIceUfrag() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpIdentityAttribute> GetIdentity() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpImageattrAttribute> GetImageattr() const MOZ_OVERRIDE;
-  virtual std::string GetLabel() const MOZ_OVERRIDE;
+  virtual const SdpCandidateAttribute& GetCandidate() const MOZ_OVERRIDE;
+  virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
+  virtual const SdpExtmapAttribute& GetExtmap() const MOZ_OVERRIDE;
+  virtual const SdpFingerprintAttribute& GetFingerprint() const MOZ_OVERRIDE;
+  virtual const SdpFmtpAttribute& GetFmtp() const MOZ_OVERRIDE;
+  virtual const SdpGroupAttribute& GetGroup() const MOZ_OVERRIDE;
+  virtual const SdpIceOptionsAttribute& GetIceOptions() const MOZ_OVERRIDE;
+  virtual const std::string& GetIcePwd() const MOZ_OVERRIDE;
+  virtual const std::string& GetIceUfrag() const MOZ_OVERRIDE;
+  virtual const SdpIdentityAttribute& GetIdentity() const MOZ_OVERRIDE;
+  virtual const SdpImageattrAttribute& GetImageattr() const MOZ_OVERRIDE;
+  virtual const std::string& GetLabel() const MOZ_OVERRIDE;
   virtual unsigned int GetMaxprate() const MOZ_OVERRIDE;
   virtual unsigned int GetMaxptime() const MOZ_OVERRIDE;
-  virtual std::string GetMid() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpMsidAttribute> GetMsid() const MOZ_OVERRIDE;
+  virtual const std::string& GetMid() const MOZ_OVERRIDE;
+  virtual const SdpMsidAttribute& GetMsid() const MOZ_OVERRIDE;
   virtual unsigned int GetPtime() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpRtcpAttribute> GetRtcp() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpRtcpFbAttribute> GetRtcpFb() const MOZ_OVERRIDE;
-//  virtual UniquePtr<SdpRtcpRemoteCandidates> GetRemoteCandidates() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpRtpmapAttribute> GetRtpmap() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpSctpmapAttribute> GetSctpmap() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpSetupAttribute> GetSetup() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpSsrcAttribute> GetSsrc() const MOZ_OVERRIDE;
-  virtual UniquePtr<SdpSsrcGroupAttribute> GetSsrcGroup() const MOZ_OVERRIDE;
+  virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
+  virtual const SdpRtcpFbAttribute& GetRtcpFb() const MOZ_OVERRIDE;
+//  virtual const SdpRtcpRemoteCandidates& GetRemoteCandidates() const MOZ_OVERRIDE;
+  virtual const SdpRtpmapAttribute& GetRtpmap() const MOZ_OVERRIDE;
+  virtual const SdpSctpmapAttribute& GetSctpmap() const MOZ_OVERRIDE;
+  virtual const SdpSetupAttribute& GetSetup() const MOZ_OVERRIDE;
+  virtual const SdpSsrcAttribute& GetSsrc() const MOZ_OVERRIDE;
+  virtual const SdpSsrcGroupAttribute& GetSsrcGroup() const MOZ_OVERRIDE;
 
   virtual void SetAttribute(const SdpAttribute &) MOZ_OVERRIDE;
+  virtual ~SipccSdpAttributeList() {}
+
 private:
-  SipccSdpAttributeList(sdp_t* sdp, uint16_t level)
-  : mSdp(sdp), mLevel(level) {}
+  SipccSdpAttributeList() {}
+
+  void Load(sdp_t* sdp, uint16_t level);
 
   sdp_t* mSdp;
   uint16_t mLevel;

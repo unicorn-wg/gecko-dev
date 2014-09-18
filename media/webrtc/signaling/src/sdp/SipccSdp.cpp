@@ -1,5 +1,3 @@
-/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim: set ts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -18,40 +16,36 @@ SipccSdp::GetSessionName() const {
   return "TODO";
 }
 
-Maybe<std::string>
-SipccSdp::GetBandwidth(std::string type) const {
-  return Maybe<std::string>();
+const Maybe<std::string>&
+SipccSdp::GetBandwidth(const std::string& type) const {
+  if (mBandwidths.count(type) > 0) {
+    return Nothing();
+  }
+  return Some(mBandwidths[type]);
 }
 
 const SdpMediaSection &
-SipccSdp::GetMediaSection(uint16_t level) const
+SipccSdp::GetMediaSection(unsigned int level) const
 {
-  if (level >= mMediaSections.size()) {
-    MOZ_CRASH();
-  }
   return mMediaSections[level];
 }
-
 SdpMediaSection &
-SipccSdp::GetMediaSection(uint16_t level)
+SipccSdp::GetMediaSection(unsigned int level)
 {
-  if (level >= mMediaSections.size()) {
-    MOZ_CRASH();
-  }
   return mMediaSections[level];
 }
 
 void
-SipccSdp::Load() {
-  if (!mMediaSections.empty()) {
-    return;
-  }
+SipccSdp::Load(sdp_t* sdp) {
+  mAttributeList.Load(sdp, 0);
 
-  for (int i = 0; i < sdp_get_num_media_lines(mSdp); ++i) {
+  // TODO load other session-level stuff
+
+  for (int i = 0; i < sdp_get_num_media_lines(sdp); ++i) {
     // note that we pass a "level" here that is one higher
     // sipcc counts media sections from 1, using 0 as the "session"
-    SipccSdpMediaSection section(mSdp, i + 1);
-    section.Load();
+    SipccSdpMediaSection section();
+    section.Load(sdp, i + 1);
     mMediaSections.push_back(section);
   }
 }

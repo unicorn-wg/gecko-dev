@@ -27,10 +27,11 @@ class Sdp
 public:
   Sdp();
 
-  virtual SdpOrigin GetOrigin() const = 0;
-  virtual std::string GetSessionName() const = 0;
+  virtual const SdpOrigin& GetOrigin() const = 0;
+  virtual const std::string& GetSessionName() const = 0;
   // Note: connection information is always retrieved from media sections
-  virtual Maybe<std::string> GetBandwidth(const std::string& type) const = 0;
+  virtual const Maybe<std::string>&
+  GetBandwidth(const std::string& type) const = 0;
 
   virtual const SdpAttributeList &GetAttributeList() const = 0;
   virtual SdpAttributeList &GetAttributeList() = 0;
