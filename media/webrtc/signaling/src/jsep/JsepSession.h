@@ -11,6 +11,10 @@
 
 #include "signaling/src/sdp/Sdp.h"
 
+#include <mozilla/UniquePtr.h>
+
+#include "signaling/src/sdp/Sdp.h"
+
 namespace mozilla {
 namespace jsep {
 

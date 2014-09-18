@@ -23,7 +23,7 @@ class JsepTrack {
  public:
   virtual ~JsepTrack() = 0;
 
-  virtual mozilla::SdpMediaSection::MediaType media_type() const;
+  virtual mozilla::SdpMediaSection::MediaType media_type() const = 0;
   virtual mozilla::SdpMediaSection::Protocol protocol() const = 0;
   virtual Maybe<std::string> bandwidth(const std::string& type) const = 0;
 
