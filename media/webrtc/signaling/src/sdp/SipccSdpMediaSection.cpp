@@ -23,7 +23,7 @@ SipccSdpMediaSection::GetProtocol() const {
   return mProtocol;
 }
 
-SdpConnection
+const SdpConnection&
 SipccSdpMediaSection::GetConnection() const {
   return SdpConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0");
 }
@@ -33,7 +33,7 @@ SipccSdpMediaSection::GetBandwidth(const std::string& type) const {
   return Maybe<std::string>();
 }
 
-std::vector<std::string>
+const std::vector<std::string>&
 SipccSdpMediaSection::GetFormats() const {
   return mFormats;
 }

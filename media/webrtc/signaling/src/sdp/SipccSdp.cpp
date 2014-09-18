@@ -8,17 +8,8 @@
 
 namespace mozilla {
 
-SdpOrigin
-SipccSdp::GetOrigin() const {
-  return SdpOrigin();
-}
 
-std::string
-SipccSdp::GetSessionName() const {
-  return "TODO";
-}
-
-const Maybe<std::string>
+const Maybe<std::string>&
 SipccSdp::GetBandwidth(const std::string& type) const {
   return Maybe<std::string>();
 }
