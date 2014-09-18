@@ -12,6 +12,7 @@
 #include "FakeMediaStreamsImpl.h"
 
 #include "signaling/src/sdp/SipccSdpParser.h"
+#include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/jsep/JsepTrack.h"
 
