@@ -8,6 +8,7 @@
 #define _SIPCCSDPMEDIASECTION_H_
 
 #include "mozilla/Attributes.h"
+#include "mozilla/UniquePtr.h"
 #include "signaling/src/sdp/SdpMediaSection.h"
 #include "signaling/src/sdp/SdpEnum.h"
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
@@ -24,7 +25,7 @@ class SipccSdpMediaSection MOZ_FINAL : public SdpMediaSection
 {
   friend class SipccSdp;
 public:
-  virtual sdp::MediaType
+  virtual MediaType
   GetMediaType() const MOZ_OVERRIDE
   {
     return mMediaType;
@@ -41,29 +42,23 @@ public:
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
-    : mSdp(sdp),
-      mLevel(level),
-      mAttributes(sdp, level),
-      mConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0") {}
+  SipccSdpMediaSection() {}
   ~SipccSdpMediaSection() {}
 
-  void Load();
-
-  // this is just on loan, so we don't delete on destruct;
-  // this doesn't live beyond the SipccSdp instance that owns this
-  sdp_t* mSdp;
-  uint16_t mLevel;
+  void Load(sdp_t* sdp, uint16_t level);
+  void LoadConnection(sdp_t* sdp, uint16_t level);
 
   // the following values are cached on first get
-  sdp::MediaType mMediaType;
+  MediaType mMediaType;
   uint16_t mPort;
   uint16_t mPortCount;
-  sdp::Protocol mProtocol;
+  Protocol mProtocol;
   std::vector<std::string> mFormats;
   SipccSdpAttributeList mAttributes;
 
-  SdpConnection mConnection;
+  UniquePtr<SdpConnection> mConnection;
+
+  SipccSdpAttributeList mAttributeList;
 };
 
 }

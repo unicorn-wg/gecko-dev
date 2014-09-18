@@ -28,7 +28,7 @@ SipccSdpMediaSection::GetConnection() const {
   return SdpConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0");
 }
 
-Maybe<std::string>
+const Maybe<std::string>&
 SipccSdpMediaSection::GetBandwidth(const std::string& type) const {
   return Maybe<std::string>();
 }
@@ -49,39 +49,47 @@ SipccSdpMediaSection::GetAttributeList() {
 }
 
 void
-SipccSdpMediaSection::Load()
+SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level)
 {
-  switch (sdp_get_media_type(mSdp, mLevel)) {
+  switch (sdp_get_media_type(sdp, level)) {
   case SDP_MEDIA_AUDIO:
-    mMediaType = sdp::kAudio;
+    mMediaType = kAudio;
     break;
   case SDP_MEDIA_VIDEO:
-    mMediaType = sdp::kVideo;
+    mMediaType = kVideo;
     break;
   case SDP_MEDIA_APPLICATION:
-    mMediaType = sdp::kApplication;
+    mMediaType = kApplication;
     break;
   case SDP_MEDIA_TEXT:
-    mMediaType = sdp::kText;
+    mMediaType = kText;
     break;
   case SDP_MEDIA_DATA:
-    mMediaType = sdp::kMessage;
+    mMediaType = kMessage;
     break;
   default:
     // TODO: log this
-    mMediaType = sdp::kUnknownMediaType;
+    mMediaType = kUnknownMediaType;
     break;
   }
 
-  mPort = sdp_get_media_portnum(mSdp, mLevel);
-  mPortCount = sdp_get_media_portcount(mSdp, mLevel);
+  mPort = sdp_get_media_portnum(sdp, level);
+  mPortCount = sdp_get_media_portcount(sdp, level);
 
-  switch (sdp_get_media_transport(mSdp, mLevel)) {
+  switch (sdp_get_media_transport(sdp, level)) {
     // TODO add right protocols to sipcc
   default:
-    mProtocol = sdp::kUnknownProtocol;
+    mProtocol = kUnknownProtocol;
   }
+
+  mAttributeList.Load(sdp, level);
+
+  LoadConnection(sdp, level);
+}
+
+void
+SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
+  // TODO
 }
 
 }
-
