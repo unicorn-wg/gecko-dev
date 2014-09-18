@@ -13,10 +13,11 @@
 #include "mozilla/UniquePtr.h"
 
 #include "signaling/src/sdp/Sdp.h"
+#include "signaling/src/sdp/SdpErrorHolder.h"
 
 namespace mozilla {
 
-class SipccSdpParser
+class SipccSdpParser : public SdpErrorHolder
 {
 public:
   SipccSdpParser() {}
@@ -27,18 +28,6 @@ public:
    * This returns a nullptr-valued pointer if things go poorly.
    */
   UniquePtr<Sdp> Parse(const std::string& sdpText);
-
-  void AddParseError(uint32_t line, const std::string& message);
-
-  /**
-   * Returns a reference to the list of parse errors.
-   * This gets cleared out when you call Parse.
-   */
-  const std::vector<std::pair<uint32_t, std::string> >&
-  GetParseErrors() const { return mErrors; }
-
-private:
-  std::vector<std::pair<uint32_t, std::string> > mErrors;
 };
 
 } // namespace mozilla

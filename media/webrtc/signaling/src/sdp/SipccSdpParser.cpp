@@ -18,7 +18,7 @@ extern "C" {
 void
 sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message)
 {
-  SipccSdpParser* parser = static_cast<SipccSdpParser*>(context);
+  SdpErrorHolder* parser = static_cast<SdpErrorHolder*>(context);
   std::string err(message);
   parser->AddParseError(line, err);
 }
@@ -36,8 +36,14 @@ SipccSdpParser::Parse(const std::string& sdpText)
   sdp_nettype_supported(sipcc_config, SDP_NT_INTERNET, true);
   sdp_addrtype_supported(sipcc_config, SDP_AT_IP4, true);
   sdp_addrtype_supported(sipcc_config, SDP_AT_IP6, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_RTPAVP, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_RTPAVPF, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_RTPSAVP, true);
   sdp_transport_supported(sipcc_config, SDP_TRANSPORT_RTPSAVPF, true);
-  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_UDPTL, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_UDPTLSRTPSAVP, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_UDPTLSRTPSAVPF, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_TCPTLSRTPSAVP, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_TCPTLSRTPSAVPF, true);
   sdp_require_session_name(sipcc_config, false);
 
   sdp_config_set_error_handler(sipcc_config,
@@ -45,28 +51,27 @@ SipccSdpParser::Parse(const std::string& sdpText)
                                this);
 
   sdp_t *sdp = sdp_init_description(sipcc_config);
-  if (sdp) {
-    const char* rawString = sdpText.c_str();
-    sdp_result_e result = sdp_parse(sdp, rawString, sdpText.length());
-    if (result == SDP_SUCCESS) {
-      SipccSdp* sipccSdp = new SipccSdp();
-      sipccSdp->Load(sdp);
-      sdp_free_description(sdp);
-      return UniquePtr<Sdp, DefaultDelete<Sdp>>(sipccSdp);
-    }
-
-    sdp_free_description(sdp);
-  } else {
-    SDP_FREE(sipcc_config); // FIXME: need a proper release for this
+  if (!sdp) {
+    sdp_free_config(sipcc_config);
+    return nullptr;
   }
 
-  return nullptr;
-}
+  const char* rawString = sdpText.c_str();
+  sdp_result_e sdpres = sdp_parse(sdp, rawString, sdpText.length());
+  if (sdpres != SDP_SUCCESS) {
+    sdp_free_description(sdp);
+    return nullptr;
+  }
 
-void
-SipccSdpParser::AddParseError(uint32_t line, const std::string& message)
-{
-  mErrors.push_back(std::make_pair(line, message));
+  SipccSdp* sipccSdp = new SipccSdp();
+  bool success = sipccSdp->Load(sdp, *this);
+  sdp_free_description(sdp);
+  if (!success) {
+    delete sipccSdp;
+    return nullptr;
+  }
+
+  return UniquePtr<Sdp, DefaultDelete<Sdp>>(sipccSdp);
 }
 
 } // namespace mozilla

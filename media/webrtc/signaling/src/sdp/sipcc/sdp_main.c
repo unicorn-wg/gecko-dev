@@ -239,7 +239,12 @@ const sdp_namearray_t sdp_transport[SDP_MAX_TRANSPORT_TYPES] =
     {"RTP/SAVP",     sizeof("RTP/SAVP")},
     {"tcp",          sizeof("tcp")},
     {"RTP/SAVPF",    sizeof("RTP/SAVPF")},
-    {"DTLS/SCTP",    sizeof("DTLS/SCTP")}
+    {"DTLS/SCTP",    sizeof("DTLS/SCTP")},
+    {"RTP/AVPF",     sizeof("RTP/AVPF")},
+    {"UDP/TLS/RTP/SAVP", sizeof("UDP/TLS/RTP/SAVP")},
+    {"UDP/TLS/RTP/SAVPF", sizeof("UDP/TLS/RTP/SAVPF")},
+    {"TCP/TLS/RTP/SAVP", sizeof("TCP/TLS/RTP/SAVP")},
+    {"TCP/TLS/RTP/SAVPF", sizeof("TCP/TLS/RTP/SAVPF")},
 };
 
 /* Note: These *must* be in the same order as the enum type. */
@@ -962,11 +967,11 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, const char *buf, size_t len)
 {
     u8           i;
     u16          cur_level = SDP_SESSION_LEVEL;
-    char        *ptr;
-    char        *next_ptr = NULL;
+    const char  *ptr;
+    const char  *next_ptr = NULL;
     char        *line_end;
     sdp_token_e  last_token = SDP_TOKEN_V;
-    sdp_result_e result=SDP_SUCCESS;
+    sdp_result_e result = SDP_SUCCESS;
     tinybool     parse_done = FALSE;
     tinybool     end_found = FALSE;
     tinybool     first_line = TRUE;
@@ -1236,9 +1241,7 @@ sdp_result_e sdp_free_description (sdp_t *sdp_p)
     }
 
     /* Free the config structure */
-    if (sdp_p->conf_p) {
-        SDP_FREE(sdp_p->conf_p);
-    }
+    sdp_free_config(sdp_p->conf_p);
 
     /* Free any timespec structures - should be only one since
      * this is all we currently support.

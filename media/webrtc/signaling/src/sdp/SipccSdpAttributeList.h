@@ -16,6 +16,7 @@ namespace mozilla {
 
 class SipccSdp;
 class SipccSdpMediaSection;
+class SdpErrorHolder;
 
 class SipccSdpAttributeList : public SdpAttributeList
 {
@@ -67,8 +68,8 @@ private:
 
   SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr);
 
-  void Load(sdp_t* sdp, uint16_t level);
-  void LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+  bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
+  bool LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                         AttributeType targetType, const std::string& name);
 
   SipccSdpAttributeList* mSessionLevel;
