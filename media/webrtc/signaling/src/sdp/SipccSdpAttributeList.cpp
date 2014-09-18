@@ -6,56 +6,58 @@
 
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
+#include "mozilla/Assertions.h"
+
 namespace mozilla {
 
 unsigned int
-SipccSdpAttributeList::CountAttributes(sdp::AttributeType type) const {
+SipccSdpAttributeList::CountAttributes(AttributeType type) const {
   return 0;
 }
 
 bool
-SipccSdpAttributeList::HasAttribute(sdp::AttributeType type) const {
+SipccSdpAttributeList::HasAttribute(AttributeType type) const {
   return false;
 }
 
-UniquePtr<SdpAttribute>
-SipccSdpAttributeList::GetAttribute(sdp::AttributeType type) const {
-  return nullptr;
+const Maybe<SdpAttribute>
+SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
+  return Nothing();
 }
 
-UniquePtr<SdpCandidateAttribute>
+const SdpCandidateAttribute&
 SipccSdpAttributeList::GetCandidate() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
-UniquePtr<SdpConnectionAttribute>
+const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpExtmapAttribute>
+const SdpExtmapAttribute&
 SipccSdpAttributeList::GetExtmap() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
-UniquePtr<SdpFingerprintAttribute>
+const SdpFingerprintAttribute&
 SipccSdpAttributeList::GetFingerprint() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
-UniquePtr<SdpFmtpAttribute>
+const SdpFmtpAttribute&
 SipccSdpAttributeList::GetFmtp() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
-UniquePtr<SdpGroupAttribute>
+const SdpGroupAttribute&
 SipccSdpAttributeList::GetGroup() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
-UniquePtr<SdpIceOptionsAttribute>
+const SdpIceOptionsAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 std::string
@@ -68,14 +70,14 @@ SipccSdpAttributeList::GetIceUfrag() const {
   return "";
 }
 
-UniquePtr<SdpIdentityAttribute>
+const SdpIdentityAttribute&
 SipccSdpAttributeList::GetIdentity() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpImageattrAttribute>
+const SdpImageattrAttribute&
 SipccSdpAttributeList::GetImageattr() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 std::string
@@ -83,12 +85,12 @@ SipccSdpAttributeList::GetLabel() const {
   return "";
 }
 
-unsigned int
+uint32_t
 SipccSdpAttributeList::GetMaxprate() const {
   return 0;
 }
 
-unsigned int
+uint32_t
 SipccSdpAttributeList::GetMaxptime() const {
   return 0;
 }
@@ -98,54 +100,54 @@ SipccSdpAttributeList::GetMid() const {
   return "";
 }
 
-UniquePtr<SdpMsidAttribute>
+const SdpMsidAttribute&
 SipccSdpAttributeList::GetMsid() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-unsigned int
+uint32_t
 SipccSdpAttributeList::GetPtime() const {
   return 0;
 }
 
-UniquePtr<SdpRtcpAttribute>
+const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpRtcpFbAttribute>
+const SdpRtcpFbAttribute&
 SipccSdpAttributeList::GetRtcpFb() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-//UniquePtr<SdpRtcpRemoteCandidates>
-//SipccSdpAttributeList::GetRemoteCandidates() const {
-//  return nullptr;
-//}
+const SdpRemoteCandidatesAttribute&
+SipccSdpAttributeList::GetRemoteCandidates() const {
+  MOZ_CRASH();
+}
 
-UniquePtr<SdpRtpmapAttribute>
+const SdpRtpmapAttribute&
 SipccSdpAttributeList::GetRtpmap() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpSctpmapAttribute>
+const SdpSctpmapAttribute&
 SipccSdpAttributeList::GetSctpmap() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpSetupAttribute>
+const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpSsrcAttribute>
+const SdpSsrcAttribute&
 SipccSdpAttributeList::GetSsrc() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-UniquePtr<SdpSsrcGroupAttribute>
+const SdpSsrcGroupAttribute&
 SipccSdpAttributeList::GetSsrcGroup() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 void
@@ -154,4 +156,3 @@ SipccSdpAttributeList::SetAttribute(const SdpAttribute &) {
 
 
 } // namespace mozilla
-
