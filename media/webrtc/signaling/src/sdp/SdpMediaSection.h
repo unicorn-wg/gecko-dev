@@ -83,10 +83,6 @@ public:
 class SdpConnection
 {
 public:
-  enum NetType {
-    kInternet // the only valid net
-  };
-
   enum AddrType {
     kIPv4,
     kIPv6,
@@ -100,7 +96,6 @@ public:
   ~SdpConnection() {}
 
 
-  NetType GetNetType() const { return kInternet; }
   AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
   int16_t GetTtl() const { return mTtl; }

@@ -62,10 +62,6 @@ public:
     return mSessionVersion;
   }
 
-  const SdpConnection::NetType GetNetType() const {
-    return SdpConnection::kInternet;
-  }
-
   const SdpConnection::AddrType GetAddrType() const {
     return mAddrType;
   }
