@@ -41,7 +41,7 @@ public:
   virtual uint32_t GetMaxprate() const MOZ_OVERRIDE;
   virtual uint32_t GetMaxptime() const MOZ_OVERRIDE;
   virtual const std::string& GetMid() const MOZ_OVERRIDE;
-  virtual const SdpMsidAttribute& GetMsid() const MOZ_OVERRIDE;
+  virtual const SdpMsidAttributeList& GetMsid() const MOZ_OVERRIDE;
   virtual uint32_t GetPtime() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
   virtual const SdpRtcpFbAttributeList& GetRtcpFb() const MOZ_OVERRIDE;

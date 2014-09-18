@@ -285,10 +285,10 @@ public:
 //   msid-attr = "msid:" identifier [ SP appdata ]
 //   identifier = 1*64token-char ; see RFC 4566
 //   appdata = 1*64token-char  ; see RFC 4566
-class SdpMsidAttribute : public SdpAttribute
+class SdpMsidAttributeList : public SdpAttribute
 {
 public:
-  SdpMsidAttribute() :
+  SdpMsidAttributeList() :
     SdpAttribute(kMsidAttribute, "msid") {}
 };
 
