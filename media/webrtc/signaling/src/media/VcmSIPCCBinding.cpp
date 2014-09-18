@@ -588,7 +588,7 @@ short vcmGetIceParams(const char *peerconnection,
         ufrag = (char *) cpr_malloc(attrs[i].size() + 1);
         if (!ufrag)
           return VCM_ERROR;
-        sstrncpy(ufrag, attrs[i].c_str(), attrs[i].size() + 1);
+        sstrncpy(ufrag, attrs[i].c_str() + 8, attrs[i].size() - 8 + 1);
         ufrag[attrs[i].size()] = 0;
       }
     }
@@ -597,7 +597,7 @@ short vcmGetIceParams(const char *peerconnection,
       pwd = (char *) cpr_malloc(attrs[i].size() + 1);
       if (!pwd)
         return VCM_ERROR;
-      sstrncpy(pwd, attrs[i].c_str(), attrs[i].size() + 1);
+      sstrncpy(pwd, attrs[i].c_str() + 8, attrs[i].size() -8 + 1);
       pwd[attrs[i].size()] = 0;
     }
 
