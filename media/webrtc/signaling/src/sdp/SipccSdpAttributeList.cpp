@@ -22,7 +22,7 @@ SipccSdpAttributeList::HasAttribute(AttributeType type) const {
 
 const SdpAttribute&
 SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
-  return Nothing();
+  MOZ_CRASH();
 }
 
 const SdpCandidateAttribute&
@@ -32,7 +32,7 @@ SipccSdpAttributeList::GetCandidate() const {
 
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpExtmapAttribute&
@@ -62,12 +62,12 @@ SipccSdpAttributeList::GetIceOptions() const {
 
 const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
-  return "";
+  MOZ_CRASH();
 }
 
 const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
-  return "";
+  MOZ_CRASH();
 }
 
 const SdpIdentityAttribute&
@@ -82,7 +82,7 @@ SipccSdpAttributeList::GetImageattr() const {
 
 const std::string&
 SipccSdpAttributeList::GetLabel() const {
-  return "";
+  MOZ_CRASH();
 }
 
 uint32_t
@@ -97,7 +97,7 @@ SipccSdpAttributeList::GetMaxptime() const {
 
 const std::string&
 SipccSdpAttributeList::GetMid() const {
-  return "";
+  MOZ_CRASH();
 }
 
 const SdpMsidAttribute&
