@@ -8,7 +8,6 @@
 #define _SDPMEDIASECTION_H_
 
 #include "mozilla/Maybe.h"
-#include "signaling/src/sdp/SdpEnum.h"
 
 #include <string>
 #include <vector>
@@ -84,22 +83,32 @@ public:
 class SdpConnection
 {
 public:
-  SdpConnection(sdp::NetType netType, sdp::AddrType addrType,
-                std::string addr, int16_t ttl = -1,
-                uint32_t count = 1)
-      : mNetType(netType), mAddrType(addrType),
-      mAddr(addr), mTtl(ttl), mCount(count) {}
+  enum NetType {
+    kInternet
+  };
+
+  enum AddrType {
+    kIPv4,
+    kIPv6,
+    kAddrTypeUnknown
+  };
+
+  SdpConnection(AddrType addrType, std::string addr,
+                int16_t ttl = -1, uint32_t count = 1)
+      : mAddrType(addrType), mAddr(addr),
+        mTtl(ttl), mCount(count) {}
   ~SdpConnection() {}
 
-  sdp::NetType GetNetType() const { return mNetType; }
-  sdp::AddrType GetAddrType() const { return mAddrType; }
+
+  NetType GetNetType() const { return mNetType; }
+  AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
   int16_t GetTtl() const { return mTtl; }
   uint32_t GetCount() const { return mCount; }
 
 private:
-  sdp::NetType mNetType;
-  sdp::AddrType mAddrType;
+  NetType mNetType;
+  AddrType mAddrType;
   const std::string mAddr;
   int16_t mTtl; // 0-255; -1 for unset
   uint32_t mCount;

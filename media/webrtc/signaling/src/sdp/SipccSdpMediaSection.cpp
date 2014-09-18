@@ -94,9 +94,36 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level)
 
 void
 SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
-  //  sdp_nettype_e type = sdp_get_conn_nettype(sdp, level);
-  //sdp_addrtype_e addrtype = sdp_get_conn_addrtype(sdp, level);
-  //const char *address = sdp_get_conn_address(sdp, level);
+  sdp_nettype_e type = sdp_get_conn_nettype(sdp, level);
+  if (type != SDP_NT_INTERNET) {
+    level = 0; // hop up to the session level and see if that works out better
+    type = sdp_get_conn_nettype(sdp, level);
+  }
+
+  SdpConnection::AddrType addrType;
+  switch (sdp_get_conn_addrtype(sdp, level)) {
+    case SDP_AT_IP4:
+      addrType = SdpConnection::kIPv4;
+      break;
+    case SDP_AT_IP6:
+      addrType = SdpConnection::kIPv6;
+      break;
+    default:
+      // TODO: log this
+      addrType = SdpConnection::kAddrTypeUnknown;
+      break;
+  }
+
+  std::string address = sdp_get_conn_address(sdp, level);
+  int16_t ttl = -1;
+  uint32_t numAddr = 1;
+  if (sdp_is_mcast_addr(sdp, level)) {
+    // TODO: log a warning about this
+    ttl = static_cast<uint16_t>(sdp_get_mcast_ttl(sdp, level));
+    numAddr = static_cast<uint32_t>(sdp_get_mcast_num_of_addresses(sdp, level));
+  }
+
+  mConnection = MakeUnique<SdpConnection>(addrType, address, ttl, numAddr);
 }
 
 }
