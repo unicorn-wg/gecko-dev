@@ -18,22 +18,27 @@ SipccSdpMediaSection::GetPortCount() const {
   return mPortCount;
 }
 
-sdp::Protocol
+SdpMediaSection::Protocol
 SipccSdpMediaSection::GetProtocol() const {
   return mProtocol;
 }
 
-SdpConnection
+const SdpConnection&
 SipccSdpMediaSection::GetConnection() const {
-  return SdpConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0");
+  MOZ_CRASH();
 }
 
-const Maybe<std::string>&
+const std::string&
 SipccSdpMediaSection::GetBandwidth(const std::string& type) const {
-  return Maybe<std::string>();
+  static std::string emptyString("");
+  auto found = mBandwidths.find(type);
+  if (found == mBandwidths.end()) {
+    return emptyString;
+  }
+  return found->second;
 }
 
-std::vector<std::string>
+const std::vector<std::string>&
 SipccSdpMediaSection::GetFormats() const {
   return mFormats;
 }
