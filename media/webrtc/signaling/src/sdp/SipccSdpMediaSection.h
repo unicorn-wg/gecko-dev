@@ -46,7 +46,8 @@ public:
 private:
   SipccSdpMediaSection() {}
 
-  void Load(sdp_t* sdp, uint16_t level);
+  void Load(sdp_t* sdp, uint16_t level,
+              SipccSdpAttributeList* sessionLevelAttrs);
   void LoadConnection(sdp_t* sdp, uint16_t level);
 
   // the following values are cached on first get

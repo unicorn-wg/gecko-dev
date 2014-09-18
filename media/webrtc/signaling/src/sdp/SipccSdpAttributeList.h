@@ -22,9 +22,9 @@ class SipccSdpAttributeList : public SdpAttributeList
   friend class SipccSdpMediaSection;
   friend class SipccSdp;
 public:
-  virtual size_t CountAttributes(AttributeType type) const MOZ_OVERRIDE;
   virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
-  virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const MOZ_OVERRIDE;
+  virtual const SdpAttribute* GetAttribute(AttributeType type) const MOZ_OVERRIDE;
+  virtual void SetAttribute(SdpAttribute* attr) MOZ_OVERRIDE;
 
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttribute& GetFingerprint() const MOZ_OVERRIDE;
@@ -58,21 +58,20 @@ public:
   virtual const std::string& GetMid() const MOZ_OVERRIDE;
   virtual unsigned int GetPtime() const MOZ_OVERRIDE;
 
-  virtual void SetAttribute(const SdpAttribute &) MOZ_OVERRIDE;
-  virtual ~SipccSdpAttributeList() {}
+  virtual ~SipccSdpAttributeList();
 
 private:
-  SipccSdpAttributeList() {}
+  static std::string sEmptyString;
+
+  SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr) {}
 
   void Load(sdp_t* sdp, uint16_t level);
-  static void LoadString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
-                         std::string& target);
+  void LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+                        AttributeType targetType, const std::string& name);
 
-  std::string mIceUfrag;
-  std::string mIcePwd;
-  std::string mIdentity;
-  std::string mMid;
-  std::string mLabel;
+  SipccSdpAttributeList* mSessionLevel;
+
+  std::map<AttributeType, SdpAttribute*> mAttributes;
 };
 
 }

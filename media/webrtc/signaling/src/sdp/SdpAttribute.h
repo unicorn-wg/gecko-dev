@@ -62,12 +62,12 @@ public:
       : mType(type), mTypeName(typeName) {}
   virtual ~SdpAttribute() {}
 
-  virtual AttributeType GetType()
+  AttributeType GetType() const
   {
     return mType;
   }
 
-  virtual const std::string& GetTypeName()
+  const std::string& GetTypeName() const
   {
     return mTypeName;
   }
@@ -509,11 +509,11 @@ public:
 class SdpOtherAttribute : public SdpAttribute
 {
 public:
-  SdpOtherAttribute(std::string typeName, std::string value = "") :
-    SdpAttribute(kOtherAttribute, typeName),
+  SdpOtherAttribute(AttributeType type, std::string typeName, std::string value = "") :
+    SdpAttribute(type, typeName),
     mValue(value) {}
 
-  const std::string& getValue()
+  const std::string& GetValue() const
   {
     return mValue;
   }
