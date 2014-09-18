@@ -35,20 +35,16 @@ public:
 
   virtual unsigned int GetPort() const MOZ_OVERRIDE;
   virtual unsigned int GetPortCount() const MOZ_OVERRIDE;
-  virtual sdp::Protocol GetProtocol() const MOZ_OVERRIDE;
-  virtual SdpConnection GetConnection() const MOZ_OVERRIDE;
-  virtual Maybe<std::string> GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
-  virtual std::vector<std::string> GetFormats() const MOZ_OVERRIDE;
+  virtual Protocol GetProtocol() const MOZ_OVERRIDE;
+  virtual const SdpConnection& GetConnection() const MOZ_OVERRIDE;
+  virtual const std::string& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
+  virtual const std::vector<std::string>& GetFormats() const MOZ_OVERRIDE;
 
   virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE;
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
-    : mSdp(sdp),
-      mLevel(level),
-      mAttributes(sdp, level),
-      mConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0") {}
+  SipccSdpMediaSection() {}
 
   void Load(sdp_t* sdp, uint16_t level);
   void LoadConnection(sdp_t* sdp, uint16_t level);
@@ -62,6 +58,7 @@ private:
   SipccSdpAttributeList mAttributes;
 
   UniquePtr<SdpConnection> mConnection;
+  std::map<std::string, std::string> mBandwidths;
 
   SipccSdpAttributeList mAttributeList;
 };

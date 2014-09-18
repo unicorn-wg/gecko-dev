@@ -38,7 +38,6 @@ extern "C" {
 
 using mozilla::SipccSdpParser;
 using mozilla::Sdp;
-using mozilla::sdp::AttributeType;
 
 namespace test {
 

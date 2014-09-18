@@ -7,6 +7,7 @@
 #ifndef _sdp_h_
 #define _sdp_h_
 
+#include <map>
 #include <vector>
 #include "mozilla/Attributes.h"
 #include "mozilla/UniquePtr.h"
@@ -26,19 +27,15 @@ class SipccSdp MOZ_FINAL : public Sdp
 {
   friend class SipccSdpParser;
 public:
-  ~SipccSdp() {
-    sdp_free_description(mSdp);
-  }
+  ~SipccSdp();
 
-  virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE {
-    return *mOrigin;
-  }
+  virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE;
+
   virtual const std::string& GetSessionName() const MOZ_OVERRIDE {
     return mSessionName;
   }
   // Note: connection information is always retrieved from media sections
-  virtual Maybe<std::string> GetBandwidth(
-      const std::string& type) const MOZ_OVERRIDE;
+  virtual const std::string& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
     return static_cast<uint16_t>(mMediaSections.size());
@@ -58,13 +55,11 @@ public:
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
 private:
-  explicit SipccSdp(sdp_t* sdp) :
-      mSdp(sdp),
-      mAttributeList(sdp, 0) {}
+  explicit SipccSdp() {}
 
   void Load(sdp_t* sdp);
 
-  std::vector<SipccSdpMediaSection> mMediaSections;
+  std::vector<SipccSdpMediaSection*> mMediaSections;
   SipccSdpAttributeList mAttributeList;
   std::map<std::string, std::string> mBandwidths;
   std::string mSessionName;

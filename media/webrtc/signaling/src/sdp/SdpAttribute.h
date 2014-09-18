@@ -56,8 +56,8 @@ public:
     kOtherAttribute
   };
 
-  SdpAttribute(AttributeType type, std::string typeName) :
-    mType(type), mTypeName(typeName) {}
+  SdpAttribute(AttributeType type, const std::string& typeName)
+      : mType(type), mTypeName(typeName) {}
   virtual ~SdpAttribute() {}
 
   virtual AttributeType GetType()
@@ -87,10 +87,10 @@ private:
 //                          [SP rel-port]
 //                          *(SP extension-att-name SP
 //                               extension-att-value)
-class SdpCandidateAttribute : public SdpAttribute
+class SdpCandidateAttributeList : public SdpAttribute
 {
 public:
-  SdpCandidateAttribute() :
+  SdpCandidateAttributeList() :
     SdpAttribute(kCandidateAttribute, "candidate") {}
 };
 
@@ -130,10 +130,10 @@ public:
 //        SP = <Defined in RFC 5234>
 //
 //        DIGIT = <Defined in RFC 5234>
-class SdpExtmapAttribute : public SdpAttribute
+class SdpExtmapAttributeList : public SdpAttribute
 {
 public:
-  SdpExtmapAttribute() :
+  SdpExtmapAttributeList() :
     SdpAttribute(kExtmapAttribute, "extmap") {}
 };
 
@@ -161,10 +161,10 @@ public:
 
 // RFC4566, RFC5576
 //       a=fmtp:<format> <format specific parameters>
-class SdpFmtpAttribute : public SdpAttribute
+class SdpFmtpAttributeList : public SdpAttribute
 {
 public:
-  SdpFmtpAttribute() :
+  SdpFmtpAttributeList() :
     SdpAttribute(kFmtpAttribute, "fmtp") {}
 };
 
@@ -274,10 +274,10 @@ public:
 //     qvalue  = ( "0" "." 1*2DIGIT )
 //             / ( "1" "." 1*2("0") )
 //                ; Values between 0.00 and 1.00
-class SdpImageattrAttribute : public SdpAttribute
+class SdpImageattrAttributeList : public SdpAttribute
 {
 public:
-  SdpImageattrAttribute() :
+  SdpImageattrAttributeList() :
     SdpAttribute(kImageattrAttribute, "imageattr") {}
 };
 
@@ -341,19 +341,19 @@ public:
 //                       / SP "app" [SP byte-string]
 //                       / SP token [SP byte-string]
 //                       / ; empty
-class SdpRtcpFbAttribute : public SdpAttribute
+class SdpRtcpFbAttributeList : public SdpAttribute
 {
 public:
-  SdpRtcpFbAttribute() :
+  SdpRtcpFbAttributeList() :
     SdpAttribute(kRtcpFbAttribute, "rtcp-fb") {}
 };
 
 // RFC4566
 // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]
-class SdpRtpmapAttribute : public SdpAttribute
+class SdpRtpmapAttributeList : public SdpAttribute
 {
 public:
-  SdpRtpmapAttribute() :
+  SdpRtpmapAttributeList() :
     SdpAttribute(kRtpmapAttribute, "rtpmap") {}
 };
 
@@ -366,10 +366,10 @@ public:
 //         streams             =  "streams" EQUALS 1*DIGIT"
 // (draft-07 appears to have done something really funky here, but I
 // don't beleive it).
-class SdpSctpmapAttribute : public SdpAttribute
+class SdpSctpmapAttributeList : public SdpAttribute
 {
 public:
-  SdpSctpmapAttribute() :
+  SdpSctpmapAttributeList() :
     SdpAttribute(kSctpmapAttribute, "sctpmap") {}
 };
 

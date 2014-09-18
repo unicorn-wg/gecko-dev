@@ -4,35 +4,46 @@
 
 #include "signaling/src/sdp/SipccSdp.h"
 
+#include "mozilla/Assertions.h"
+
 namespace mozilla {
 
-SdpOrigin
-SipccSdp::GetOrigin() const {
-  return SdpOrigin();
-}
-
-std::string
-SipccSdp::GetSessionName() const {
-  return "TODO";
-}
-
-const Maybe<std::string>&
-SipccSdp::GetBandwidth(const std::string& type) const {
-  if (mBandwidths.count(type) > 0) {
-    return Nothing();
+SipccSdp::~SipccSdp() {
+  for (auto i = mMediaSections.begin(); i != mMediaSections.end(); ++i) {
+    delete *i;
   }
-  return Some(mBandwidths[type]);
 }
 
-const SdpMediaSection &
-SipccSdp::GetMediaSection(unsigned int level) const
-{
-  return mMediaSections[level];
+const SdpOrigin& SipccSdp::GetOrigin() const {
+  return *mOrigin;
 }
-SdpMediaSection &
-SipccSdp::GetMediaSection(unsigned int level)
+
+const std::string&
+SipccSdp::GetBandwidth(const std::string& type) const {
+  static std::string emptyString("");
+  auto found = mBandwidths.find(type);
+  if (found == mBandwidths.end()) {
+    return emptyString;
+  }
+  return found->second;
+}
+
+const SdpMediaSection&
+SipccSdp::GetMediaSection(uint16_t level) const
 {
-  return mMediaSections[level];
+  if (level > mMediaSections.size()) {
+    MOZ_CRASH();
+  }
+  return *mMediaSections[level];
+}
+
+SdpMediaSection&
+SipccSdp::GetMediaSection(uint16_t level)
+{
+  if (level > mMediaSections.size()) {
+    MOZ_CRASH();
+  }
+  return *mMediaSections[level];
 }
 
 void
@@ -44,8 +55,8 @@ SipccSdp::Load(sdp_t* sdp) {
   for (int i = 0; i < sdp_get_num_media_lines(sdp); ++i) {
     // note that we pass a "level" here that is one higher
     // sipcc counts media sections from 1, using 0 as the "session"
-    SipccSdpMediaSection section();
-    section.Load(sdp, i + 1);
+    SipccSdpMediaSection* section = new SipccSdpMediaSection();
+    section->Load(sdp, i + 1);
     mMediaSections.push_back(section);
   }
 }
