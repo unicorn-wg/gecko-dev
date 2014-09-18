@@ -7,16 +7,15 @@
 #ifndef _SDP_H_
 #define _SDP_H_
 
-#include "signaling/src/sdp/SdpAttributeList.h"
-#include "signaling/src/sdp/SdpEnum.h"
+#include <vector>
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Maybe.h"
-#include <vector>
+#include "signaling/src/sdp/SdpMediaSection.h"
+#include "signaling/src/sdp/SdpAttributeList.h"
 
 namespace mozilla {
 
 class SdpOrigin;
-class SdpConnection;
 class SdpBandwidth;
 class SdpEncryptionKey;
 
@@ -48,64 +47,38 @@ public:
   SdpOrigin() :
     mSessionId(0),
     mSessionVersion(0),
-    mNetType(sdp::kInternet),
-    mAddrType(sdp::kIPv4)
+    mAddrType(SdpConnection::kIPv4)
   {}
 
   const std::string& GetUsername() const {
     return mUsername;
   }
 
-  void SetUsername(const std::string& username) {
-    mUsername = username;
-  }
-
   uint64_t GetSessionId() const {
     return mSessionId;
-  }
-
-  void SetSessionId(uint64_t sessionId) {
-    mSessionId = sessionId;
   }
 
   uint64_t GetSessionVersion() const {
     return mSessionVersion;
   }
 
-  void SetSessionVersion(uint64_t sessionVersion) {
-    mSessionVersion = sessionVersion;
+  const SdpConnection::NetType GetNetType() const {
+    return SdpConnection::kInternet;
   }
 
-  const sdp::NetType& GetNetType() const {
-    return mNetType;
-  }
-
-  void SetNetType(const sdp::NetType& netType) {
-    mNetType = netType;
-  }
-
-  const sdp::AddrType& GetAddrType() const {
+  const SdpConnection::AddrType GetAddrType() const {
     return mAddrType;
-  }
-
-  void SetAddrType(const sdp::AddrType& addrType) {
-    mAddrType = addrType;
   }
 
   const std::string& GetAddress() const {
     return mAddress;
   }
 
-  void SetAddress(const std::string& address) {
-    mAddress = address;
-  }
-
 private:
   std::string mUsername;
   uint64_t mSessionId;
   uint64_t mSessionVersion;
-  sdp::NetType mNetType;
-  sdp::AddrType mAddrType;
+  SdpConnection::AddrType mAddrType;
   std::string mAddress;
 };
 
