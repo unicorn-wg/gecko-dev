@@ -958,7 +958,7 @@ sdp_result_e sdp_validate_sdp (sdp_t *sdp_p)
  *              if not, what type of error was encountered.  The
  *              information from the parse is stored in the sdp_p structure.
  */
-sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, size_t len)
+sdp_result_e sdp_parse (sdp_t *sdp_p, const char *buf, size_t len)
 {
     u8           i;
     u16          cur_level = SDP_SESSION_LEVEL;
@@ -971,6 +971,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, char **bufp, size_t len)
     tinybool     end_found = FALSE;
     tinybool     first_line = TRUE;
     tinybool     unrec_token = FALSE;
+    const char   **bufp = &buf;
 
     if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
         return (SDP_INVALID_SDP_PTR);
