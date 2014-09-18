@@ -21,6 +21,13 @@ SipccSdpParser::Parse(const std::string& sdpText)
     return nullptr;
   }
 
+  sdp_nettype_supported(sipcc_config, SDP_NT_INTERNET, true);
+  sdp_addrtype_supported(sipcc_config, SDP_AT_IP4, true);
+  sdp_addrtype_supported(sipcc_config, SDP_AT_IP6, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_RTPSAVPF, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_UDPTL, true);
+  sdp_require_session_name(sipcc_config, false);
+
   // XXX - capture errors properly
   // sdp_config_set_error_handler(sipcc_sdp_parser_error_handler, this);
 
