@@ -44,7 +44,8 @@ private:
   SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
     : mSdp(sdp),
       mLevel(level),
-      mAttributes(sdp, level) {}
+      mAttributes(sdp, level),
+      mConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0") {}
   ~SipccSdpMediaSection() {}
 
   void Load();
