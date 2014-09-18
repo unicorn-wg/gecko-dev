@@ -36,9 +36,9 @@ public:
   virtual unsigned int GetPort() const MOZ_OVERRIDE;
   virtual unsigned int GetPortCount() const MOZ_OVERRIDE;
   virtual Protocol GetProtocol() const MOZ_OVERRIDE;
-  virtual SdpConnection GetConnection() const MOZ_OVERRIDE;
-  virtual Maybe<std::string> GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
-  virtual std::vector<std::string> GetFormats() const MOZ_OVERRIDE;
+  virtual const SdpConnection& GetConnection() const MOZ_OVERRIDE;
+  virtual const Maybe<std::string>& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
+  virtual const std::vector<std::string>& GetFormats() const MOZ_OVERRIDE;
 
   virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE;
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;

@@ -7,6 +7,7 @@
 #ifndef _sdp_h_
 #define _sdp_h_
 
+#include <map>
 #include <vector>
 #include "mozilla/Attributes.h"
 #include "mozilla/UniquePtr.h"
@@ -31,11 +32,12 @@ public:
   virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE {
     return *mOrigin;
   }
+
   virtual const std::string& GetSessionName() const MOZ_OVERRIDE {
     return mSessionName;
   }
   // Note: connection information is always retrieved from media sections
-  virtual Maybe<std::string> GetBandwidth(
+  virtual const Maybe<std::string>& GetBandwidth(
       const std::string& type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
