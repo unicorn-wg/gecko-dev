@@ -27,57 +27,57 @@ SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
 
 const SdpCandidateAttribute&
 SipccSdpAttributeList::GetCandidate() const {
-  MOZ_CRASH()
+  MOZ_CRASH();
 }
 
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpExtmapAttribute&
 SipccSdpAttributeList::GetExtmap() const {
-  MOZ_CRASH()
+  MOZ_CRASH();
 }
 
 const SdpFingerprintAttribute&
 SipccSdpAttributeList::GetFingerprint() const {
-  MOZ_CRASH()
+  MOZ_CRASH();
 }
 
 const SdpFmtpAttribute&
 SipccSdpAttributeList::GetFmtp() const {
-  MOZ_CRASH()
+  MOZ_CRASH();
 }
 
 const SdpGroupAttribute&
 SipccSdpAttributeList::GetGroup() const {
-  MOZ_CRASH()
+  MOZ_CRASH();
 }
 
 const SdpIceOptionsAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
-  MOZ_CRASH()
+  MOZ_CRASH();
 }
 
-std::string
+const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
   return "";
 }
 
-std::string
+const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
   return "";
 }
 
 const SdpIdentityAttribute&
 SipccSdpAttributeList::GetIdentity() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpImageattrAttribute&
 SipccSdpAttributeList::GetImageattr() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 std::string
@@ -95,14 +95,14 @@ SipccSdpAttributeList::GetMaxptime() const {
   return 0;
 }
 
-std::string
+const std::string&
 SipccSdpAttributeList::GetMid() const {
   return "";
 }
 
 const SdpMsidAttribute&
 SipccSdpAttributeList::GetMsid() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 uint32_t
@@ -112,42 +112,42 @@ SipccSdpAttributeList::GetPtime() const {
 
 const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpRtcpFbAttribute&
 SipccSdpAttributeList::GetRtcpFb() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpRemoteCandidatesAttribute&
 SipccSdpAttributeList::GetRemoteCandidates() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpRtpmapAttribute&
 SipccSdpAttributeList::GetRtpmap() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpSctpmapAttribute&
 SipccSdpAttributeList::GetSctpmap() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpSsrcAttribute&
 SipccSdpAttributeList::GetSsrc() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 const SdpSsrcGroupAttribute&
 SipccSdpAttributeList::GetSsrcGroup() const {
-  MOZ_CRASH();
+  MOZ_CRASH();;
 }
 
 void
