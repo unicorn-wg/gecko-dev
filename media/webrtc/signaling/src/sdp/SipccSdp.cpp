@@ -4,6 +4,8 @@
 
 #include "signaling/src/sdp/SipccSdp.h"
 
+#include "mozilla/Assertions.h"
+
 namespace mozilla {
 
 SdpOrigin
@@ -21,14 +23,21 @@ SipccSdp::GetBandwidth(const std::string& type) const {
   return Maybe<std::string>();
 }
 
-const SdpMediaSection &
-SipccSdp::GetMediaSection(unsigned int level) const
+const SdpMediaSection&
+SipccSdp::GetMediaSection(uint16_t level) const
 {
+  if (level > mMediaSections.size()) {
+    MOZ_CRASH();
+  }
   return mMediaSections[level];
 }
-SdpMediaSection &
-SipccSdp::GetMediaSection(unsigned int level)
+
+SdpMediaSection&
+SipccSdp::GetMediaSection(uint16_t level)
 {
+  if (level > mMediaSections.size()) {
+    MOZ_CRASH();
+  }
   return mMediaSections[level];
 }
 

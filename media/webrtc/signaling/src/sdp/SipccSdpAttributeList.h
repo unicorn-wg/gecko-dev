@@ -24,7 +24,7 @@ class SipccSdpAttributeList : public SdpAttributeList
 public:
   virtual size_t CountAttributes(AttributeType type) const MOZ_OVERRIDE;
   virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
-  virtual SdpAttribute GetAttribute(AttributeType type, size_t index = 0) const MOZ_OVERRIDE;
+  virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const MOZ_OVERRIDE;
 
   virtual const SdpCandidateAttribute& GetCandidate() const MOZ_OVERRIDE;
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
@@ -45,7 +45,7 @@ public:
   virtual uint32_t GetPtime() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
   virtual const SdpRtcpFbAttribute& GetRtcpFb() const MOZ_OVERRIDE;
-//  virtual const SdpRtcpRemoteCandidates& GetRemoteCandidates() const MOZ_OVERRIDE;
+  virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const MOZ_OVERRIDE;
   virtual const SdpRtpmapAttribute& GetRtpmap() const MOZ_OVERRIDE;
   virtual const SdpSctpmapAttribute& GetSctpmap() const MOZ_OVERRIDE;
   virtual const SdpSetupAttribute& GetSetup() const MOZ_OVERRIDE;
