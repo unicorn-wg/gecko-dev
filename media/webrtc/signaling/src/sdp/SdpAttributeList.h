@@ -18,11 +18,11 @@ namespace mozilla {
 class SdpAttributeList
 {
 public:
-  virtual unsigned int CountAttributes(sdp::AttributeType type) const = 0;
-  virtual bool HasAttribute(sdp::AttributeType type) const = 0;
+  typedef SdpAttribute::AttributeType AttributeType;
 
-  virtual UniquePtr<SdpAttribute>
-    GetAttribute(sdp::AttributeType type) const = 0;
+  virtual unsigned int CountAttributes(AttributeType type) const = 0;
+  virtual bool HasAttribute(AttributeType type) const = 0;
+  virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const = 0;
 
   virtual const SdpCandidateAttribute& GetCandidate() const = 0;
   virtual const SdpConnectionAttribute& GetConnection() const = 0;

@@ -9,17 +9,17 @@
 namespace mozilla {
 
 unsigned int
-SipccSdpAttributeList::CountAttributes(sdp::AttributeType type) const {
+SipccSdpAttributeList::CountAttributes(AttributeType type) const {
   return 0;
 }
 
 bool
-SipccSdpAttributeList::HasAttribute(sdp::AttributeType type) const {
+SipccSdpAttributeList::HasAttribute(AttributeType type) const {
   return false;
 }
 
 const SdpAttribute&
-SipccSdpAttributeList::GetAttribute(sdp::AttributeType type) const {
+SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
   return nullptr;
 }
 
