@@ -63,7 +63,7 @@ public:
 
 private:
   static std::string sEmptyString;
-  const size_t kMaxAttributeIndex = SdpAttribute::kOtherAttribute;
+  static const size_t kMaxAttributeIndex = SdpAttribute::kOtherAttribute;
 
   SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr);
 
@@ -73,7 +73,7 @@ private:
 
   SipccSdpAttributeList* mSessionLevel;
 
-  SdpAttribute** mAttributes;
+  SdpAttribute* mAttributes[kMaxAttributeIndex];
   std::vector<SdpAttribute*> mOtherAttributes;
 };
 
