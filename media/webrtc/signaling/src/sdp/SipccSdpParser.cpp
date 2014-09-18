@@ -36,9 +36,10 @@ SipccSdpParser::Parse(const std::string& sdpText)
     }
 
     sdp_free_description(sdp);
+  } else {
+    SDP_FREE(sipcc_config); // FIXME: need a proper release for this
   }
 
-  SDP_FREE(sipcc_config); // FIXME: need a proper release for this
   return nullptr;
 }
 
