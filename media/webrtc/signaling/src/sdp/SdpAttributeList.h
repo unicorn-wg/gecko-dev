@@ -43,7 +43,7 @@ public:
   virtual unsigned int GetPtime() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRtcpFbAttribute& GetRtcpFb() const = 0;
-  virtual const SdpRtcpRemoteCandidates& GetRemoteCandidates() const = 0;
+  virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;
   virtual const SdpRtpmapAttribute& GetRtpmap() const = 0;
   virtual const SdpSctpmapAttribute& GetSctpmap() const = 0;
   virtual const SdpSetupAttribute& GetSetup() const = 0;
