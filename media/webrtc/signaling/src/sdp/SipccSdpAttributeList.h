@@ -20,6 +20,7 @@ class SipccSdpMediaSection;
 class SipccSdpAttributeList : public SdpAttributeList
 {
   friend class SipccSdpMediaSection;
+  friend class SipccSdp;
 public:
   virtual unsigned int CountAttributes(sdp::AttributeType type) const MOZ_OVERRIDE;
   virtual bool HasAttribute(sdp::AttributeType type) const MOZ_OVERRIDE;

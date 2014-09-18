@@ -25,6 +25,8 @@ class SipccSdpMediaSection MOZ_FINAL : public SdpMediaSection
 {
   friend class SipccSdp;
 public:
+  ~SipccSdpMediaSection() {}
+
   virtual MediaType
   GetMediaType() const MOZ_OVERRIDE
   {
@@ -42,8 +44,11 @@ public:
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection() {}
-  ~SipccSdpMediaSection() {}
+  SipccSdpMediaSection(sdp_t* sdp, uint16_t level)
+    : mSdp(sdp),
+      mLevel(level),
+      mAttributes(sdp, level),
+      mConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0") {}
 
   void Load(sdp_t* sdp, uint16_t level);
   void LoadConnection(sdp_t* sdp, uint16_t level);

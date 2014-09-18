@@ -34,11 +34,11 @@ public:
    * Returns a reference to the list of parse errors.
    * This gets cleared out when you call Parse.
    */
-  const std::vector<std::pair<uint32_t, const std::string> >&
+  const std::vector<std::pair<uint32_t, std::string> >&
   GetParseErrors() const { return mErrors; }
 
 private:
-  std::vector<std::pair<uint32_t, const std::string> > mErrors;
+  std::vector<std::pair<uint32_t, std::string> > mErrors;
 };
 
 } // namespace mozilla
