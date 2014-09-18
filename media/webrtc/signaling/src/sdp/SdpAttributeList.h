@@ -1,3 +1,5 @@
+/* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* vim: set ts=2 et sw=2 tw=80: */
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -16,8 +18,8 @@ namespace mozilla {
 class SdpAttributeList
 {
 public:
-  virtual unsigned int CountAttributes(SdpAttributeType type) const = 0;
-  virtual bool HasAttribute(SdpAttributeType type) const = 0;
+  virtual unsigned int CountAttributes(sdp::AttributeType type) const = 0;
+  virtual bool HasAttribute(sdp::AttributeType type) const = 0;
 
   virtual UniquePtr<SdpAttribute>
     GetAttribute(sdp::AttributeType type) const = 0;
@@ -41,14 +43,14 @@ public:
   virtual unsigned int GetPtime() const = 0;
   virtual UniquePtr<SdpRtcpAttribute> GetRtcp() const = 0;
   virtual UniquePtr<SdpRtcpFbAttribute> GetRtcpFb() const = 0;
-  virtual UniquePtr<SdpRtcpRemoteCandidates> GetRemoteCandidates() const = 0;
+  // virtual UniquePtr<SdpRtcpRemoteCandidates> GetRemoteCandidates() const = 0;
   virtual UniquePtr<SdpRtpmapAttribute> GetRtpmap() const = 0;
   virtual UniquePtr<SdpSctpmapAttribute> GetSctpmap() const = 0;
   virtual UniquePtr<SdpSetupAttribute> GetSetup() const = 0;
   virtual UniquePtr<SdpSsrcAttribute> GetSsrc() const = 0;
   virtual UniquePtr<SdpSsrcGroupAttribute> GetSsrcGroup() const = 0;
 
-  virtual SetAttribute(const SdpAttribute &) = 0;
+  virtual void SetAttribute(const SdpAttribute &) = 0;
 };
 
 }
