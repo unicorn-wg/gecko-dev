@@ -36,11 +36,11 @@ public:
   virtual const SdpIdentityAttribute& GetIdentity() const = 0;
   virtual const SdpImageattrAttribute& GetImageattr() const = 0;
   virtual std::string GetLabel() const = 0;
-  virtual unsigned int GetMaxprate() const = 0;
-  virtual unsigned int GetMaxptime() const = 0;
+  virtual uint32_t GetMaxprate() const = 0;
+  virtual uint32_t GetMaxptime() const = 0;
   virtual std::string GetMid() const = 0;
   virtual const SdpMsidAttribute& GetMsid() const = 0;
-  virtual unsigned int GetPtime() const = 0;
+  virtual uint32_t GetPtime() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRtcpFbAttribute& GetRtcpFb() const = 0;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;

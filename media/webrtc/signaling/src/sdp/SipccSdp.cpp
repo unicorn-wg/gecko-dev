@@ -16,7 +16,7 @@ SipccSdp::GetSessionName() const {
   return "TODO";
 }
 
-const Maybe<std::string>&
+const Maybe<std::string>
 SipccSdp::GetBandwidth(const std::string& type) const {
   if (mBandwidths.count(type) > 0) {
     return Nothing();

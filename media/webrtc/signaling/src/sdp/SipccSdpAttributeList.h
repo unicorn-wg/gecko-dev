@@ -40,11 +40,11 @@ public:
   virtual const SdpIdentityAttribute& GetIdentity() const MOZ_OVERRIDE;
   virtual const SdpImageattrAttribute& GetImageattr() const MOZ_OVERRIDE;
   virtual const std::string& GetLabel() const MOZ_OVERRIDE;
-  virtual unsigned int GetMaxprate() const MOZ_OVERRIDE;
-  virtual unsigned int GetMaxptime() const MOZ_OVERRIDE;
+  virtual uint32_t GetMaxprate() const MOZ_OVERRIDE;
+  virtual uint32_t GetMaxptime() const MOZ_OVERRIDE;
   virtual const std::string& GetMid() const MOZ_OVERRIDE;
   virtual const SdpMsidAttribute& GetMsid() const MOZ_OVERRIDE;
-  virtual unsigned int GetPtime() const MOZ_OVERRIDE;
+  virtual uint32_t GetPtime() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
   virtual const SdpRtcpFbAttribute& GetRtcpFb() const MOZ_OVERRIDE;
 //  virtual const SdpRtcpRemoteCandidates& GetRemoteCandidates() const MOZ_OVERRIDE;

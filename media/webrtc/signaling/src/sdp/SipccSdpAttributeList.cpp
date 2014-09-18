@@ -18,42 +18,42 @@ SipccSdpAttributeList::HasAttribute(sdp::AttributeType type) const {
   return false;
 }
 
-UniquePtr<SdpAttribute>
+const SdpAttribute&
 SipccSdpAttributeList::GetAttribute(sdp::AttributeType type) const {
   return nullptr;
 }
 
-UniquePtr<SdpCandidateAttribute>
+const SdpCandidateAttribute&
 SipccSdpAttributeList::GetCandidate() const {
   return nullptr;
 }
 
-UniquePtr<SdpConnectionAttribute>
+const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
   return nullptr;
 }
 
-UniquePtr<SdpExtmapAttribute>
+const SdpExtmapAttribute&
 SipccSdpAttributeList::GetExtmap() const {
   return nullptr;
 }
 
-UniquePtr<SdpFingerprintAttribute>
+const SdpFingerprintAttribute&
 SipccSdpAttributeList::GetFingerprint() const {
   return nullptr;
 }
 
-UniquePtr<SdpFmtpAttribute>
+const SdpFmtpAttribute&
 SipccSdpAttributeList::GetFmtp() const {
   return nullptr;
 }
 
-UniquePtr<SdpGroupAttribute>
+const SdpGroupAttribute&
 SipccSdpAttributeList::GetGroup() const {
   return nullptr;
 }
 
-UniquePtr<SdpIceOptionsAttribute>
+const SdpIceOptionsAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
   return nullptr;
 }
@@ -68,12 +68,12 @@ SipccSdpAttributeList::GetIceUfrag() const {
   return "";
 }
 
-UniquePtr<SdpIdentityAttribute>
+const SdpIdentityAttribute&
 SipccSdpAttributeList::GetIdentity() const {
   return nullptr;
 }
 
-UniquePtr<SdpImageattrAttribute>
+const SdpImageattrAttribute&
 SipccSdpAttributeList::GetImageattr() const {
   return nullptr;
 }
@@ -83,12 +83,12 @@ SipccSdpAttributeList::GetLabel() const {
   return "";
 }
 
-unsigned int
+uint32_t
 SipccSdpAttributeList::GetMaxprate() const {
   return 0;
 }
 
-unsigned int
+uint32_t
 SipccSdpAttributeList::GetMaxptime() const {
   return 0;
 }
@@ -98,52 +98,52 @@ SipccSdpAttributeList::GetMid() const {
   return "";
 }
 
-UniquePtr<SdpMsidAttribute>
+const SdpMsidAttribute&
 SipccSdpAttributeList::GetMsid() const {
   return nullptr;
 }
 
-unsigned int
+uint32_t
 SipccSdpAttributeList::GetPtime() const {
   return 0;
 }
 
-UniquePtr<SdpRtcpAttribute>
+const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
   return nullptr;
 }
 
-UniquePtr<SdpRtcpFbAttribute>
+const SdpRtcpFbAttribute&
 SipccSdpAttributeList::GetRtcpFb() const {
   return nullptr;
 }
 
-//UniquePtr<SdpRtcpRemoteCandidates>
+//const SdpRtcpRemoteCandidates&
 //SipccSdpAttributeList::GetRemoteCandidates() const {
 //  return nullptr;
 //}
 
-UniquePtr<SdpRtpmapAttribute>
+const SdpRtpmapAttribute&
 SipccSdpAttributeList::GetRtpmap() const {
   return nullptr;
 }
 
-UniquePtr<SdpSctpmapAttribute>
+const SdpSctpmapAttribute&
 SipccSdpAttributeList::GetSctpmap() const {
   return nullptr;
 }
 
-UniquePtr<SdpSetupAttribute>
+const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
   return nullptr;
 }
 
-UniquePtr<SdpSsrcAttribute>
+const SdpSsrcAttribute&
 SipccSdpAttributeList::GetSsrc() const {
   return nullptr;
 }
 
-UniquePtr<SdpSsrcGroupAttribute>
+const SdpSsrcGroupAttribute&
 SipccSdpAttributeList::GetSsrcGroup() const {
   return nullptr;
 }
@@ -154,4 +154,3 @@ SipccSdpAttributeList::SetAttribute(const SdpAttribute &) {
 
 
 } // namespace mozilla
-
