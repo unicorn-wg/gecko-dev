@@ -33,7 +33,7 @@ public:
   virtual SdpOrigin GetOrigin() const MOZ_OVERRIDE;
   virtual std::string GetSessionName() const MOZ_OVERRIDE;
   // Note: connection information is always retrieved from media sections
-  virtual std::string GetBandwidth(std::string type) const MOZ_OVERRIDE;
+  virtual Maybe<std::string> GetBandwidth(std::string type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
     return static_cast<uint16_t>(mMediaSections.size());
