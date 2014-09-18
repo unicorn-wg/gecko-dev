@@ -100,7 +100,7 @@ SipccSdpAttributeList::GetMid() const {
   MOZ_CRASH();
 }
 
-const SdpMsidAttribute&
+const SdpMsidAttributeList&
 SipccSdpAttributeList::GetMsid() const {
   MOZ_CRASH();;
 }
