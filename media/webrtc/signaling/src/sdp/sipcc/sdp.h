@@ -1111,7 +1111,7 @@ extern void sdp_allow_choose(void *config_p, sdp_choose_param_e param,
 extern sdp_t *sdp_init_description(sdp_conf_options_t *config_p);
 extern void sdp_debug(sdp_t *sdp_ptr, sdp_debug_e debug_type, tinybool debug_flag);
 extern void sdp_set_string_debug(sdp_t *sdp_ptr, const char *debug_str);
-extern sdp_result_e sdp_parse(sdp_t *sdp_ptr, char **bufp, size_t len);
+extern sdp_result_e sdp_parse(sdp_t *sdp_ptr, const char *buf, size_t len);
 extern sdp_result_e sdp_build(sdp_t *sdp_ptr, flex_string *fs);
 extern sdp_result_e sdp_free_description(sdp_t *sdp_ptr);
 extern void sdp_parse_error(sdp_t *sdp, const char *format, ...);
