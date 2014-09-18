@@ -288,7 +288,7 @@ public:
 class SdpMsidAttributeList : public SdpAttribute
 {
 public:
-  SdpMsidAttribute() :
+  SdpMsidAttributeList() :
     SdpAttribute(kMsidAttribute, "msid") {}
 };
 
