@@ -25,7 +25,7 @@ SipccSdpMediaSection::GetProtocol() const {
 
 const SdpConnection&
 SipccSdpMediaSection::GetConnection() const {
-  return SdpConnection(sdp::kInternet, sdp::kIPv4, "0.0.0.0");
+  MOZ_CRASH();
 }
 
 const std::string&
