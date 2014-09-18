@@ -111,6 +111,12 @@ sdp_conf_options_t *sdp_init_config ()
     return (conf_p);
 }
 
+void sdp_free_config(sdp_conf_options_t* config_p) {
+  if (config_p) {
+    SDP_FREE(config_p);
+  }
+}
+
 /* Function:    void sdp_appl_debug(void *config_p, sdp_debug_e debug_type,
  *                                  tinybool my_bool);
  * Description:	Define the default type of debug for the application.
@@ -318,5 +324,3 @@ void sdp_config_set_error_handler(void *config_p,
     conf_p->error_handler = handler;
     conf_p->error_handler_context = context;
 }
-
-

@@ -19,6 +19,7 @@ extern "C" {
 namespace mozilla {
 
 class SipccSdp;
+class SdpErrorHolder;
 
 class SipccSdpMediaSection MOZ_FINAL : public SdpMediaSection
 {
@@ -46,8 +47,8 @@ private:
   SipccSdpMediaSection(SipccSdpAttributeList *sessionLevel)
       : mAttributes(sessionLevel) {}
 
-  void Load(sdp_t* sdp, uint16_t level);
-  void LoadConnection(sdp_t* sdp, uint16_t level);
+  bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
+  bool LoadConnection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
 
   // the following values are cached on first get
   MediaType mMediaType;

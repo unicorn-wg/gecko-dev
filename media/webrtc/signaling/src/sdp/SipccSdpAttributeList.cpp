@@ -7,6 +7,7 @@
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
 #include "mozilla/Assertions.h"
+#include "signaling/src/sdp/SdpErrorHolder.h"
 
 namespace mozilla {
 
@@ -56,37 +57,52 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
   }
 }
 
-void
+bool
 SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                                         AttributeType targetType, const std::string& name) {
   const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 0);
   if (value) {
     SetAttribute(new SdpOtherAttribute(targetType, name, std::string(value)));
   }
+  return value != nullptr;
 }
 
-void
-SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level) {
-  LoadSimpleString(sdp, level, SDP_ATTR_MID,
-                   SdpAttribute::kMidAttribute, "mid");
-  LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
-                   SdpAttribute::kLabelAttribute, "label");
-  LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
-                   SdpAttribute::kIdentityAttribute, "identity");
+bool
+SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
+                            SdpErrorHolder& errorHolder) {
+  bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
+                                 SdpAttribute::kMidAttribute, "mid");
+  if (mSessionLevel && result) {
+    errorHolder.AddParseError(0, "mid attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
+                            SdpAttribute::kLabelAttribute, "label");
+  if (result && !mSessionLevel) {
+    errorHolder.AddParseError(0, "label attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
+                            SdpAttribute::kIdentityAttribute, "identity");
+  if (result && mSessionLevel) {
+    errorHolder.AddParseError(0, "identity attribute at the media level");
+    return false;
+  }
 
   char *value;
-  sdp_result_e result =
+  sdp_result_e sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 1, &value);
-  if (result == SDP_SUCCESS) {
+  if (sdpres == SDP_SUCCESS) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIceUfragAttribute,
                                        "ice-ufrag", std::string(value)));
   }
-  result =
+  sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 1, &value);
-  if (result == SDP_SUCCESS) {
+  if (sdpres == SDP_SUCCESS) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
                                        "ice-pwd", std::string(value)));
   }
+  return true;
 }
 
 const SdpCandidateAttributeList&

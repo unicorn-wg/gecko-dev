@@ -22,6 +22,7 @@ extern "C" {
 namespace mozilla {
 
 class SipccSdpParser;
+class SdpErrorHolder;
 
 class SipccSdp MOZ_FINAL : public Sdp
 {
@@ -59,7 +60,7 @@ public:
 private:
   explicit SipccSdp() {}
 
-  void Load(sdp_t* sdp);
+  bool Load(sdp_t* sdp, SdpErrorHolder& errorHolder);
 
   std::vector<SipccSdpMediaSection*> mMediaSections;
   SipccSdpAttributeList mAttributeList;

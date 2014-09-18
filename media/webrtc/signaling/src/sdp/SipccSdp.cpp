@@ -5,6 +5,7 @@
 #include "signaling/src/sdp/SipccSdp.h"
 
 #include "mozilla/Assertions.h"
+#include "signaling/src/sdp/SdpErrorHolder.h"
 
 namespace mozilla {
 
@@ -46,10 +47,12 @@ SipccSdp::GetMediaSection(uint16_t level)
   return *mMediaSections[level];
 }
 
-void
-SipccSdp::Load(sdp_t* sdp) {
+bool
+SipccSdp::Load(sdp_t* sdp, SdpErrorHolder& errorHolder) {
   // Believe it or not, SDP_SESSION_LEVEL is 0xFFFF
-  mAttributeList.Load(sdp, SDP_SESSION_LEVEL);
+  if (!mAttributeList.Load(sdp, SDP_SESSION_LEVEL, errorHolder)) {
+    return false;
+  }
 
   // TODO load other session-level stuff
 
@@ -57,9 +60,12 @@ SipccSdp::Load(sdp_t* sdp) {
     // note that we pass a "level" here that is one higher
     // sipcc counts media sections from 1, using 0 as the "session"
     SipccSdpMediaSection* section = new SipccSdpMediaSection(&mAttributeList);
-    section->Load(sdp, i + 1);
+    if (!section->Load(sdp, i + 1, errorHolder)) {
+      return false;
+    }
     mMediaSections.push_back(section);
   }
+  return true;
 }
 
 void
