@@ -17,20 +17,17 @@ SipccSdpAttributeList::SipccSdpAttributeList(
     SipccSdpAttributeList* sessionLevel /* = nullptr */)
     : mSessionLevel(sessionLevel)
 {
-  mAttributes = new SdpAttribute*[kMaxAttributeIndex];
+  memset(&mAttributes, 0, sizeof(mAttributes));
 }
 
 SipccSdpAttributeList::~SipccSdpAttributeList() {
   for (size_t i = 0; i < kMaxAttributeIndex; ++i) {
-    if (mAttributes[i]) {
-      delete mAttributes[i];
-    }
+    delete mAttributes[i];
   }
   for (auto it = mOtherAttributes.begin();
        it != mOtherAttributes.end(); ++it) {
     delete *it;
   }
-  delete[] mAttributes;
 }
 
 bool
