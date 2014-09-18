@@ -153,8 +153,8 @@ StaticRefPtr<PeerConnectionCtxShutdown> PeerConnectionCtx::gPeerConnectionCtxShu
 nsresult PeerConnectionCtx::InitializeGlobal(nsIThread *mainThread,
   nsIEventTarget* stsThread) {
   if (!gMainThread) {
-#ifdef KEEP_SIPCC
     gMainThread = mainThread;
+#ifdef KEEP_SIPCC
     CSF::VcmSIPCCBinding::setMainThread(gMainThread);
 #endif
   } else {
