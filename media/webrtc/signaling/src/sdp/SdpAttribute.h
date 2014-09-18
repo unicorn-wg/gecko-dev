@@ -17,11 +17,25 @@ namespace mozilla {
 class SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType () const = 0;
-  virtual std::string GetTypeName() const = 0;
+  SdpAttribute(sdp::AttributeType type, std::string typeName) :
+    mType(type), mTypeName(typeName) {}
+
+  virtual sdp::AttributeType GetType()
+  {
+    return mType;
+  }
+
+  virtual const std::string &GetTypeName()
+  {
+    return mTypeName;
+  }
 
 protected:
   virtual ~SdpAttribute() {}
+
+private:
+  sdp::AttributeType mType;
+  std::string mTypeName;
 };
 
 
@@ -39,15 +53,8 @@ protected:
 class SdpCandidateAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kCandidateAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "candidate";
-  }
+  SdpCandidateAttribute() :
+    SdpAttribute(sdp::kCandidateAttribute, "candidate") {}
 };
 
 // RFC4145
@@ -62,17 +69,8 @@ public:
   };
 
   SdpConnectionAttribute(SdpConnectionAttribute::ConnValue value) :
+    SdpAttribute(sdp::kConnectionAttribute, "connection"),
     mValue(value) {}
-
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kConnectionAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "connection";
-  }
 
   enum ConnValue mValue;
 };
@@ -98,15 +96,8 @@ public:
 class SdpExtmapAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kExtmapAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "extmap";
-  }
+  SdpExtmapAttribute() :
+    SdpAttribute(sdp::kExtmapAttribute, "extmap") {}
 };
 
 
@@ -127,15 +118,8 @@ public:
 class SdpFingerprintAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kFingerprintAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "fingerprint";
-  }
+  SdpFingerprintAttribute() :
+    SdpAttribute(sdp::kFingerprintAttribute, "fingerprint") {}
 };
 
 // RFC4566, RFC5576
@@ -143,15 +127,8 @@ public:
 class SdpFmtpAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kFmtpAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "fmtp";
-  }
+  SdpFmtpAttribute() :
+    SdpAttribute(sdp::kFmtpAttribute, "fmtp") {}
 };
 
 // RFC5888
@@ -162,15 +139,8 @@ public:
 class SdpGroupAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kGroupAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "group";
-  }
+  SdpGroupAttribute() :
+    SdpAttribute(sdp::kGroupAttribute, "group") {}
 };
 
 // RFC5245
@@ -180,15 +150,8 @@ public:
 class SdpIceOptionsAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kGroupAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "group";
-  }
+  SdpIceOptionsAttribute() :
+    SdpAttribute(sdp::kIceOptionsAttribute, "ice-options") {}
 };
 
 // draft-ietf-rtcweb-security-arch
@@ -204,15 +167,8 @@ public:
 class SdpIdentityAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kIdentityAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "identity";
-  }
+  SdpIdentityAttribute() :
+    SdpAttribute(sdp::kIdentityAttribute, "identity") {}
 };
 
 // RFC6236
@@ -284,15 +240,8 @@ public:
 class SdpImageattrAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kImageattrAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "imageattr";
-  }
+  SdpImageattrAttribute() :
+    SdpAttribute(sdp::kImageattrAttribute, "imageattr") {}
 };
 
 // draft-ietf-mmusic-msid
@@ -302,15 +251,8 @@ public:
 class SdpMsidAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kMsidAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "msid";
-  }
+  SdpMsidAttribute() :
+    SdpAttribute(sdp::kMsidAttribute, "msid") {}
 };
 
 // RFC5245
@@ -320,15 +262,8 @@ public:
 class SdpRemoteCandidatesAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kRemoteCandidatesAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "remote-candidates";
-  }
+  SdpRemoteCandidatesAttribute() :
+    SdpAttribute(sdp::kRemoteCandidatesAttribute, "remote-candidates") {}
 };
 
 // RFC3605
@@ -337,15 +272,8 @@ public:
 class SdpRtcpAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kRtcpAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "rtcp";
-  }
+  SdpRtcpAttribute() :
+    SdpAttribute(sdp::kRtcpAttribute, "rtcp") {}
 };
 
 // RFC4585
@@ -379,15 +307,8 @@ public:
 class SdpRtcpFbAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kRtcpFbAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "rtcp-fb";
-  }
+  SdpRtcpFbAttribute() :
+    SdpAttribute(sdp::kRtcpFbAttribute, "rtcp-fb") {}
 };
 
 // RFC4566
@@ -395,15 +316,8 @@ public:
 class SdpRtpmapAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kRtpmapAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "rtpmap";
-  }
+  SdpRtpmapAttribute() :
+    SdpAttribute(sdp::kRtpmapAttribute, "rtpmap") {}
 };
 
 // draft-ietf-mmusic-sctp-sdp-06
@@ -418,15 +332,8 @@ public:
 class SdpSctpmapAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kSctpmapAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "sctpmap";
-  }
+  SdpSctpmapAttribute() :
+    SdpAttribute(sdp::kSctpmapAttribute, "sctpmap") {}
 };
 
 // RFC4145
@@ -435,15 +342,8 @@ public:
 class SdpSetupAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kSetupAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "setup";
-  }
+  SdpSetupAttribute() :
+    SdpAttribute(sdp::kSetupAttribute, "setup") {}
 };
 
 // RFC5576
@@ -455,15 +355,8 @@ public:
 class SdpSsrcAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kSsrcAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "ssrc";
-  }
+  SdpSsrcAttribute() :
+    SdpAttribute(sdp::kSsrcAttribute, "ssrc") {}
 };
 
 // RFC5576
@@ -475,15 +368,8 @@ public:
 class SdpSsrcGroupAttribute : public SdpAttribute
 {
 public:
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kSsrcAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return "ssrc";
-  }
+  SdpSsrcGroupAttribute() :
+    SdpAttribute(sdp::kSsrcGroupAttribute, "ssrc-group") {}
 };
 
 // Used for any other kind of attribute not otherwise specialized
@@ -491,17 +377,8 @@ class SdpOtherAttribute : public SdpAttribute
 {
 public:
   SdpOtherAttribute(std::string typeName, std::string value = "") :
-    mTypeName(typeName), mValue(value) {}
-
-  virtual sdp::AttributeType GetType() const MOZ_OVERRIDE
-  {
-    return sdp::kOtherAttribute;
-  }
-
-  virtual std::string GetTypeName() const MOZ_OVERRIDE
-  {
-    return mTypeName;
-  }
+    SdpAttribute(sdp::kOtherAttribute, typeName),
+    mValue(value) {}
 
   std::string const getValue()
   {
