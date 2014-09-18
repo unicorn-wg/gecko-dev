@@ -15,6 +15,8 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/Assertions.h"
 
+#include "signaling/src/sdp/SdpEnum.h"
+
 namespace mozilla {
 
 class SdpAttribute
@@ -661,7 +663,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << mIdentifier;
+    os << "a=" << mTypeName << ":" << mIdentifier;
     if (mAppdata.length()) {
       os << " " << mAppdata;
     }

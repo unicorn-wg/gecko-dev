@@ -28,10 +28,7 @@ public:
   virtual void RemoveAttribute(AttributeType type) MOZ_OVERRIDE;
 
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
-  virtual const SdpGroupAttribute& GetGroup() const MOZ_OVERRIDE;
-  virtual const SdpExtmapAttributeList& GetExtmap() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttributeList& GetFingerprint() const MOZ_OVERRIDE;
-  virtual const SdpFmtpAttributeList& GetFmtp() const MOZ_OVERRIDE;
   virtual const SdpGroupAttributeList& GetGroup() const MOZ_OVERRIDE;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
