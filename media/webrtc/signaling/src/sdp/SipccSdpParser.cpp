@@ -13,6 +13,18 @@ extern "C" {
 
 namespace mozilla {
 
+extern "C" {
+
+void
+sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message)
+{
+  SipccSdpParser* parser = static_cast<SipccSdpParser*>(context);
+  std::string err(message);
+  parser->AddParseError(line, err);
+}
+
+}
+
 UniquePtr<Sdp>
 SipccSdpParser::Parse(const std::string& sdpText)
 {
@@ -21,8 +33,16 @@ SipccSdpParser::Parse(const std::string& sdpText)
     return nullptr;
   }
 
-  // XXX - capture errors properly
-  // sdp_config_set_error_handler(sipcc_sdp_parser_error_handler, this);
+  sdp_nettype_supported(sipcc_config, SDP_NT_INTERNET, true);
+  sdp_addrtype_supported(sipcc_config, SDP_AT_IP4, true);
+  sdp_addrtype_supported(sipcc_config, SDP_AT_IP6, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_RTPSAVPF, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_UDPTL, true);
+  sdp_require_session_name(sipcc_config, false);
+
+  sdp_config_set_error_handler(sipcc_config,
+                               &sipcc_sdp_parser_error_handler,
+                               this);
 
   sdp_t *sdp = sdp_init_description(sipcc_config);
   if (sdp) {
@@ -47,18 +67,6 @@ void
 SipccSdpParser::AddParseError(uint32_t line, const std::string& message)
 {
   mErrors.push_back(std::make_pair(line, message));
-}
-
-extern "C" {
-
-void
-sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message)
-{
-  SipccSdpParser* parser = static_cast<SipccSdpParser*>(context);
-  std::string err(message);
-  parser->AddParseError(line, err);
-}
-
 }
 
 } // namespace mozilla

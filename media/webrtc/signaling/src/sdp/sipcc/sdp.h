@@ -1003,6 +1003,10 @@ typedef struct sdp_srtp_crypto_suite_list_ {
     unsigned char salt_size_bytes;
 } sdp_srtp_crypto_suite_list;
 
+typedef void (*sdp_parse_error_handler)(void *context,
+                                        uint32_t line,
+                                        const char *message);
+
 /* Application configuration options */
 typedef struct sdp_conf_options {
     u32                       magic_num;
@@ -1024,6 +1028,8 @@ typedef struct sdp_conf_options {
     u32                       num_invalid_param;
     u32                       num_no_resource;
     struct sdp_conf_options  *next_p;
+    sdp_parse_error_handler  error_handler;
+    void                    *error_handler_context;
 } sdp_conf_options_t;
 
 
@@ -1106,6 +1112,9 @@ extern void sdp_transport_supported(void *config_p, sdp_transport_e transport,
                              tinybool transport_supported);
 extern void sdp_allow_choose(void *config_p, sdp_choose_param_e param,
                              tinybool choose_allowed);
+extern void sdp_config_set_error_handler(void *config_p,
+                                         sdp_parse_error_handler handler,
+                                         void *context);
 
 /* sdp_main.c */
 extern sdp_t *sdp_init_description(sdp_conf_options_t *config_p);
