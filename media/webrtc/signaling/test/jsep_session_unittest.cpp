@@ -8,6 +8,9 @@
 #include "gtest/gtest.h"
 #include "gtest_utils.h"
 
+#include "FakeMediaStreams.h"
+#include "FakeMediaStreamsImpl.h"
+
 #include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
 
