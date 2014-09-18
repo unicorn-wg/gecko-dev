@@ -56,8 +56,8 @@ public:
     kOtherAttribute
   };
 
-  SdpAttribute(AttributeType type, std::string typeName) :
-    mType(type), mTypeName(typeName) {}
+  SdpAttribute(AttributeType type, const std::string& typeName)
+      : mType(type), mTypeName(typeName) {}
   virtual ~SdpAttribute() {}
 
   virtual AttributeType GetType()

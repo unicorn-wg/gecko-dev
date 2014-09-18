@@ -26,9 +26,7 @@ class SipccSdp MOZ_FINAL : public Sdp
 {
   friend class SipccSdpParser;
 public:
-  ~SipccSdp() {
-    sdp_free_description(mSdp);
-  }
+  ~SipccSdp() {}
 
   virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE {
     return *mOrigin;
@@ -58,9 +56,7 @@ public:
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
 private:
-  explicit SipccSdp(sdp_t* sdp) :
-      mSdp(sdp),
-      mAttributeList(sdp, 0) {}
+  explicit SipccSdp() {}
 
   void Load(sdp_t* sdp);
 

@@ -20,7 +20,7 @@ class SdpAttributeList
 public:
   typedef SdpAttribute::AttributeType AttributeType;
 
-  virtual unsigned int CountAttributes(AttributeType type) const = 0;
+  virtual size_t CountAttributes(AttributeType type) const = 0;
   virtual bool HasAttribute(AttributeType type) const = 0;
   virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const = 0;
 
