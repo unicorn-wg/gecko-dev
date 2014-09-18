@@ -29,7 +29,6 @@ public:
   Sdp() {};
 
   virtual const SdpOrigin& GetOrigin() const = 0;
-  virtual const std::string& GetSessionName() const = 0;
   // Note: connection information is always retrieved from media sections
   virtual const std::string& GetBandwidth(const std::string& type) const = 0;
 
@@ -63,10 +62,13 @@ inline std::string Sdp::toString() {
 class SdpOrigin
 {
 public:
-  SdpOrigin() :
-    mSessionId(0),
-    mSessionVersion(0),
-    mAddrType(SdpConnection::kIPv4)
+  SdpOrigin(const std::string& username, uint64_t sessId, uint64_t sessVer,
+            SdpConnection::AddrType addrType, const std::string& addr) :
+      mUsername(username),
+      mSessionId(sessId),
+      mSessionVersion(sessVer),
+      mAddrType(addrType),
+      mAddress(addr)
   {}
 
   const std::string& GetUsername() const {
