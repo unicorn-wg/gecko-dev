@@ -4,6 +4,7 @@
 
 #include "signaling/src/sdp/SipccSdp.h"
 
+#include <cstdlib>
 #include "mozilla/Assertions.h"
 #include "signaling/src/sdp/SdpErrorHolder.h"
 
@@ -48,13 +49,46 @@ SipccSdp::GetMediaSection(uint16_t level)
 }
 
 bool
+SipccSdp::LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder) {
+  std::string username = sdp_get_owner_username(sdp);
+  uint64_t sessId = strtoul(sdp_get_owner_sessionid(sdp), nullptr, 10);
+  uint64_t sessVer = strtoul(sdp_get_owner_version(sdp), nullptr, 10);
+
+  sdp_nettype_e type = sdp_get_owner_network_type(sdp);
+  if (type != SDP_NT_INTERNET) {
+    errorHolder.AddParseError(0, "Unsupported network type");
+    return false;
+  }
+
+  SdpConnection::AddrType addrType;
+  switch (sdp_get_owner_address_type(sdp)) {
+    case SDP_AT_IP4:
+      addrType = SdpConnection::kIPv4;
+      break;
+    case SDP_AT_IP6:
+      addrType = SdpConnection::kIPv6;
+      break;
+    default:
+      errorHolder.AddParseError(0, "Unsupported address type");
+      return false;
+  }
+
+  std::string address = sdp_get_owner_address(sdp);
+  mOrigin = MakeUnique<SdpOrigin>(username, sessId, sessVer,
+                                  addrType, address);
+  return true;
+}
+
+bool
 SipccSdp::Load(sdp_t* sdp, SdpErrorHolder& errorHolder) {
   // Believe it or not, SDP_SESSION_LEVEL is 0xFFFF
   if (!mAttributeList.Load(sdp, SDP_SESSION_LEVEL, errorHolder)) {
     return false;
   }
 
-  // TODO load other session-level stuff
+  if (!LoadOrigin(sdp, errorHolder)) {
+    return false;
+  }
 
   for (int i = 0; i < sdp_get_num_media_lines(sdp); ++i) {
     // note that we pass a "level" here that is one higher
