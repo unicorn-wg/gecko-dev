@@ -28,7 +28,6 @@ public:
   virtual const SdpFingerprintAttribute& GetFingerprint() const = 0;
   virtual const SdpGroupAttribute& GetGroup() const = 0;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const = 0;
-  virtual const SdpIdentityAttribute& GetIdentity() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;
   virtual const SdpSetupAttribute& GetSetup() const = 0;
@@ -50,6 +49,7 @@ public:
   // easy by just returning their value.
   virtual const std::string& GetIcePwd() const = 0;
   virtual const std::string& GetIceUfrag() const = 0;
+  virtual const std::string& GetIdentity() const = 0;
   virtual const std::string& GetLabel() const = 0;
   virtual unsigned int GetMaxprate() const = 0;
   virtual unsigned int GetMaxptime() const = 0;

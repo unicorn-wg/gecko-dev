@@ -26,31 +26,37 @@ public:
   virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
   virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const MOZ_OVERRIDE;
 
-  virtual const SdpCandidateAttributeList& GetCandidate() const MOZ_OVERRIDE;
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
-  virtual const SdpExtmapAttributeList& GetExtmap() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttribute& GetFingerprint() const MOZ_OVERRIDE;
-  virtual const SdpFmtpAttributeList& GetFmtp() const MOZ_OVERRIDE;
   virtual const SdpGroupAttribute& GetGroup() const MOZ_OVERRIDE;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const MOZ_OVERRIDE;
-  virtual const std::string& GetIcePwd() const MOZ_OVERRIDE;
-  virtual const std::string& GetIceUfrag() const MOZ_OVERRIDE;
-  virtual const SdpIdentityAttribute& GetIdentity() const MOZ_OVERRIDE;
-  virtual const SdpImageattrAttributeList& GetImageattr() const MOZ_OVERRIDE;
-  virtual const std::string& GetLabel() const MOZ_OVERRIDE;
-  virtual uint32_t GetMaxprate() const MOZ_OVERRIDE;
-  virtual uint32_t GetMaxptime() const MOZ_OVERRIDE;
-  virtual const std::string& GetMid() const MOZ_OVERRIDE;
-  virtual const SdpMsidAttributeList& GetMsid() const MOZ_OVERRIDE;
-  virtual uint32_t GetPtime() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
-  virtual const SdpRtcpFbAttributeList& GetRtcpFb() const MOZ_OVERRIDE;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const MOZ_OVERRIDE;
-  virtual const SdpRtpmapAttributeList& GetRtpmap() const MOZ_OVERRIDE;
-  virtual const SdpSctpmapAttributeList& GetSctpmap() const MOZ_OVERRIDE;
   virtual const SdpSetupAttribute& GetSetup() const MOZ_OVERRIDE;
   virtual const SdpSsrcAttribute& GetSsrc() const MOZ_OVERRIDE;
   virtual const SdpSsrcGroupAttribute& GetSsrcGroup() const MOZ_OVERRIDE;
+
+  // These attributes can appear multiple times, so the returned
+  // classes actually represent a collection of values.
+  virtual const SdpCandidateAttributeList& GetCandidate() const MOZ_OVERRIDE;
+  virtual const SdpExtmapAttributeList& GetExtmap() const MOZ_OVERRIDE;
+  virtual const SdpFmtpAttributeList& GetFmtp() const MOZ_OVERRIDE;
+  virtual const SdpImageattrAttributeList& GetImageattr() const MOZ_OVERRIDE;
+  virtual const SdpMsidAttributeList& GetMsid() const MOZ_OVERRIDE;
+  virtual const SdpRtcpFbAttributeList& GetRtcpFb() const MOZ_OVERRIDE;
+  virtual const SdpRtpmapAttributeList& GetRtpmap() const MOZ_OVERRIDE;
+  virtual const SdpSctpmapAttributeList& GetSctpmap() const MOZ_OVERRIDE;
+
+  // These attributes are effectively simple types, so we'll make life
+  // easy by just returning their value.
+  virtual const std::string& GetIcePwd() const MOZ_OVERRIDE;
+  virtual const std::string& GetIceUfrag() const MOZ_OVERRIDE;
+  virtual const std::string& GetIdentity() const MOZ_OVERRIDE;
+  virtual const std::string& GetLabel() const MOZ_OVERRIDE;
+  virtual unsigned int GetMaxprate() const MOZ_OVERRIDE;
+  virtual unsigned int GetMaxptime() const MOZ_OVERRIDE;
+  virtual const std::string& GetMid() const MOZ_OVERRIDE;
+  virtual unsigned int GetPtime() const MOZ_OVERRIDE;
 
   virtual void SetAttribute(const SdpAttribute &) MOZ_OVERRIDE;
   virtual ~SipccSdpAttributeList() {}
@@ -58,10 +64,15 @@ public:
 private:
   SipccSdpAttributeList() {}
 
-  void Load(sdp_t* sdp, uint16_t level) { MOZ_CRASH(); }
+  void Load(sdp_t* sdp, uint16_t level);
+  static void LoadString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+                         std::string& target);
 
-  sdp_t* mSdp;
-  uint16_t mLevel;
+  std::string mIceUfrag;
+  std::string mIcePwd;
+  std::string mIdentity;
+  std::string mMid;
+  std::string mLabel;
 };
 
 }

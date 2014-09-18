@@ -1973,7 +1973,8 @@ const char *sdp_attr_get_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_X_SIDIN) &&
         (attr_type != SDP_ATTR_X_SIDOUT)&&
         (attr_type != SDP_ATTR_X_CONFID) &&
-        (attr_type != SDP_ATTR_LABEL)) {
+        (attr_type != SDP_ATTR_LABEL) &&
+        (attr_type != SDP_ATTR_IDENTITY)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
             CSFLogError(logTag, "%s Attribute type is not a simple string (%s)",
                       sdp_p->debug_str, sdp_get_attr_name(attr_type));
