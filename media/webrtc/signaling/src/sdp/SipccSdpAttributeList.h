@@ -58,7 +58,7 @@ public:
 private:
   SipccSdpAttributeList() {}
 
-  void Load(sdp_t* sdp, uint16_t level);
+  void Load(sdp_t* sdp, uint16_t level) { MOZ_CRASH(); }
 
   sdp_t* mSdp;
   uint16_t mLevel;
