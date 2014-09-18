@@ -1086,6 +1086,20 @@ inline std::ostream& operator <<(std::ostream& os,
 }
 
 ///////////////////////////////////////////////////////////////////////////
+class SdpMultiStringAttribute : public SdpAttribute
+{
+  public:
+    SdpMultiStringAttribute(AttributeType type,
+                            const std::string& typeName) :
+      SdpAttribute(type, typeName) {}
+
+    void PushEntry(const std::string& entry) {
+      mValues.push_back(entry);
+    }
+
+    std::vector<std::string> mValues;
+};
+
 // Used for any other kind of attribute not otherwise specialized
 class SdpOtherAttribute : public SdpAttribute
 {
