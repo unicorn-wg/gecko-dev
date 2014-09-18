@@ -55,7 +55,7 @@ public:
     kSetupAttribute,
     kSsrcAttribute,
     kSsrcGroupAttribute,
-    kOtherAttribute
+    kOtherAttribute // we rely on this being the last element in the array
   };
 
   SdpAttribute(AttributeType type, const std::string& typeName)
