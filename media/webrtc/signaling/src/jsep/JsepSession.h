@@ -53,7 +53,8 @@ class JsepSession {
 
   // Access the negotiated track pairs.
   virtual nsresult num_negotiated_track_pairs(size_t* pairs) const = 0;
-  virtual nsresult track_pair(size_t index, const JsepTrackPair** pair) const = 0;
+  virtual nsresult track_pair(size_t index, const JsepTrackPair** pair)
+      const = 0;
 
  private:
   const std::string mName;
