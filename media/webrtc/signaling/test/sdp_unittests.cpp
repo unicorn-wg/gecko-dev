@@ -823,8 +823,12 @@ class NewSdpTest : public ::testing::Test {
   public:
     NewSdpTest() {}
 
-    void ParseSdp(const std::string &sdp) {
+    void ParseSdp(const std::string &sdp, bool expectSuccess = true) {
       mSdp = mozilla::Move(mParser.Parse(sdp));
+
+      if (expectSuccess) {
+        ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+      }
     }
 
     // For streaming parse errors
@@ -846,14 +850,14 @@ TEST_F(NewSdpTest, CreateDestroy) {
 }
 
 TEST_F(NewSdpTest, ParseEmpty) {
-  ParseSdp("");
+  ParseSdp("", false);
   ASSERT_FALSE(mSdp);
   ASSERT_NE(0U, mParser.GetParseErrors().size())
     << "Expected at least one parse error.";
 }
 
 TEST_F(NewSdpTest, ParseGarbage) {
-  ParseSdp("foobajooba");
+  ParseSdp("foobajooba", false);
   ASSERT_FALSE(mSdp);
   ASSERT_NE(0U, mParser.GetParseErrors().size())
     << "Expected at least one parse error.";
@@ -861,7 +865,6 @@ TEST_F(NewSdpTest, ParseGarbage) {
 
 TEST_F(NewSdpTest, ParseMinimal) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(0U, mParser.GetParseErrors().size()) <<
     "Got parse errors: " << GetParseErrors();
 }
@@ -921,12 +924,10 @@ const std::string kBasicAudioVideoOffer =
 
 TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
 }
 
 TEST_F(NewSdpTest, CheckIceUfrag) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kIceUfragAttribute));
   auto ice_ufrag = mSdp->GetAttributeList().GetIceUfrag();
@@ -935,7 +936,6 @@ TEST_F(NewSdpTest, CheckIceUfrag) {
 
 TEST_F(NewSdpTest, CheckIcePwd) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kIcePwdAttribute));
   auto ice_pwd = mSdp->GetAttributeList().GetIcePwd();
@@ -945,7 +945,6 @@ TEST_F(NewSdpTest, CheckIcePwd) {
 /*
 TEST_F(NewSdpTest, CheckFingerprint) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kFingerprintAttribute));
   auto fingerprint = mSdp->GetAttributeList().GetFingerprint();
@@ -959,13 +958,11 @@ TEST_F(NewSdpTest, CheckFingerprint) {
 
 TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
 }
 
 TEST_F(NewSdpTest, CheckMlines) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
   ASSERT_EQ(SdpMediaSection::kAudio, mSdp->GetMediaSection(0).GetMediaType())
     << "Wrong type for first media section";
@@ -992,7 +989,6 @@ TEST_F(NewSdpTest, CheckMlines) {
 
 TEST_F(NewSdpTest, CheckRtpmap) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
@@ -1012,7 +1008,6 @@ TEST_F(NewSdpTest, CheckRtpmap) {
 
 TEST_F(NewSdpTest, CheckFormatParameters) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
@@ -1021,7 +1016,6 @@ TEST_F(NewSdpTest, CheckFormatParameters) {
 
 TEST_F(NewSdpTest, CheckConnectionLines) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
@@ -1045,10 +1039,14 @@ TEST_F(NewSdpTest, CheckConnectionLines) {
   ASSERT_EQ(12U, conn3.GetCount());
 }
 
+TEST_F(NewSdpTest, CheckDirections) {
+  ParseSdp(kBasicAudioVideoOffer);
+
+}
+
 // TODO: Tests that parse above SDP, and check various things
 // For media sections 1 and 2:
 //  Check fmtp
-//  Check direction (should be sendrecv)
 //  Check extmap
 //  Check setup
 //  Check rtcp-mux

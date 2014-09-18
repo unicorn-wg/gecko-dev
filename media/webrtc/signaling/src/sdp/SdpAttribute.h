@@ -10,6 +10,7 @@
 #include <list>
 #include <vector>
 #include <ostream>
+#include <sstream>
 
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Attributes.h"
@@ -26,6 +27,7 @@ public:
     kBundleOnlyAttribute,
     kCandidateAttribute,
     kConnectionAttribute,
+    kDirectionAttribute,
     kDtlsFingerprintAttribute,
     kExtmapAttribute,
     kFingerprintAttribute,
@@ -254,9 +256,49 @@ inline std::ostream& operator <<(std::ostream& os,
   return os;
 }
 
+
+// RFC 4566
+//      a=sendrecv / a=sendonly / a=recvonly / a=inactive
+class SdpDirectionAttribute : public SdpAttribute
+{
+ public:
+  enum Direction {
+    kSendRecv,
+    kSendOnly,
+    kRecvOnly,
+    kInactive
+  };
+
+  SdpDirectionAttribute(Direction value)
+      : SdpAttribute(kDirectionAttribute, GetString(value)),
+        mValue(value) {}
+
+  Direction mValue;
+
+  static std::string GetString(Direction v) {
+    strstream ss;
+    ss << v;
+    return ss.str();
+  }
+};
+
+inline std::ostream& operator <<(std::ostream& os,
+                                 SdpDirectionAttribute::Direction d)
+{
+  switch (d) {
+    case SdpDirectionAttribute::kSendonly: os << "sendonly"; break;
+    case SdpDirectionAttribute::kRecvonly: os << "recvonly"; break;
+    case SdpDirectionAttribute::kSendrecv: os << "sendrecv"; break;
+    case SdpDirectionAttribute::kInactive: os << "inactive"; break;
+    default: MOZ_ASSERT(false); os << "?";
+  }
+  return os;
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // a=extmap, RFC5285
 //-------------------------------------------------------------------------
+// RFC5285
 //        extmap = mapentry SP extensionname [SP extensionattributes]
 //
 //        extensionname = URI
