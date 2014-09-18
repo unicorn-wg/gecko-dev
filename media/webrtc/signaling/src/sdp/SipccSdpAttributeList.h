@@ -28,14 +28,17 @@ public:
   virtual void RemoveAttribute(AttributeType type) MOZ_OVERRIDE;
 
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
-  virtual const SdpFingerprintAttribute& GetFingerprint() const MOZ_OVERRIDE;
   virtual const SdpGroupAttribute& GetGroup() const MOZ_OVERRIDE;
+  virtual const SdpExtmapAttributeList& GetExtmap() const MOZ_OVERRIDE;
+  virtual const SdpFingerprintAttributeList& GetFingerprint() const MOZ_OVERRIDE;
+  virtual const SdpFmtpAttributeList& GetFmtp() const MOZ_OVERRIDE;
+  virtual const SdpGroupAttributeList& GetGroup() const MOZ_OVERRIDE;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const MOZ_OVERRIDE;
   virtual const SdpSetupAttribute& GetSetup() const MOZ_OVERRIDE;
-  virtual const SdpSsrcAttribute& GetSsrc() const MOZ_OVERRIDE;
-  virtual const SdpSsrcGroupAttribute& GetSsrcGroup() const MOZ_OVERRIDE;
+  virtual const SdpSsrcAttributeList& GetSsrc() const MOZ_OVERRIDE;
+  virtual const SdpSsrcGroupAttributeList& GetSsrcGroup() const MOZ_OVERRIDE;
 
   // These attributes can appear multiple times, so the returned
   // classes actually represent a collection of values.

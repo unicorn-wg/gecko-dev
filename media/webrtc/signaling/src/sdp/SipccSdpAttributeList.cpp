@@ -104,7 +104,7 @@ SipccSdpAttributeList::GetExtmap() const {
   MOZ_CRASH();
 }
 
-const SdpFingerprintAttribute&
+const SdpFingerprintAttributeList&
 SipccSdpAttributeList::GetFingerprint() const {
   if (!HasAttribute(SdpAttribute::kFingerprintAttribute)) {
     if (mSessionLevel) {
@@ -120,7 +120,7 @@ SipccSdpAttributeList::GetFmtp() const {
   MOZ_CRASH();
 }
 
-const SdpGroupAttribute&
+const SdpGroupAttributeList&
 SipccSdpAttributeList::GetGroup() const {
   MOZ_CRASH();
 }
@@ -245,12 +245,12 @@ SipccSdpAttributeList::GetSetup() const {
   MOZ_CRASH();
 }
 
-const SdpSsrcAttribute&
+const SdpSsrcAttributeList&
 SipccSdpAttributeList::GetSsrc() const {
   MOZ_CRASH();
 }
 
-const SdpSsrcGroupAttribute&
+const SdpSsrcGroupAttributeList&
 SipccSdpAttributeList::GetSsrcGroup() const {
   MOZ_CRASH();
 }

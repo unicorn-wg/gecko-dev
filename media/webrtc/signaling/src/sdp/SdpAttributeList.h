@@ -26,25 +26,25 @@ public:
   virtual void RemoveAttribute(AttributeType type) = 0;
 
   virtual const SdpConnectionAttribute& GetConnection() const = 0;
-  virtual const SdpFingerprintAttribute& GetFingerprint() const = 0;
-  virtual const SdpGroupAttribute& GetGroup() const = 0;
   virtual const SdpIceOptionsAttribute& GetIceOptions() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;
   virtual const SdpSetupAttribute& GetSetup() const = 0;
-  virtual const SdpSsrcAttribute& GetSsrc() const = 0;
-  virtual const SdpSsrcGroupAttribute& GetSsrcGroup() const = 0;
 
   // These attributes can appear multiple times, so the returned
   // classes actually represent a collection of values.
   virtual const SdpCandidateAttributeList& GetCandidate() const = 0;
   virtual const SdpExtmapAttributeList& GetExtmap() const = 0;
+  virtual const SdpFingerprintAttributeList& GetFingerprint() const = 0;
   virtual const SdpFmtpAttributeList& GetFmtp() const = 0;
+  virtual const SdpGroupAttributeList& GetGroup() const = 0;
   virtual const SdpImageattrAttributeList& GetImageattr() const = 0;
   virtual const SdpMsidAttributeList& GetMsid() const = 0;
   virtual const SdpRtcpFbAttributeList& GetRtcpFb() const = 0;
   virtual const SdpRtpmapAttributeList& GetRtpmap() const = 0;
   virtual const SdpSctpmapAttributeList& GetSctpmap() const = 0;
+  virtual const SdpSsrcAttributeList& GetSsrc() const = 0;
+  virtual const SdpSsrcGroupAttributeList& GetSsrcGroup() const = 0;
 
   // These attributes are effectively simple types, so we'll make life
   // easy by just returning their value.
