@@ -29,16 +29,13 @@ class SipccSdp MOZ_FINAL : public Sdp
 public:
   ~SipccSdp();
 
-  virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE {
-    return *mOrigin;
-  }
+  virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE;
 
   virtual const std::string& GetSessionName() const MOZ_OVERRIDE {
     return mSessionName;
   }
   // Note: connection information is always retrieved from media sections
-  virtual const Maybe<std::string>& GetBandwidth(
-      const std::string& type) const MOZ_OVERRIDE;
+  virtual const std::string& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
     return static_cast<uint16_t>(mMediaSections.size());
