@@ -54,7 +54,8 @@ SipccSdpMediaSection::GetAttributeList() {
 }
 
 void
-SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level)
+SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
+                           SipccSdpAttributeList* sessionLevelAttrs)
 {
   switch (sdp_get_media_type(sdp, level)) {
   case SDP_MEDIA_AUDIO:

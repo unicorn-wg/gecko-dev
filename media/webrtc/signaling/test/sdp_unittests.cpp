@@ -30,6 +30,8 @@ MtransportTestUtils *test_utils;
 nsCOMPtr<nsIThread> gThread;
 
 #include "signaling/src/sdp/SipccSdpParser.h"
+#include "signaling/src/sdp/SdpMediaSection.h"
+#include "signaling/src/sdp/SdpAttribute.h"
 
 extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
@@ -38,6 +40,8 @@ extern "C" {
 
 using mozilla::SipccSdpParser;
 using mozilla::Sdp;
+using mozilla::SdpMediaSection;
+using mozilla::SdpAttribute;
 
 namespace test {
 
@@ -918,63 +922,68 @@ TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
 }
 
-//TEST_F(NewSdpTest, CheckIceUfrag) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  auto ice_ufrag = mSdp.GetIceUfrag();
-//  ASSERT_TRUE(ice_ufrag) << "No ice-ufrag";
-//  ASSERT_EQ("4a799b2e", ice_ufrag->Value()) << "Wrong ice-ufrag value";
-//}
+TEST_F(NewSdpTest, CheckIceUfrag) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  auto ice_ufrag = mSdp->GetAttributeList().GetIceUfrag();
+  ASSERT_EQ("4a799b2e", ice_ufrag) << "Wrong ice-ufrag value";
+}
 
-//TEST_F(NewSdpTest, CheckIcePwd) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  auto ice_ufrag = mSdp.GetIcePwd();
-//  ASSERT_TRUE(ice_pwd) << "No ice-pwd";
-//  ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd->Value()) << "Wrong ice-pwd value";
-//}
+TEST_F(NewSdpTest, CheckIcePwd) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  auto ice_pwd = mSdp->GetAttributeList().GetIcePwd();
+  ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
+}
 
-//TEST_F(NewSdpTest, CheckFingerprint) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  auto fingerprint = mSdp.GetFingerprint();
-//  ASSERT_TRUE(fingerprint) << "No fingerprint";
+TEST_F(NewSdpTest, CheckFingerprint) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  auto fingerprint = mSdp->GetAttributeList().GetFingerprint();
 //  ASSERT_EQ("sha-256", ice_pwd->Algorithm()) << "Wrong algorithm";
 //  ASSERT_EQ("DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C", ice_pwd->Fingerprint()) << "Wrong fingerprint";
-//}
+}
 
-//TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2, mSdp.GetMediaSectionCount()) << "Wrong number of media sections";
-//}
+TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(2, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+}
 
-//TEST_F(NewSdpTest, CheckMlines) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2U, mSdp.GetMediaSectionCount()) << "Wrong number of media sections";
-//  ASSERT_EQ("audio", mSdp.GetMediaSection(0).GetType())
-//    << "Wrong type for first media section";
-//  oSSERT_EQ("RTP/SAVPF", mSdp.GetMediaSection(0).GetProtocol())
-//    << "Wrong protocol for audio";
-//  auto audio_formats = mSdp.GetMediaSection(0).GetFormats();
-//  ASSERT_EQ(5U, audio_formats.size()) << "Wrong number of formats for audio";
-//  ASSERT_EQ("109", audio_formats[0]);
-//  ASSERT_EQ("9",   audio_formats[1]);
-//  ASSERT_EQ("0",   audio_formats[2]);
-//  ASSERT_EQ("8",   audio_formats[3]);
-//  ASSERT_EQ("101", audio_formats[4]);
-//
-//  ASSERT_EQ("video", mSdp.GetMediaSection(1).GetType())
-//    << "Wrong type for second media section";
-//  oSSERT_EQ("RTP/SAVPF", mSdp.GetMediaSection(1).GetProtocol())
-//    << "Wrong protocol for video";
-//  auto video_formats = mSdp.GetMediaSection(1).GetFormats();
-//  ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
-//  ASSERT_EQ("120", video_formats[0]);
-//}
+TEST_F(NewSdpTest, CheckMlines) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(2U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ(SdpMediaSection::kAudio, mSdp->GetMediaSection(0).GetMediaType())
+    << "Wrong type for first media section";
+  ASSERT_EQ(SdpMediaSection::kRtpSavpf,
+            mSdp->GetMediaSection(0).GetProtocol())
+    << "Wrong protocol for audio";
+  auto audio_formats = mSdp->GetMediaSection(0).GetFormats();
+  ASSERT_EQ(5U, audio_formats.size()) << "Wrong number of formats for audio";
+  ASSERT_EQ("109", audio_formats[0]);
+  ASSERT_EQ("9",   audio_formats[1]);
+  ASSERT_EQ("0",   audio_formats[2]);
+  ASSERT_EQ("8",   audio_formats[3]);
+  ASSERT_EQ("101", audio_formats[4]);
 
-//TEST_F(NewSdpTest, CheckRtpmap) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2U, mSdp.GetMediaSectionCount())
-//    << "Wrong number of media sections";
-//
-//  ASSERT_EQ(5U, mSdp.GetMediaSection(0).GetNumRtpmap())
+  ASSERT_EQ(SdpMediaSection::kVideo, mSdp->GetMediaSection(1).GetMediaType())
+    << "Wrong type for second media section";
+  ASSERT_EQ(SdpMediaSection::kRtpSavpf,
+            mSdp->GetMediaSection(1).GetProtocol())
+    << "Wrong protocol for video";
+  auto video_formats = mSdp->GetMediaSection(1).GetFormats();
+  ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
+  ASSERT_EQ("120", video_formats[0]);
+}
+
+TEST_F(NewSdpTest, CheckRtpmap) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
+
+//  ASSERT_EQ(5U, mSdp->GetMediaSection(0).GetAttributeList().CountAttributes(SdpAttribute::kRtpmapAttribute))
 //    << "Wrong number of rtpmap attributes for audio";
 //
   // TODO: Write a CheckRtpmap(rtpmap, payloadType, encodingName, rate)
@@ -986,15 +995,16 @@ TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
   // CheckRtpmap("101", "telephone-event", 8000, mSdp.GetMediaSection(0).GetRtpmap(4));
 
   // CheckRtpmap("120", "VP8",            90000, mSdp.GetMediaSection(0).GetRtpmap(0));
-//}
+}
 
-//TEST_F(NewSdpTest, CheckFormatParameters) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_EQ(2U, mSdp.GetMediaSectionCount())
-//    << "Wrong number of media sections";
-//
-//  ASSERT_EQ(1U, mSdp.GetMediaSection(0).GetAttributeList().Count(kFmtp));
-//}
+TEST_F(NewSdpTest, CheckFormatParameters) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
+
+//  ASSERT_EQ(1U, mSdp->GetMediaSection(0).GetAttributeList().Count(kFmtp));
+}
 
 // TODO: Tests that parse above SDP, and check various things
 // For media sections 1 and 2:
