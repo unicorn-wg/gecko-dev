@@ -130,6 +130,7 @@
          './src/sdp/sipcc/sdp_utils.c',
          './src/sdp/sipcc/sdp_services_unix.c',
 
+         # SDP Wrapper
          './src/sdp/Sdp.h',
          './src/sdp/SdpAttribute.h',
          './src/sdp/SdpAttributeList.h',
@@ -143,6 +144,9 @@
          './src/sdp/SipccSdp.cpp',
          './src/sdp/SipccSdpMediaSection.cpp',
          './src/sdp/SipccSdpParser.cpp',
+
+         # JSEP
+         './src/jsep/JsepSessionImpl.cpp',
       ],
 
       #
