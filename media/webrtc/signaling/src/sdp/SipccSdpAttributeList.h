@@ -59,7 +59,7 @@ public:
 private:
   SipccSdpAttributeList() {}
 
-  void Load(sdp_t* sdp, uint16_t levelmSdp, i + 1);
+  void Load(sdp_t* sdp, uint16_t level);
 
   sdp_t* mSdp;
   uint16_t mLevel;

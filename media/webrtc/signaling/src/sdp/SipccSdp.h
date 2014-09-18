@@ -30,25 +30,29 @@ public:
     sdp_free_description(mSdp);
   }
 
-  virtual SdpOrigin GetOrigin() const MOZ_OVERRIDE;
-  virtual std::string GetSessionName() const MOZ_OVERRIDE;
+  virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE {
+    return *mOrigin;
+  }
+  virtual const std::string& GetSessionName() const MOZ_OVERRIDE {
+    return mSessionName;
+  }
   // Note: connection information is always retrieved from media sections
-  virtual Maybe<std::string> GetBandwidth(
-      const std::string& type) const MOZ_OVERRIDE;
+  virtual const Maybe<std::string>&
+      GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
     return static_cast<uint16_t>(mMediaSections.size());
   }
 
-  virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE {
+  virtual const SdpAttributeList& GetAttributeList() const MOZ_OVERRIDE {
     return mAttributeList;
   }
 
-  virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE {
+  virtual SdpAttributeList& GetAttributeList() MOZ_OVERRIDE {
     return mAttributeList;
   }
 
-  virtual const SdpMediaSection &GetMediaSection(
+  virtual const SdpMediaSection& GetMediaSection(
       uint16_t level) const MOZ_OVERRIDE;
 
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
@@ -58,9 +62,11 @@ private:
 
   void Load(sdp_t* sdp);
 
-  sdp_t *mSdp;
   std::vector<SipccSdpMediaSection> mMediaSections;
   SipccSdpAttributeList mAttributeList;
+  std::map<std::string, std::string> mBandwidths;
+  std::string mSessionName;
+  UniquePtr<SdpOrigin> mOrigin;
 };
 
 } // namespace mozilla
