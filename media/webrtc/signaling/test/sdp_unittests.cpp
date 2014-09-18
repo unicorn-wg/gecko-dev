@@ -871,6 +871,7 @@ const std::string kBasicAudioVideoOffer =
 "v=0\r\n"
 "o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0\r\n"
 "s=SIP Call\r\n"
+"c=IN IP4 224.0.0.1/100/12\r\n"
 "t=0 0\r\n"
 "a=ice-ufrag:4a799b2e\r\n"
 "a=ice-pwd:e4cc12a910f106a0a744719425510e17\r\n"
@@ -897,7 +898,7 @@ const std::string kBasicAudioVideoOffer =
 "a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340\r\n"
 "a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host\r\n"
 "m=video 9 RTP/SAVPF 120\r\n"
-"c=IN IP4 0.0.0.0\r\n"
+"c=IN IP6 ::1\r\n"
 "a=rtpmap:120 VP8/90000\r\n"
 "a=sendrecv\r\n"
 "a=rtcp-fb:120 nack\r\n"
@@ -912,7 +913,11 @@ const std::string kBasicAudioVideoOffer =
 "a=candidate:6 1 UDP 16515071 162.222.183.171 64800 typ relay raddr 162.222.183.171 rport 64800\r\n"
 "a=candidate:2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530\r\n"
 "a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935\r\n"
-"a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026\r\n";
+"a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026\r\n"
+"m=audio 9 RTP/SAVPF 0\r\n"
+// fallthrough on everything possible
+"a=rtpmap:0 PCMU/8000\r\n";
+
 
 TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
   ParseSdp(kBasicAudioVideoOffer);
@@ -953,13 +958,13 @@ TEST_F(NewSdpTest, CheckFingerprint) {
 TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
-  ASSERT_EQ(2, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
 }
 
 TEST_F(NewSdpTest, CheckMlines) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
-  ASSERT_EQ(2U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
   ASSERT_EQ(SdpMediaSection::kAudio, mSdp->GetMediaSection(0).GetMediaType())
     << "Wrong type for first media section";
   ASSERT_EQ(SdpMediaSection::kRtpSavpf,
@@ -986,7 +991,7 @@ TEST_F(NewSdpTest, CheckMlines) {
 TEST_F(NewSdpTest, CheckRtpmap) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
-  ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
 //  ASSERT_EQ(5U, mSdp->GetMediaSection(0).GetAttributeList().CountAttributes(SdpAttribute::kRtpmapAttribute))
@@ -1006,10 +1011,39 @@ TEST_F(NewSdpTest, CheckRtpmap) {
 TEST_F(NewSdpTest, CheckFormatParameters) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
-  ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
 //  ASSERT_EQ(1U, mSdp->GetMediaSection(0).GetAttributeList().Count(kFmtp));
+}
+
+TEST_F(NewSdpTest, CheckConnectionLines) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
+
+  const SdpConnection& conn1 = mSdp->GetMediaSection(0).GetConnection();
+  ASSERT_EQ(SdpConnection::kInternet, conn1.GetNetType());
+  ASSERT_EQ(SdpConnection::kIPv4, conn1.GetAddrType());
+  ASSERT_EQ("0.0.0.0", conn1.GetAddress());
+  ASSERT_EQ(-1, conn1.GetTtl());
+  ASSERT_EQ(1U, conn1.GetCount());
+
+  const SdpConnection& conn2 = mSdp->GetMediaSection(1).GetConnection();
+  ASSERT_EQ(SdpConnection::kInternet, conn2.GetNetType());
+  ASSERT_EQ(SdpConnection::kIPv6, conn2.GetAddrType());
+  ASSERT_EQ("::1", conn2.GetAddress());
+  ASSERT_EQ(-1, conn2.GetTtl());
+  ASSERT_EQ(1U, conn2.GetCount());
+
+  // tests that we can fall through to session level as appropriate
+  const SdpConnection& conn3 = mSdp->GetMediaSection(2).GetConnection();
+  ASSERT_EQ(SdpConnection::kInternet, conn3.GetNetType());
+  ASSERT_EQ(SdpConnection::kIPv4, conn3.GetAddrType());
+  ASSERT_EQ("224.0.0.1", conn3.GetAddress());
+  ASSERT_EQ(100, conn3.GetTtl());
+  ASSERT_EQ(12U, conn3.GetCount());
 }
 
 // TODO: Tests that parse above SDP, and check various things

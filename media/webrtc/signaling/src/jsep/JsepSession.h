@@ -7,6 +7,9 @@
 
 #include <string>
 #include <vector>
+#include "mozilla/UniquePtr.h"
+
+#include "signaling/src/sdp/Sdp.h"
 
 namespace mozilla {
 namespace jsep {
@@ -30,8 +33,8 @@ enum JsepSdpType {
 };
 
 class JsepOAOptions {};
-class JsepOfferOptions : public JsepOAOptions {}
-class JsepAnswerOptions : public JsepOAOptions {}
+class JsepOfferOptions : public JsepOAOptions {};
+class JsepAnswerOptions : public JsepOAOptions {};
 
 class JsepSession {
  public:
@@ -39,7 +42,7 @@ class JsepSession {
 
   // Accessors for basic properties.
   virtual const std::string& name() const { return mName; }
-  virtual const std::string& state() const { return mState; }
+  virtual JsepSignalingState state() const { return mState; }
 
   // TODO(ekr@rtfm.com): Somehow let this know about media streams.
 

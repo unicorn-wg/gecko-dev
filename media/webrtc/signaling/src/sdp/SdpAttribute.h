@@ -12,8 +12,6 @@
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Attributes.h"
 
-#include "signaling/src/sdp/SdpEnum.h"
-
 namespace mozilla {
 
 class SdpAttribute
