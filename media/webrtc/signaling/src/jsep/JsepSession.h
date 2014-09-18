@@ -19,6 +19,7 @@ namespace mozilla {
 namespace jsep {
 
 // Forward declarations tracks and track pairs
+class JsepMediaStreamTrack;
 class JsepTrackPair;
 
 enum JsepSignalingState {
@@ -48,7 +49,13 @@ class JsepSession {
   virtual const std::string& name() const { return mName; }
   virtual JsepSignalingState state() const { return mState; }
 
-  // TODO(ekr@rtfm.com): Somehow let this know about media streams.
+  // Manage tracks. We take shared ownership of any track.
+  virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;
+  virtual nsresult RemoveTrack(size_t track_index) = 0;
+  virtual nsresult ReplaceTrack(size_t track_index,
+                                const RefPtr<JsepMediaStreamTrack>& track) = 0;
+  virtual size_t num_tracks() = 0;
+  nsresult track(size_t index, RefPtr<JsepMediaStreamTrack>* track);
 
   // Basic JSEP operations.
   virtual nsresult CreateOffer(const JsepOfferOptions& options) = 0;

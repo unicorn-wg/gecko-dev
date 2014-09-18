@@ -5,6 +5,10 @@
 #ifndef _JSEPMEDIASTREAMTRACK_H_
 #define _JSEPMEDIASTREAMTRACK_H_
 
+#include <mozilla/RefPtr.h>
+
+#include "signaling/src/sdp/SdpMediaSection.h"
+
 namespace mozilla {
 namespace jsep {
 
@@ -14,6 +18,11 @@ namespace jsep {
 class JsepMediaStreamTrack {
  public:
   virtual mozilla::SdpMediaSection::MediaType media_type() const = 0;
+
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(JsepMediaStreamTrack);
+
+ private:
+  virtual ~JsepMediaStreamTrack() {}
 };
 
 }  // namespace jsep
