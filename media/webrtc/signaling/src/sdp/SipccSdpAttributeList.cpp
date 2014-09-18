@@ -6,6 +6,8 @@
 
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
+#include "mozilla/Assertions.h"
+
 namespace mozilla {
 
 unsigned int
@@ -18,44 +20,44 @@ SipccSdpAttributeList::HasAttribute(AttributeType type) const {
   return false;
 }
 
-const SdpAttribute&
+const Maybe<SdpAttribute>
 SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
-  return nullptr;
+  return Nothing();
 }
 
 const SdpCandidateAttribute&
 SipccSdpAttributeList::GetCandidate() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpExtmapAttribute&
 SipccSdpAttributeList::GetExtmap() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 const SdpFingerprintAttribute&
 SipccSdpAttributeList::GetFingerprint() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 const SdpFmtpAttribute&
 SipccSdpAttributeList::GetFmtp() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 const SdpGroupAttribute&
 SipccSdpAttributeList::GetGroup() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 const SdpIceOptionsAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
-  return nullptr;
+  MOZ_CRASH()
 }
 
 std::string
@@ -70,12 +72,12 @@ SipccSdpAttributeList::GetIceUfrag() const {
 
 const SdpIdentityAttribute&
 SipccSdpAttributeList::GetIdentity() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpImageattrAttribute&
 SipccSdpAttributeList::GetImageattr() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 std::string
@@ -100,7 +102,7 @@ SipccSdpAttributeList::GetMid() const {
 
 const SdpMsidAttribute&
 SipccSdpAttributeList::GetMsid() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 uint32_t
@@ -110,42 +112,42 @@ SipccSdpAttributeList::GetPtime() const {
 
 const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpRtcpFbAttribute&
 SipccSdpAttributeList::GetRtcpFb() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
-//const SdpRtcpRemoteCandidates&
-//SipccSdpAttributeList::GetRemoteCandidates() const {
-//  return nullptr;
-//}
+const SdpRemoteCandidatesAttribute&
+SipccSdpAttributeList::GetRemoteCandidates() const {
+  MOZ_CRASH();
+}
 
 const SdpRtpmapAttribute&
 SipccSdpAttributeList::GetRtpmap() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpSctpmapAttribute&
 SipccSdpAttributeList::GetSctpmap() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpSsrcAttribute&
 SipccSdpAttributeList::GetSsrc() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 const SdpSsrcGroupAttribute&
 SipccSdpAttributeList::GetSsrcGroup() const {
-  return nullptr;
+  MOZ_CRASH();
 }
 
 void
