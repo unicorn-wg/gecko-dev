@@ -20,9 +20,10 @@ class SdpAttributeList
 public:
   typedef SdpAttribute::AttributeType AttributeType;
 
-  virtual size_t CountAttributes(AttributeType type) const = 0;
   virtual bool HasAttribute(AttributeType type) const = 0;
-  virtual const SdpAttribute& GetAttribute(AttributeType type, size_t index = 0) const = 0;
+  virtual const SdpAttribute* GetAttribute(AttributeType type) const = 0;
+  // The setter takes an attribute of any type, and takes ownership
+  virtual void SetAttribute(SdpAttribute* attr) = 0;
 
   virtual const SdpConnectionAttribute& GetConnection() const = 0;
   virtual const SdpFingerprintAttribute& GetFingerprint() const = 0;
@@ -55,9 +56,6 @@ public:
   virtual unsigned int GetMaxptime() const = 0;
   virtual const std::string& GetMid() const = 0;
   virtual unsigned int GetPtime() const = 0;
-
-  // The setter takes an attribute of any type, and Does The Right Thing™
-  virtual void SetAttribute(const SdpAttribute &) = 0;
 };
 
 }
