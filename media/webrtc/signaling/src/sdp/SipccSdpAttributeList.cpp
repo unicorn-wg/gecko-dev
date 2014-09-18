@@ -10,6 +10,23 @@
 
 namespace mozilla {
 
+/* static */ void
+SipccSdpAttributeList::LoadString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+                                  std::string& target) {
+  const char* value = sdp_attr_get_simple_string(sdp, type, level, 0, 0);
+  if (value) {
+    target = value;
+  }
+}
+
+void
+SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level) {
+  LoadString(sdp, level, SDP_ATTR_MID, mMid);
+  LoadString(sdp, level, SDP_ATTR_LABEL, mLabel);
+  LoadString(sdp, level, SDP_ATTR_IDENTITY, mIdentity);
+}
+
+
 size_t
 SipccSdpAttributeList::CountAttributes(AttributeType type) const {
   return 0;
@@ -62,27 +79,27 @@ SipccSdpAttributeList::GetIceOptions() const {
 
 const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
-  MOZ_CRASH();
+  return mIcePwd;
 }
 
 const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
-  MOZ_CRASH();
+  return mIceUfrag;
 }
 
-const SdpIdentityAttribute&
+const std::string&
 SipccSdpAttributeList::GetIdentity() const {
-  MOZ_CRASH();;
+  return mIdentity;
 }
 
 const SdpImageattrAttributeList&
 SipccSdpAttributeList::GetImageattr() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const std::string&
 SipccSdpAttributeList::GetLabel() const {
-  MOZ_CRASH();
+  return mLabel;
 }
 
 uint32_t
@@ -102,7 +119,7 @@ SipccSdpAttributeList::GetMid() const {
 
 const SdpMsidAttributeList&
 SipccSdpAttributeList::GetMsid() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 uint32_t
@@ -112,42 +129,42 @@ SipccSdpAttributeList::GetPtime() const {
 
 const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpRtcpFbAttributeList&
 SipccSdpAttributeList::GetRtcpFb() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpRemoteCandidatesAttribute&
 SipccSdpAttributeList::GetRemoteCandidates() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpRtpmapAttributeList&
 SipccSdpAttributeList::GetRtpmap() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpSctpmapAttributeList&
 SipccSdpAttributeList::GetSctpmap() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpSsrcAttribute&
 SipccSdpAttributeList::GetSsrc() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 const SdpSsrcGroupAttribute&
 SipccSdpAttributeList::GetSsrcGroup() const {
-  MOZ_CRASH();;
+  MOZ_CRASH();
 }
 
 void
