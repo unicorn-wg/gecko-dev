@@ -4745,7 +4745,9 @@ sdp_result_e sdp_parse_attr_srtpcontext (sdp_t *sdp_p, sdp_attr_t *attr_p,
 
 sdp_result_e sdp_build_attr_ice_attr (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                           flex_string *fs) {
-  flex_string_sprintf(fs, "a=%s\r\n", attr_p->attr.ice_attr);
+  flex_string_sprintf(fs, "a=%s:%s\r\n",
+                      sdp_get_attr_name(attr_p->type),
+                      attr_p->attr.ice_attr);
 
   return SDP_SUCCESS;
 }
@@ -4763,9 +4765,7 @@ sdp_result_e sdp_parse_attr_ice_attr (sdp_t *sdp_p, sdp_attr_t *attr_p, const ch
         return (SDP_INVALID_PARAMETER);
     }
 
-    /* We need the attr= here. This is pretty gross. */
-    snprintf(attr_p->attr.ice_attr, sizeof(attr_p->attr.ice_attr),
-      "%s:%s", sdp_get_attr_name(attr_p->type), tmp);
+    snprintf(attr_p->attr.ice_attr, sizeof(attr_p->attr.ice_attr), "%s", tmp);
 
     if (sdp_p->debug_flag[SDP_DEBUG_TRACE]) {
       SDP_PRINT("%s Parsed a=%s, %s", sdp_p->debug_str, sdp_get_attr_name(attr_p->type), tmp);
