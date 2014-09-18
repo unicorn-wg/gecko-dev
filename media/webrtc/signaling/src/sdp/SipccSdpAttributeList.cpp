@@ -106,7 +106,13 @@ SipccSdpAttributeList::GetExtmap() const {
 
 const SdpFingerprintAttribute&
 SipccSdpAttributeList::GetFingerprint() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kFingerprintAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetFingerprint();
+    }
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kFingerprintAttribute);
+  return *static_cast<const SdpFingerprintAttribute*>(attr);
 }
 
 const SdpFmtpAttributeList&
