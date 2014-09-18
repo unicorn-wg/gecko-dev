@@ -7,6 +7,8 @@
 #ifndef _SDPATTRIBUTE_H_
 #define _SDPATTRIBUTE_H_
 
+#include <list>
+
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Attributes.h"
 
@@ -65,7 +67,7 @@ public:
     return mType;
   }
 
-  virtual const std::string &GetTypeName()
+  virtual const std::string& GetTypeName()
   {
     return mTypeName;
   }
@@ -87,11 +89,73 @@ private:
 //                          [SP rel-port]
 //                          *(SP extension-att-name SP
 //                               extension-att-value)
+// foundation            = 1*32ice-char
+// component-id          = 1*5DIGIT
+// transport             = "UDP" / transport-extension
+// transport-extension   = token              ; from RFC 3261
+// priority              = 1*10DIGIT
+// cand-type             = "typ" SP candidate-types
+// candidate-types       = "host" / "srflx" / "prflx" / "relay" / token
+// rel-addr              = "raddr" SP connection-address
+// rel-port              = "rport" SP port
+// extension-att-name    = byte-string    ;from RFC 4566
+// extension-att-value   = byte-string
+// ice-char              = ALPHA / DIGIT / "+" / "/"
 class SdpCandidateAttributeList : public SdpAttribute
 {
 public:
   SdpCandidateAttributeList() :
     SdpAttribute(kCandidateAttribute, "candidate") {}
+
+  enum Transport {
+    kUdp,
+    kTcp
+  };
+
+  enum Type {
+    kHost,
+    kSrflx,
+    kPrflx,
+    kRelay
+  };
+
+
+  struct Candidate
+  {
+    std::string foundation;
+    uint16_t componentId;
+    Transport transport;
+    uint32_t priority;
+    std::string address;
+    uint16_t port;
+    Type type;
+    std::string raddr;
+    uint16_t rport;
+  };
+
+  void PushEntry(const std::string& foundation,
+                 uint16_t componentId,
+                 Transport transport,
+                 uint32_t priority,
+                 const std::string& address,
+                 uint16_t port,
+                 Type type,
+                 const std::string& raddr = "",
+                 uint16_t rport = 0) {
+    mCandidates.push_back({
+      foundation,
+      componentId,
+      transport,
+      priority,
+      address,
+      port,
+      type,
+      raddr,
+      rport
+    });
+  }
+
+  std::list<Candidate> mCandidates;
 };
 
 // RFC4145
@@ -109,7 +173,7 @@ public:
     SdpAttribute(kConnectionAttribute, "connection"),
     mValue(value) {}
 
-  enum ConnValue mValue;
+  ConnValue mValue;
 };
 
 // RFC5285
@@ -135,6 +199,36 @@ class SdpExtmapAttributeList : public SdpAttribute
 public:
   SdpExtmapAttributeList() :
     SdpAttribute(kExtmapAttribute, "extmap") {}
+
+  enum Direction {
+    kNotSpecified,
+    kSendonly,
+    kRecvonly,
+    kSendrecv,
+    kInactive
+  };
+
+  struct Extmap
+  {
+    uint16_t entry;
+    Direction direction;
+    std::string extensionname;
+    std::string extensionattrbutes;
+  };
+
+  void PushEntry(uint16_t entry,
+                 Direction direction,
+                 const std::string& extensionname,
+                 const std::string& extensionattributes = "") {
+    mExtmaps.push_back({
+      entry,
+      direction,
+      extensionname,
+      extensionattributes
+    });
+  }
+
+  std::list<Extmap> mExtmaps;
 };
 
 
@@ -155,12 +249,31 @@ public:
 class SdpFingerprintAttribute : public SdpAttribute
 {
 public:
-  SdpFingerprintAttribute() :
-    SdpAttribute(kFingerprintAttribute, "fingerprint") {}
+  enum HashAlgorithm {
+    kSha1,
+    kSha224,
+    kSha256,
+    kSha384,
+    kSha512,
+    kMd5,
+    kMd2,
+    kUnknownAlgorithm
+  };
+
+  SdpFingerprintAttribute(HashAlgorithm hashFunc,
+                          const std::string& fingerprint) :
+    SdpAttribute(kFingerprintAttribute, "fingerprint"),
+    mHashFunc(hashFunc),
+    mFingerprint(fingerprint) {}
+
+  HashAlgorithm mHashFunc;
+  std::string mFingerprint;
 };
 
 // RFC4566, RFC5576
 //       a=fmtp:<format> <format specific parameters>
+//
+// XXX This wants to be really fancy.
 class SdpFmtpAttributeList : public SdpAttribute
 {
 public:
