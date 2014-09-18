@@ -13,12 +13,51 @@ namespace mozilla {
 /* static */ std::string
 SipccSdpAttributeList::sEmptyString = "";
 
+SipccSdpAttributeList::SipccSdpAttributeList(
+    SipccSdpAttributeList* sessionLevel /* = nullptr */)
+    : mSessionLevel(sessionLevel)
+{
+  mAttributes = new SdpAttribute*[kMaxAttributeIndex];
+}
+
 SipccSdpAttributeList::~SipccSdpAttributeList() {
-  for (auto it = mAttributes.begin(); it != mAttributes.end(); ++it) {
-    delete it->second;
+  for (size_t i = 0; i < kMaxAttributeIndex; ++i) {
+    if (mAttributes[i]) {
+      delete mAttributes[i];
+    }
+  }
+  for (auto it = mOtherAttributes.begin();
+       it != mOtherAttributes.end(); ++it) {
+    delete *it;
+  }
+  delete[] mAttributes;
+}
+
+bool
+SipccSdpAttributeList::HasAttribute(AttributeType type) const {
+  return mAttributes[static_cast<size_t>(type)] != nullptr;
+}
+
+const SdpAttribute*
+SipccSdpAttributeList::GetAttribute(AttributeType type) const {
+  return mAttributes[static_cast<size_t>(type)];
+}
+
+void SipccSdpAttributeList::RemoveAttribute(AttributeType type) {
+  if (HasAttribute(type)) {
+    delete mAttributes[static_cast<size_t>(type)];
   }
 }
 
+void
+SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
+  if (attr->GetType() == SdpAttribute::kOtherAttribute) {
+    mOtherAttributes.push_back(attr);
+  } else {
+    RemoveAttribute(attr->GetType());
+    mAttributes[attr->GetType()] = attr;
+  }
+}
 
 void
 SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
@@ -51,21 +90,6 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
                                        "ice-pwd", std::string(value)));
   }
-}
-
-bool
-SipccSdpAttributeList::HasAttribute(AttributeType type) const {
-  return mAttributes.count(type) > 0;
-}
-
-const SdpAttribute*
-SipccSdpAttributeList::GetAttribute(AttributeType type) const {
-  return mAttributes.find(type)->second;
-}
-
-void
-SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
-  mAttributes[attr->GetType()] = attr;
 }
 
 const SdpCandidateAttributeList&

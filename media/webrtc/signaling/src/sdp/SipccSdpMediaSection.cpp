@@ -25,7 +25,7 @@ SipccSdpMediaSection::GetProtocol() const {
 
 const SdpConnection&
 SipccSdpMediaSection::GetConnection() const {
-  MOZ_CRASH();
+  return *mConnection;
 }
 
 const std::string&
@@ -54,8 +54,7 @@ SipccSdpMediaSection::GetAttributeList() {
 }
 
 void
-SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
-                           SipccSdpAttributeList* sessionLevelAttrs)
+SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level)
 {
   switch (sdp_get_media_type(sdp, level)) {
   case SDP_MEDIA_AUDIO:
@@ -95,7 +94,9 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
 
 void
 SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
-  // TODO
+  //  sdp_nettype_e type = sdp_get_conn_nettype(sdp, level);
+  //sdp_addrtype_e addrtype = sdp_get_conn_addrtype(sdp, level);
+  //const char *address = sdp_get_conn_address(sdp, level);
 }
 
 }

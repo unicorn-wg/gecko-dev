@@ -7,7 +7,7 @@
 #ifndef _SIPCCSDPATTRIBUTELIST_H_
 #define _SIPCCSDPATTRIBUTELIST_H_
 
-#include "signaling/src/sdp/SdpAttribute.h"
+#include "signaling/src/sdp/SdpAttributeList.h"
 extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
 }
@@ -25,6 +25,7 @@ public:
   virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
   virtual const SdpAttribute* GetAttribute(AttributeType type) const MOZ_OVERRIDE;
   virtual void SetAttribute(SdpAttribute* attr) MOZ_OVERRIDE;
+  virtual void RemoveAttribute(AttributeType type) MOZ_OVERRIDE;
 
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttribute& GetFingerprint() const MOZ_OVERRIDE;
@@ -62,8 +63,9 @@ public:
 
 private:
   static std::string sEmptyString;
+  const size_t kMaxAttributeIndex = SdpAttribute::kOtherAttribute;
 
-  SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr) {}
+  SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr);
 
   void Load(sdp_t* sdp, uint16_t level);
   void LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
@@ -71,7 +73,8 @@ private:
 
   SipccSdpAttributeList* mSessionLevel;
 
-  std::map<AttributeType, SdpAttribute*> mAttributes;
+  SdpAttribute** mAttributes;
+  std::vector<SdpAttribute*> mOtherAttributes;
 };
 
 }
