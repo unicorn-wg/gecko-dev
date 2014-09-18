@@ -62,12 +62,12 @@ public:
       : mType(type), mTypeName(typeName) {}
   virtual ~SdpAttribute() {}
 
-  virtual AttributeType GetType()
+  AttributeType GetType() const
   {
     return mType;
   }
 
-  virtual const std::string& GetTypeName()
+  const std::string& GetTypeName() const
   {
     return mTypeName;
   }
@@ -304,23 +304,6 @@ public:
     SdpAttribute(kIceOptionsAttribute, "ice-options") {}
 };
 
-// draft-ietf-rtcweb-security-arch
-//   identity-attribute  = "identity:" identity-assertion
-//                         [ SP identity-extension
-//                           *(";" [ SP ] identity-extension) ]
-//   identity-assertion  = base64
-//   base64              = 1*(ALPHA / DIGIT / "+" / "/" / "=" )
-//   identity-extension  = extension-att-name [ "=" extension-att-value ]
-//   extension-att-name  = token
-//   extension-att-value = 1*(%x01-09 / %x0b-0c / %x0e-3a / %x3c-ff)
-//                         ; byte-string from [RFC4566] omitting ";"
-class SdpIdentityAttribute : public SdpAttribute
-{
-public:
-  SdpIdentityAttribute() :
-    SdpAttribute(kIdentityAttribute, "identity") {}
-};
-
 // RFC6236
 //     image-attr = "imageattr:" PT 1*2( 1*WSP ( "send" / "recv" )
 //                                       1*WSP attr-list )
@@ -526,11 +509,11 @@ public:
 class SdpOtherAttribute : public SdpAttribute
 {
 public:
-  SdpOtherAttribute(std::string typeName, std::string value = "") :
-    SdpAttribute(kOtherAttribute, typeName),
+  SdpOtherAttribute(AttributeType type, std::string typeName, std::string value = "") :
+    SdpAttribute(type, typeName),
     mValue(value) {}
 
-  std::string const getValue()
+  const std::string& GetValue() const
   {
     return mValue;
   }

@@ -56,7 +56,7 @@ SipccSdp::Load(sdp_t* sdp) {
     // note that we pass a "level" here that is one higher
     // sipcc counts media sections from 1, using 0 as the "session"
     SipccSdpMediaSection* section = new SipccSdpMediaSection();
-    section->Load(sdp, i + 1);
+    section->Load(sdp, i + 1, &mAttributeList);
     mMediaSections.push_back(section);
   }
 }
