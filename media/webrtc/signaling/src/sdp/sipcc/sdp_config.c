@@ -101,6 +101,10 @@ sdp_conf_options_t *sdp_init_config ()
     conf_p->num_invalid_param       = 0;
     conf_p->num_no_resource         = 0;
 
+    /* Parse error handler stuff */
+    conf_p->error_handler           = NULL;
+    conf_p->error_handler_context   = NULL;
+
     CSFLogInfo(logTag, "SDP: Initialized config pointer: %p (magic=0x%X)",
                 conf_p, conf_p ? conf_p->magic_num : 0);
 
@@ -304,3 +308,15 @@ void sdp_allow_choose (void *config_p, sdp_choose_param_e param, tinybool choose
         conf_p->allow_choose[param] = choose_allowed;
     }
 }
+
+void sdp_config_set_error_handler(void *config_p,
+                                  sdp_parse_error_handler handler,
+                                  void *context)
+{
+    sdp_conf_options_t *conf_p = (sdp_conf_options_t *)config_p;
+
+    conf_p->error_handler = handler;
+    conf_p->error_handler_context = context;
+}
+
+
