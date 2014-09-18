@@ -46,12 +46,68 @@ protected:
 class SdpOrigin
 {
 public:
-  virtual std::string GetUsername() const = 0;
-  virtual uint64_t GetSessionId() const = 0;
-  virtual uint64_t GetSessionVersion() const = 0;
-  virtual sdp::NetType GetNetType() const = 0;
-  virtual sdp::AddrType GetAddrType() const = 0;
-  virtual std::string GetAddress() const = 0;
+  SdpOrigin() :
+    mSessionId(0),
+    mSessionVersion(0),
+    mNetType(sdp::kInternet),
+    mAddrType(sdp::kIPv4)
+  {}
+
+  const std::string& GetUsername() const {
+    return mUsername;
+  }
+
+  void SetUsername(const std::string& username) {
+    mUsername = username;
+  }
+
+  uint64_t GetSessionId() const {
+    return mSessionId;
+  }
+
+  void SetSessionId(uint64_t sessionId) {
+    mSessionId = sessionId;
+  }
+
+  uint64_t GetSessionVersion() const {
+    return mSessionVersion;
+  }
+
+  void SetSessionVersion(uint64_t sessionVersion) {
+    mSessionVersion = sessionVersion;
+  }
+
+  const sdp::NetType& GetNetType() const {
+    return mNetType;
+  }
+
+  void SetNetType(const sdp::NetType& netType) {
+    mNetType = netType;
+  }
+
+  const sdp::AddrType& GetAddrType() const {
+    return mAddrType;
+  }
+
+  void SetAddrType(const sdp::AddrType& addrType) {
+    mAddrType = addrType;
+  }
+
+  const std::string& GetAddress() const {
+    return mAddress;
+  }
+
+  void SetAddress(const std::string& address) {
+    mAddress = address;
+  }
+
+private:
+  std::string mUsername;
+  uint64_t mSessionId;
+  uint64_t mSessionVersion;
+  sdp::NetType mNetType;
+  sdp::AddrType mAddrType;
+  std::string mAddress;
 };
 
 } // namespace mozilla
