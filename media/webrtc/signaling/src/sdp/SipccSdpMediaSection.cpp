@@ -18,7 +18,7 @@ SipccSdpMediaSection::GetPortCount() const {
   return mPortCount;
 }
 
-sdp::Protocol
+Protocol
 SipccSdpMediaSection::GetProtocol() const {
   return mProtocol;
 }

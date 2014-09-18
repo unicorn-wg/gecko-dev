@@ -7,7 +7,7 @@
 #ifndef _SIPCCSDPATTRIBUTELIST_H_
 #define _SIPCCSDPATTRIBUTELIST_H_
 
-#include "signaling/src/sdp/SdpAttributeList.h"
+#include "signaling/src/sdp/SdpAttribute.h"
 extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
 }
@@ -22,11 +22,9 @@ class SipccSdpAttributeList : public SdpAttributeList
   friend class SipccSdpMediaSection;
   friend class SipccSdp;
 public:
-  virtual unsigned int CountAttributes(sdp::AttributeType type) const MOZ_OVERRIDE;
-  virtual bool HasAttribute(sdp::AttributeType type) const MOZ_OVERRIDE;
-
-  virtual UniquePtr<SdpAttribute>
-    GetAttribute(sdp::AttributeType type) const MOZ_OVERRIDE;
+  virtual size_t CountAttributes(AttributeType type) const MOZ_OVERRIDE;
+  virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
+  virtual SdpAttribute GetAttribute(AttributeType type, size_t index = 0) const MOZ_OVERRIDE;
 
   virtual const SdpCandidateAttribute& GetCandidate() const MOZ_OVERRIDE;
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
