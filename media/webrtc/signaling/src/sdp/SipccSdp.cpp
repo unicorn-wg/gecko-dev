@@ -48,7 +48,8 @@ SipccSdp::GetMediaSection(uint16_t level)
 
 void
 SipccSdp::Load(sdp_t* sdp) {
-  mAttributeList.Load(sdp, 0);
+  // Believe it or not, SDP_SESSION_LEVEL is 0xFFFF
+  mAttributeList.Load(sdp, SDP_SESSION_LEVEL);
 
   // TODO load other session-level stuff
 

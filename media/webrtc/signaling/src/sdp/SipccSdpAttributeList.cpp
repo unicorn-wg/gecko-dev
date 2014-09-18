@@ -76,13 +76,13 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level) {
 
   char *value;
   sdp_result_e result =
-      sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 0, &value);
+      sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 1, &value);
   if (result == SDP_SUCCESS) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIceUfragAttribute,
                                        "ice-ufrag", std::string(value)));
   }
   result =
-      sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 0, &value);
+      sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 1, &value);
   if (result == SDP_SUCCESS) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
                                        "ice-pwd", std::string(value)));
