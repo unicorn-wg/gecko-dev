@@ -16,12 +16,9 @@ SipccSdp::GetSessionName() const {
   return "TODO";
 }
 
-const Maybe<std::string>&
+Maybe<std::string>
 SipccSdp::GetBandwidth(const std::string& type) const {
-  if (mBandwidths.count(type) > 0) {
-    return Nothing();
-  }
-  return Some(mBandwidths[type]);
+  return Maybe<std::string>();
 }
 
 const SdpMediaSection &

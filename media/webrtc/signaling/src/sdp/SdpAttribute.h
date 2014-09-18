@@ -58,6 +58,7 @@ public:
 
   SdpAttribute(AttributeType type, std::string typeName) :
     mType(type), mTypeName(typeName) {}
+  virtual ~SdpAttribute() {}
 
   virtual AttributeType GetType()
   {
@@ -68,9 +69,6 @@ public:
   {
     return mTypeName;
   }
-
-protected:
-  virtual ~SdpAttribute() {}
 
 private:
   AttributeType mType;

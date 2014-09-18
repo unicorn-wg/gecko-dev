@@ -25,7 +25,7 @@ class SdpMediaSection;
 class Sdp
 {
 public:
-  Sdp();
+  Sdp() {};
 
   virtual const SdpOrigin& GetOrigin() const = 0;
   virtual const std::string& GetSessionName() const = 0;
@@ -40,7 +40,6 @@ public:
   virtual const SdpMediaSection &GetMediaSection(uint16_t level) const = 0;
   virtual SdpMediaSection &GetMediaSection(uint16_t level) = 0;
 
-protected:
   virtual ~Sdp() {};
 };
 

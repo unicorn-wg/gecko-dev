@@ -37,8 +37,8 @@ public:
     return mSessionName;
   }
   // Note: connection information is always retrieved from media sections
-  virtual const Maybe<std::string>&
-      GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
+  virtual Maybe<std::string> GetBandwidth(
+      const std::string& type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
     return static_cast<uint16_t>(mMediaSections.size());
@@ -58,7 +58,9 @@ public:
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
 private:
-  SipccSdp() {}
+  explicit SipccSdp(sdp_t* sdp) :
+      mSdp(sdp),
+      mAttributeList(sdp, 0) {}
 
   void Load(sdp_t* sdp);
 
