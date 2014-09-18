@@ -10,7 +10,7 @@
 
 namespace mozilla {
 
-unsigned int
+size_t
 SipccSdpAttributeList::CountAttributes(AttributeType type) const {
   return 0;
 }
@@ -20,7 +20,7 @@ SipccSdpAttributeList::HasAttribute(AttributeType type) const {
   return false;
 }
 
-const Maybe<SdpAttribute>
+const SdpAttribute&
 SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
   return Nothing();
 }
@@ -80,7 +80,7 @@ SipccSdpAttributeList::GetImageattr() const {
   MOZ_CRASH();;
 }
 
-std::string
+const std::string&
 SipccSdpAttributeList::GetLabel() const {
   return "";
 }
