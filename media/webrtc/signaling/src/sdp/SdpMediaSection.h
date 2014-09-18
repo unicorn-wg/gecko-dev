@@ -8,6 +8,10 @@
 #define _SDPMEDIASECTION_H_
 
 #include "mozilla/Maybe.h"
+#include "signaling/src/sdp/SdpEnum.h"
+
+#include <string>
+#include <vector>
 
 namespace mozilla {
 
