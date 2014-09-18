@@ -8,6 +8,11 @@
 
 namespace mozilla {
 
+SipccSdp::~SipccSdp() {
+  for (auto i = mMediaSections.begin(); i != mMediaSections.end(); ++i) {
+    delete *i;
+  }
+}
 
 const Maybe<std::string>&
 SipccSdp::GetBandwidth(const std::string& type) const {
@@ -23,7 +28,7 @@ SipccSdp::GetMediaSection(uint16_t level) const
   if (level > mMediaSections.size()) {
     MOZ_CRASH();
   }
-  return mMediaSections[level];
+  return *mMediaSections[level];
 }
 
 SdpMediaSection&
@@ -32,7 +37,7 @@ SipccSdp::GetMediaSection(uint16_t level)
   if (level > mMediaSections.size()) {
     MOZ_CRASH();
   }
-  return mMediaSections[level];
+  return *mMediaSections[level];
 }
 
 void
@@ -44,8 +49,8 @@ SipccSdp::Load(sdp_t* sdp) {
   for (int i = 0; i < sdp_get_num_media_lines(sdp); ++i) {
     // note that we pass a "level" here that is one higher
     // sipcc counts media sections from 1, using 0 as the "session"
-    SipccSdpMediaSection section();
-    section.Load(sdp, i + 1);
+    SipccSdpMediaSection* section = new SipccSdpMediaSection();
+    section->Load(sdp, i + 1);
     mMediaSections.push_back(section);
   }
 }

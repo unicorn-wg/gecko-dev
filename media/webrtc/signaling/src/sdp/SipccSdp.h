@@ -27,7 +27,7 @@ class SipccSdp MOZ_FINAL : public Sdp
 {
   friend class SipccSdpParser;
 public:
-  ~SipccSdp() {}
+  ~SipccSdp();
 
   virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE {
     return *mOrigin;
@@ -62,7 +62,7 @@ private:
 
   void Load(sdp_t* sdp);
 
-  std::vector<SipccSdpMediaSection> mMediaSections;
+  std::vector<SipccSdpMediaSection*> mMediaSections;
   SipccSdpAttributeList mAttributeList;
   std::map<std::string, std::string> mBandwidths;
   std::string mSessionName;
