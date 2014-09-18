@@ -10,7 +10,6 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/UniquePtr.h"
 #include "signaling/src/sdp/SdpMediaSection.h"
-#include "signaling/src/sdp/SdpEnum.h"
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
 extern "C" {
@@ -44,10 +43,10 @@ public:
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection() {}
+  SipccSdpMediaSection(SipccSdpAttributeList *sessionLevel)
+      : mAttributes(sessionLevel) {}
 
-  void Load(sdp_t* sdp, uint16_t level,
-              SipccSdpAttributeList* sessionLevelAttrs);
+  void Load(sdp_t* sdp, uint16_t level);
   void LoadConnection(sdp_t* sdp, uint16_t level);
 
   // the following values are cached on first get
