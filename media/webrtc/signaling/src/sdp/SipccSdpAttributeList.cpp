@@ -10,36 +10,62 @@
 
 namespace mozilla {
 
-/* static */ void
-SipccSdpAttributeList::LoadString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
-                                  std::string& target) {
-  const char* value = sdp_attr_get_simple_string(sdp, type, level, 0, 0);
+/* static */ std::string
+SipccSdpAttributeList::sEmptyString = "";
+
+SipccSdpAttributeList::~SipccSdpAttributeList() {
+  for (auto it = mAttributes.begin(); it != mAttributes.end(); ++it) {
+    delete it->second;
+  }
+}
+
+
+void
+SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+                                        AttributeType targetType, const std::string& name) {
+  const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 0);
   if (value) {
-    target = value;
+    SetAttribute(new SdpOtherAttribute(targetType, name, std::string(value)));
   }
 }
 
 void
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level) {
-  LoadString(sdp, level, SDP_ATTR_MID, mMid);
-  LoadString(sdp, level, SDP_ATTR_LABEL, mLabel);
-  LoadString(sdp, level, SDP_ATTR_IDENTITY, mIdentity);
-}
+  LoadSimpleString(sdp, level, SDP_ATTR_MID,
+                   SdpAttribute::kMidAttribute, "mid");
+  LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
+                   SdpAttribute::kLabelAttribute, "label");
+  LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
+                   SdpAttribute::kIdentityAttribute, "identity");
 
-
-size_t
-SipccSdpAttributeList::CountAttributes(AttributeType type) const {
-  return 0;
+  char *value;
+  sdp_result_e result =
+      sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 0, &value);
+  if (result == SDP_SUCCESS) {
+    SetAttribute(new SdpOtherAttribute(SdpAttribute::kIceUfragAttribute,
+                                       "ice-ufrag", std::string(value)));
+  }
+  result =
+      sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 0, &value);
+  if (result == SDP_SUCCESS) {
+    SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
+                                       "ice-pwd", std::string(value)));
+  }
 }
 
 bool
 SipccSdpAttributeList::HasAttribute(AttributeType type) const {
-  return false;
+  return mAttributes.count(type) > 0;
 }
 
-const SdpAttribute&
-SipccSdpAttributeList::GetAttribute(AttributeType type, size_t index) const {
-  MOZ_CRASH();
+const SdpAttribute*
+SipccSdpAttributeList::GetAttribute(AttributeType type) const {
+  return mAttributes.find(type)->second;
+}
+
+void
+SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
+  mAttributes[attr->GetType()] = attr;
 }
 
 const SdpCandidateAttributeList&
@@ -79,17 +105,38 @@ SipccSdpAttributeList::GetIceOptions() const {
 
 const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
-  return mIcePwd;
+  if (!HasAttribute(SdpAttribute::kIcePwdAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetIcePwd();
+    }
+    return sEmptyString;
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kIcePwdAttribute);
+  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
 }
 
 const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
-  return mIceUfrag;
+  if (!HasAttribute(SdpAttribute::kIceUfragAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetIceUfrag();
+    }
+    return sEmptyString;
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kIceUfragAttribute);
+  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
 }
 
 const std::string&
 SipccSdpAttributeList::GetIdentity() const {
-  return mIdentity;
+  if (mSessionLevel) {
+    MOZ_CRASH("This is session-level only foo!");
+  }
+  if (!HasAttribute(SdpAttribute::kIdentityAttribute)) {
+    return sEmptyString;
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kIdentityAttribute);
+  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
 }
 
 const SdpImageattrAttributeList&
@@ -99,7 +146,14 @@ SipccSdpAttributeList::GetImageattr() const {
 
 const std::string&
 SipccSdpAttributeList::GetLabel() const {
-  return mLabel;
+  if (!mSessionLevel) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+  if (!HasAttribute(SdpAttribute::kLabelAttribute)) {
+    return sEmptyString;
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kLabelAttribute);
+  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
 }
 
 uint32_t
@@ -114,7 +168,14 @@ SipccSdpAttributeList::GetMaxptime() const {
 
 const std::string&
 SipccSdpAttributeList::GetMid() const {
-  MOZ_CRASH();
+  if (!mSessionLevel) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+  if (!HasAttribute(SdpAttribute::kMidAttribute)) {
+    return sEmptyString;
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kMidAttribute);
+  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
 }
 
 const SdpMsidAttributeList&
@@ -165,10 +226,6 @@ SipccSdpAttributeList::GetSsrc() const {
 const SdpSsrcGroupAttribute&
 SipccSdpAttributeList::GetSsrcGroup() const {
   MOZ_CRASH();
-}
-
-void
-SipccSdpAttributeList::SetAttribute(const SdpAttribute &) {
 }
 
 
