@@ -17,10 +17,49 @@ namespace mozilla {
 class SdpAttribute
 {
 public:
-  SdpAttribute(sdp::AttributeType type, std::string typeName) :
+  enum AttributeType {
+    kBundleOnlyAttribute,
+    kCandidateAttribute,
+    kConnectionAttribute,
+    kDtlsFingerprintAttribute,
+    kExtmapAttribute,
+    kFingerprintAttribute,
+    kFmtpAttribute,
+    kGroupAttribute,
+    kIceLiteAttribute,
+    kIceMismatchAttribute,
+    kIceOptionsAttribute,
+    kIcePwdAttribute,
+    kIceUfragAttribute,
+    kIdentityAttribute,
+    kImageattrAttribute,
+    kInactiveAttribute,
+    kLabelAttribute,
+    kMaxprateAttribute,
+    kMaxptimeAttribute,
+    kMidAttribute,
+    kMsidAttribute,
+    kPtimeAttribute,
+    kRecvonlyAttribute,
+    kRemoteCandidatesAttribute,
+    kRtcpAttribute,
+    kRtcpFbAttribute,
+    kRtcpMuxAttribute,
+    kRtcpRsizeAttribute,
+    kRtpmapAttribute,
+    kSctpmapAttribute,
+    kSendonlyAttribute,
+    kSendrecvAttribute,
+    kSetupAttribute,
+    kSsrcAttribute,
+    kSsrcGroupAttribute,
+    kOtherAttribute
+  };
+
+  SdpAttribute(AttributeType type, std::string typeName) :
     mType(type), mTypeName(typeName) {}
 
-  virtual sdp::AttributeType GetType()
+  virtual AttributeType GetType()
   {
     return mType;
   }
@@ -34,7 +73,7 @@ protected:
   virtual ~SdpAttribute() {}
 
 private:
-  sdp::AttributeType mType;
+  AttributeType mType;
   std::string mTypeName;
 };
 
@@ -54,7 +93,7 @@ class SdpCandidateAttribute : public SdpAttribute
 {
 public:
   SdpCandidateAttribute() :
-    SdpAttribute(sdp::kCandidateAttribute, "candidate") {}
+    SdpAttribute(kCandidateAttribute, "candidate") {}
 };
 
 // RFC4145
@@ -69,7 +108,7 @@ public:
   };
 
   SdpConnectionAttribute(SdpConnectionAttribute::ConnValue value) :
-    SdpAttribute(sdp::kConnectionAttribute, "connection"),
+    SdpAttribute(kConnectionAttribute, "connection"),
     mValue(value) {}
 
   enum ConnValue mValue;
@@ -97,7 +136,7 @@ class SdpExtmapAttribute : public SdpAttribute
 {
 public:
   SdpExtmapAttribute() :
-    SdpAttribute(sdp::kExtmapAttribute, "extmap") {}
+    SdpAttribute(kExtmapAttribute, "extmap") {}
 };
 
 
@@ -119,7 +158,7 @@ class SdpFingerprintAttribute : public SdpAttribute
 {
 public:
   SdpFingerprintAttribute() :
-    SdpAttribute(sdp::kFingerprintAttribute, "fingerprint") {}
+    SdpAttribute(kFingerprintAttribute, "fingerprint") {}
 };
 
 // RFC4566, RFC5576
@@ -128,7 +167,7 @@ class SdpFmtpAttribute : public SdpAttribute
 {
 public:
   SdpFmtpAttribute() :
-    SdpAttribute(sdp::kFmtpAttribute, "fmtp") {}
+    SdpAttribute(kFmtpAttribute, "fmtp") {}
 };
 
 // RFC5888
@@ -140,7 +179,7 @@ class SdpGroupAttribute : public SdpAttribute
 {
 public:
   SdpGroupAttribute() :
-    SdpAttribute(sdp::kGroupAttribute, "group") {}
+    SdpAttribute(kGroupAttribute, "group") {}
 };
 
 // RFC5245
@@ -151,7 +190,7 @@ class SdpIceOptionsAttribute : public SdpAttribute
 {
 public:
   SdpIceOptionsAttribute() :
-    SdpAttribute(sdp::kIceOptionsAttribute, "ice-options") {}
+    SdpAttribute(kIceOptionsAttribute, "ice-options") {}
 };
 
 // draft-ietf-rtcweb-security-arch
@@ -168,7 +207,7 @@ class SdpIdentityAttribute : public SdpAttribute
 {
 public:
   SdpIdentityAttribute() :
-    SdpAttribute(sdp::kIdentityAttribute, "identity") {}
+    SdpAttribute(kIdentityAttribute, "identity") {}
 };
 
 // RFC6236
@@ -241,7 +280,7 @@ class SdpImageattrAttribute : public SdpAttribute
 {
 public:
   SdpImageattrAttribute() :
-    SdpAttribute(sdp::kImageattrAttribute, "imageattr") {}
+    SdpAttribute(kImageattrAttribute, "imageattr") {}
 };
 
 // draft-ietf-mmusic-msid
@@ -252,7 +291,7 @@ class SdpMsidAttribute : public SdpAttribute
 {
 public:
   SdpMsidAttribute() :
-    SdpAttribute(sdp::kMsidAttribute, "msid") {}
+    SdpAttribute(kMsidAttribute, "msid") {}
 };
 
 // RFC5245
@@ -263,7 +302,7 @@ class SdpRemoteCandidatesAttribute : public SdpAttribute
 {
 public:
   SdpRemoteCandidatesAttribute() :
-    SdpAttribute(sdp::kRemoteCandidatesAttribute, "remote-candidates") {}
+    SdpAttribute(kRemoteCandidatesAttribute, "remote-candidates") {}
 };
 
 // RFC3605
@@ -273,7 +312,7 @@ class SdpRtcpAttribute : public SdpAttribute
 {
 public:
   SdpRtcpAttribute() :
-    SdpAttribute(sdp::kRtcpAttribute, "rtcp") {}
+    SdpAttribute(kRtcpAttribute, "rtcp") {}
 };
 
 // RFC4585
@@ -308,7 +347,7 @@ class SdpRtcpFbAttribute : public SdpAttribute
 {
 public:
   SdpRtcpFbAttribute() :
-    SdpAttribute(sdp::kRtcpFbAttribute, "rtcp-fb") {}
+    SdpAttribute(kRtcpFbAttribute, "rtcp-fb") {}
 };
 
 // RFC4566
@@ -317,7 +356,7 @@ class SdpRtpmapAttribute : public SdpAttribute
 {
 public:
   SdpRtpmapAttribute() :
-    SdpAttribute(sdp::kRtpmapAttribute, "rtpmap") {}
+    SdpAttribute(kRtpmapAttribute, "rtpmap") {}
 };
 
 // draft-ietf-mmusic-sctp-sdp-06
@@ -333,7 +372,7 @@ class SdpSctpmapAttribute : public SdpAttribute
 {
 public:
   SdpSctpmapAttribute() :
-    SdpAttribute(sdp::kSctpmapAttribute, "sctpmap") {}
+    SdpAttribute(kSctpmapAttribute, "sctpmap") {}
 };
 
 // RFC4145
@@ -343,7 +382,7 @@ class SdpSetupAttribute : public SdpAttribute
 {
 public:
   SdpSetupAttribute() :
-    SdpAttribute(sdp::kSetupAttribute, "setup") {}
+    SdpAttribute(kSetupAttribute, "setup") {}
 };
 
 // RFC5576
@@ -356,7 +395,7 @@ class SdpSsrcAttribute : public SdpAttribute
 {
 public:
   SdpSsrcAttribute() :
-    SdpAttribute(sdp::kSsrcAttribute, "ssrc") {}
+    SdpAttribute(kSsrcAttribute, "ssrc") {}
 };
 
 // RFC5576
@@ -369,7 +408,7 @@ class SdpSsrcGroupAttribute : public SdpAttribute
 {
 public:
   SdpSsrcGroupAttribute() :
-    SdpAttribute(sdp::kSsrcGroupAttribute, "ssrc-group") {}
+    SdpAttribute(kSsrcGroupAttribute, "ssrc-group") {}
 };
 
 // Used for any other kind of attribute not otherwise specialized
@@ -377,7 +416,7 @@ class SdpOtherAttribute : public SdpAttribute
 {
 public:
   SdpOtherAttribute(std::string typeName, std::string value = "") :
-    SdpAttribute(sdp::kOtherAttribute, typeName),
+    SdpAttribute(kOtherAttribute, typeName),
     mValue(value) {}
 
   std::string const getValue()

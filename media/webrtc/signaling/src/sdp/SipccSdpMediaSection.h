@@ -49,10 +49,10 @@ private:
   void LoadConnection(sdp_t* sdp, uint16_t level);
 
   // the following values are cached on first get
-  sdp::MediaType mMediaType;
+  MediaType mMediaType;
   uint16_t mPort;
   uint16_t mPortCount;
-  sdp::Protocol mProtocol;
+  Protocol mProtocol;
   std::vector<std::string> mFormats;
   SipccSdpAttributeList mAttributes;
 

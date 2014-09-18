@@ -31,7 +31,7 @@ SipccSdpParser::Parse(const std::string& sdpText)
     if (result == SDP_SUCCESS) {
       SipccSdp* sipccSdp = new SipccSdp();
       sipccSdp->Load(sdp);
-      return UniquePtr<Sdp>(sipccSdp);
+      return UniquePtr<Sdp, DefaultDelete<Sdp>>(sipccSdp);
     }
 
     sdp_free_description(sdp);

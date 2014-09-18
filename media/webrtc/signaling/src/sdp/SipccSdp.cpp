@@ -16,9 +16,12 @@ SipccSdp::GetSessionName() const {
   return "TODO";
 }
 
-Maybe<std::string>
-SipccSdp::GetBandwidth(std::string type) const {
-  return Maybe<std::string>();
+const Maybe<std::string>&
+SipccSdp::GetBandwidth(const std::string& type) const {
+  if (mBandwidths.count(type) > 0) {
+    return Nothing();
+  }
+  return Some(mBandwidths[type]);
 }
 
 const SdpMediaSection &
@@ -33,12 +36,10 @@ SipccSdp::GetMediaSection(unsigned int level)
 }
 
 void
-SipccSdp::Load(sdp_t* sdp, uint16_t level) {
-  if (!mMediaSections.empty()) {
-    return;
-  }
-
+SipccSdp::Load(sdp_t* sdp) {
   mAttributeList.Load(sdp, 0);
+
+  // TODO load other session-level stuff
 
   for (int i = 0; i < sdp_get_num_media_lines(sdp); ++i) {
     // note that we pass a "level" here that is one higher
