@@ -46,6 +46,7 @@ SipccSdpParser::Parse(const std::string& sdpText)
   sdp_transport_supported(sipcc_config, SDP_TRANSPORT_UDPTLSRTPSAVPF, true);
   sdp_transport_supported(sipcc_config, SDP_TRANSPORT_TCPTLSRTPSAVP, true);
   sdp_transport_supported(sipcc_config, SDP_TRANSPORT_TCPTLSRTPSAVPF, true);
+  sdp_transport_supported(sipcc_config, SDP_TRANSPORT_DTLSSCTP, true);
   sdp_require_session_name(sipcc_config, false);
 
   sdp_config_set_error_handler(sipcc_config,

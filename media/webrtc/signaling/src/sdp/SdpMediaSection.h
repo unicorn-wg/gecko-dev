@@ -71,6 +71,9 @@ public:
     kTcpTlsMrcpv2,       // TCP/TLS/MRCPv2 [RFC6787]
     kPstn,               // PSTN [RFC7195]
     kUdpTlsUdptl,        // UDP/TLS/UDPTL [RFC7345]
+    kSctp,               // SCTP [draft-ietf-mmusic-sctp-sdp-07]
+    kSctpDtls,           // SCTP/DTLS [draft-ietf-mmusic-sctp-sdp-07]
+    kDtlsSctp,           // DTLS/SCTP [draft-ietf-mmusic-sctp-sdp-07]
     kUnknownProtocol
   };
 
@@ -164,6 +167,9 @@ inline std::ostream& operator <<(std::ostream& os, SdpMediaSection::Protocol p)
     case SdpMediaSection::kTcpTlsMrcpv2: os << "TCP/TLS/MRCPv2"; break;
     case SdpMediaSection::kPstn: os << "PSTN"; break;
     case SdpMediaSection::kUdpTlsUdptl: os << "UDP/TLS/UDPTL"; break;
+    case SdpMediaSection::kSctp: os << "SCTP"; break;
+    case SdpMediaSection::kSctpDtls: os << "SCTP/DTLS"; break;
+    case SdpMediaSection::kDtlsSctp: os << "DTLS/SCTP"; break;
     default: MOZ_ASSERT(false); os << "?";
   }
   return os;
