@@ -94,6 +94,52 @@ inline std::ostream& operator <<(std::ostream& os, const SdpMediaSection &ms)
   return os;
 }
 
+inline std::ostream& operator <<(std::ostream& os, SdpMediaSection::Protocol p)
+{
+  switch (p) {
+    case SdpMediaSection::kRtpAvp: os << "RTP/AVP"; break;
+    case SdpMediaSection::kUdp: os << "udp"; break;
+    case SdpMediaSection::kVat: os << "vat"; break;
+    case SdpMediaSection::kRtp: os << "rtp"; break;
+    case SdpMediaSection::kUdptl: os << "udptl"; break;
+    case SdpMediaSection::kTcp: os << "TCP"; break;
+    case SdpMediaSection::kRtpAvpf: os << "RTP/AVPF"; break;
+    case SdpMediaSection::kTcpRtpAvp: os << "TCP/RTP/AVP"; break;
+    case SdpMediaSection::kRtpSavp: os << "RTP/SAVP"; break;
+    case SdpMediaSection::kTcpBfcp: os << "TCP/BFCP"; break;
+    case SdpMediaSection::kTcpTlsBfcp: os << "TCP/TLS/BFCP"; break;
+    case SdpMediaSection::kTcpTls: os << "TCP/TLS"; break;
+    case SdpMediaSection::kFluteUdp: os << "FLUTE/UDP"; break;
+    case SdpMediaSection::kTcpMsrp: os << "TCP/MSRP"; break;
+    case SdpMediaSection::kTcpTlsMsrp: os << "TCP/TLS/MSRP"; break;
+    case SdpMediaSection::kDccp: os << "DCCP"; break;
+    case SdpMediaSection::kDccpRtpAvp: os << "DCCP/RTP/AVP"; break;
+    case SdpMediaSection::kDccpRtpSavp: os << "DCCP/RTP/SAVP"; break;
+    case SdpMediaSection::kDccpRtpAvpf: os << "DCCP/RTP/AVPF"; break;
+    case SdpMediaSection::kDccpRtpSavpf: os << "DCCP/RTP/SAVPF"; break;
+    case SdpMediaSection::kRtpSavpf: os << "RTP/SAVPF"; break;
+    case SdpMediaSection::kUdpTlsRtpSavp: os << "UDP/TLS/RTP/SAVP"; break;
+    case SdpMediaSection::kTcpTlsRtpSavp: os << "TCP/TLS/RTP/SAVP"; break;
+    case SdpMediaSection::kDccpTlsRtpSavp: os << "DCCP/TLS/RTP/SAVP"; break;
+    case SdpMediaSection::kUdpTlsRtpSavpf: os << "UDP/TLS/RTP/SAVPF"; break;
+    case SdpMediaSection::kTcpTlsRtpSavpf: os << "TCP/TLS/RTP/SAVPF"; break;
+    case SdpMediaSection::kDccpTlsRtpSavpf: os << "DCCP/TLS/RTP/SAVPF"; break;
+    case SdpMediaSection::kUdpMbmsFecRtpAvp:
+      os << "UDP/MBMS-FEC/RTP/AVP"; break;
+    case SdpMediaSection::kUdpMbmsFecRtpSavp:
+      os << "UDP/MBMS-FEC/RTP/SAVP"; break;
+    case SdpMediaSection::kUdpMbmsRepair: os << "UDP/MBMS-REPAIR"; break;
+    case SdpMediaSection::kFecUdp: os << "FEC/UDP"; break;
+    case SdpMediaSection::kUdpFec: os << "UDP/FEC"; break;
+    case SdpMediaSection::kTcpMrcpv2: os << "TCP/MRCPv2"; break;
+    case SdpMediaSection::kTcpTlsMrcpv2: os << "TCP/TLS/MRCPv2"; break;
+    case SdpMediaSection::kPstn: os << "PSTN"; break;
+    case SdpMediaSection::kUdpTlsUdptl: os << "UDP/TLS/UDPTL"; break;
+    default: MOZ_ASSERT(false); os << "?";
+  }
+  return os;
+}
+
 class SdpConnection
 {
 public:
