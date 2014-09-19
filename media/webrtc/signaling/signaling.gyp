@@ -134,6 +134,7 @@
          # SDP Wrapper
          './src/sdp/Sdp.h',
          './src/sdp/SdpAttribute.h',
+         './src/sdp/SdpAttribute.cpp',
          './src/sdp/SdpAttributeList.h',
          './src/sdp/SdpErrorHolder.h',
          './src/sdp/SdpMediaSection.h',

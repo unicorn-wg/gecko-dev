@@ -278,10 +278,7 @@ public:
     SdpAttribute(kConnectionAttribute),
     mValue(value) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType << ":" << mValue << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   ConnValue mValue;
 };
@@ -317,9 +314,7 @@ class SdpDirectionAttribute : public SdpAttribute
 
   Direction mValue;
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << GetTypeName() << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   const std::string GetTypeName() const MOZ_OVERRIDE;
 };
@@ -398,20 +393,7 @@ public:
     });
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mExtmaps.begin(); i != mExtmaps.end(); ++i) {
-      os << "a=" << mType << ":" << i->entry;
-      if (i->direction != kNotSpecified) {
-        os << "/" << i->direction;
-      }
-      os << " " << i->extensionname;
-      if (i->extensionattributes.length()) {
-        os << " " << i->extensionattributes;
-      }
-      os << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<Extmap> mExtmaps;
 };
@@ -471,13 +453,7 @@ public:
     mFingerprints.push_back({hashFunc, fingerprint});
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mFingerprints.begin(); i != mFingerprints.end(); ++i) {
-      os << "a=" << mType << ":" << i->hashFunc
-         << " " << i->fingerprint << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<Fingerprint> mFingerprints;
 };
@@ -516,13 +492,7 @@ public:
     std::string parameters;
   };
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mFmtps.begin(); i != mFmtps.end(); ++i) {
-      os << "a=" << mType << ":" << i->format
-         << " " << i->parameters << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   void PushEntry(const std::string& format, const std::string& parameters) {
     mFmtps.push_back({ format, parameters });
@@ -573,18 +543,7 @@ public:
     });
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mGroups.begin(); i != mGroups.end(); ++i) {
-      os << "a=" << mType << ":"
-         << i->semantics << " "
-         << i->identifier;
-      for (auto j = i->tags.begin(); j != i->tags.end(); ++j) {
-        os << " " << (*j);
-      }
-      os << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<Group> mGroups;
 };
@@ -620,14 +579,7 @@ public:
     SdpAttribute(kIceOptionsAttribute),
     mOptions(options) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType;
-    for (auto i = mOptions.begin(); i != mOptions.end(); i++) {
-      os << (i == mOptions.begin() ? ":" : " ") << (*i);
-    }
-    os << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::vector<std::string> mOptions;
 };
@@ -654,14 +606,7 @@ public:
     mAssertion(assertion),
     mExtensions(extensions) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType << mAssertion;
-    for (auto i = mExtensions.begin(); i != mExtensions.end(); i++) {
-      os << (i == mExtensions.begin() ? " " : ";") << (*i);
-    }
-    os << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::string mAssertion;
   std::vector<std::string> mExtensions;
@@ -745,10 +690,7 @@ public:
   SdpImageattrAttributeList() :
     SdpAttribute(kImageattrAttribute) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    MOZ_ASSERT(false, "Serializer not yet implemented");
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -766,14 +708,7 @@ public:
     mIdentifier(identifier),
     mAppdata(appdata) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType << ":" << mIdentifier;
-    if (mAppdata.length()) {
-      os << " " << mAppdata;
-    }
-    os << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::string mIdentifier;
   std::string mAppdata;
@@ -798,16 +733,7 @@ public:
     SdpAttribute(kRemoteCandidatesAttribute),
     mCandidates(candidates) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType;
-    for (auto i = mCandidates.begin(); i != mCandidates.end(); i++) {
-      os << (i == mCandidates.begin() ? ":" : " ") << i->id
-         << " " << i->address
-         << " " << i->port;
-    }
-    os << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::vector<Candidate> mCandidates;
 };
@@ -830,14 +756,7 @@ public:
     mAddrType(addrType),
     mAddress(address) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType << ":" << mPort;
-    if (mNetType != sdp::kNetTypeNone && mAddrType != sdp::kAddrTypeNone) {
-      os << " " << mNetType << " " << mAddrType << " " << mAddress;
-    }
-    os << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   uint16_t mPort;
   sdp::NetType mNetType;
@@ -903,16 +822,7 @@ public:
     mFeedback.push_back({ pt, type, parameters });
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mFeedback.begin(); i != mFeedback.end(); ++i) {
-      os << "a=" << mType << ":" << i->pt << " " << i->type;
-      if (i->parameters.length()) {
-        os << " " << i->parameters;
-      }
-      os << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<Feedback> mFeedback;
 };
@@ -943,17 +853,7 @@ public:
     mRtpmaps.push_back({pt, name, clock, channels});
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mRtpmaps.begin(); i != mRtpmaps.end(); ++i) {
-      os << "a=" << mType << ":" << i->pt << " " << i->name
-         << "/" << i->clock;
-      if (i->channels) {
-        os << "/" << i->channels;
-      }
-      os << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   bool HasEntry(const std::string& pt) const {
     for (auto it = mRtpmaps.begin(); it != mRtpmaps.end(); ++it) {
@@ -1010,19 +910,7 @@ public:
     mSctpmaps.push_back({number, app, maxMessageSize, streams});
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mSctpmaps.begin(); i != mSctpmaps.end(); ++i) {
-      os << "a=" << mType << ":" << i->number << " " << i->app;
-      if (i->maxMessageSize) {
-        os << " max-message-size=" << i->maxMessageSize;
-      }
-      if (i->streams) {
-        os << " streams=" << i->streams;
-      }
-      os << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<Sctpmap> mSctpmaps;
 };
@@ -1046,10 +934,7 @@ public:
     SdpAttribute(kSetupAttribute),
     mRole(role) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType << ":" << mRole << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   Role mRole;
 };
@@ -1095,12 +980,7 @@ public:
     mSsrcs.push_back({ssrc, attribute});
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mSsrcs.begin(); i != mSsrcs.end(); ++i) {
-      os << "a=" << mType << ":" << i->ssrc << " " << i->attribute << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<Ssrc> mSsrcs;
 };
@@ -1135,16 +1015,7 @@ public:
     mSsrcGroups.push_back({semantics, ssrcs});
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mSsrcGroups.begin(); i != mSsrcGroups.end(); ++i) {
-      os << "a=" << mType << ":" << i->semantics;
-      for (auto j = i->ssrcs.begin(); j != i->ssrcs.end(); ++j) {
-        os << " " << (*j);
-      }
-      os << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::list<SsrcGroup> mSsrcGroups;
 };
@@ -1173,11 +1044,7 @@ public:
     mValues.push_back(entry);
   }
 
-  virtual void Serialize(std::ostream& os) const {
-    for (auto i = mValues.begin(); i != mValues.end(); ++i) {
-      os << mType << ":" << *i << CRLF;
-    }
-  }
+  virtual void Serialize(std::ostream& os) const;
 
   std::vector<std::string> mValues;
 };
@@ -1207,9 +1074,7 @@ public:
     return mValue;
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mType << ":" << mValue << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
 private:
   std::string mValue;
@@ -1227,10 +1092,7 @@ public:
     return mValue;
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mType << ":" << mValue << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
 private:
   uint32_t mValue;
