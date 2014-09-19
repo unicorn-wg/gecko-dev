@@ -5,6 +5,7 @@
 #include "logging.h"
 
 #include "signaling/src/jsep/JsepSessionImpl.h"
+#include <string>
 
 #include "nspr.h"
 #include "nss.h"
@@ -122,7 +123,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     }
 
     SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
-    AddCodec(msection, mediatype);
+    AddCodecs(mediatype, &msection);
 
     track->mAssignedMLine = Some(mline_index);
     ++mline_index;
@@ -131,13 +132,13 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   while (options.mOfferToReceiveAudio && nAudio < *options.mOfferToReceiveAudio) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
-    AddCodec(msection, SdpMediaSection::kAudio);
+    AddCodecs(SdpMediaSection::kAudio, &msection);
     ++nAudio;
   }
   while (options.mOfferToReceiveVideo && nVideo < *options.mOfferToReceiveVideo) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
-    AddCodec(msection, SdpMediaSection::kVideo);
+    AddCodecs(SdpMediaSection::kVideo, &msection);
     ++nVideo;
   }
 
@@ -148,14 +149,37 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   return NS_OK;
 }
 
-void
-JsepSessionImpl::AddCodec(SdpMediaSection& msection, SdpMediaSection::MediaType mediatype) {
+void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
+                                  SdpMediaSection* msection) {
   for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
     if (codec->mEnabled && (codec->mType == mediatype)) {
-      msection.AddCodec(codec->mDefaultPt,
+      msection->AddCodec(codec->mDefaultPt,
                         codec->mName,
                         codec->mClock,
                         codec->mChannels);
+    }
+  }
+}
+
+void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
+                                      SdpMediaSection* msection) {
+  const std::vector<std::string>& formats = remote_section.GetFormats();
+  const SdpRtpmapAttributeList& rtpmap = remote_section.
+      GetAttributeList().GetRtpmap();
+
+  for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
+    const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
+    for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
+      if (codec->mEnabled
+          && (codec->mType == remote_section.GetMediaType())
+          && (codec->mName == entry.name)
+          && (codec->mClock == entry.clock)
+          && (codec->mChannels = entry.channels)) {
+        msection->AddCodec(entry.pt,  // Reflect the other side's PT
+                           codec->mName,
+                           codec->mClock,
+                           codec->mChannels);
+      }
     }
   }
 }
@@ -210,6 +234,9 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
       new SdpDirectionAttribute(matched ?
                                 SdpDirectionAttribute::kSendrecv :
                                 SdpDirectionAttribute::kRecvonly));
+
+    // Now add the codecs.
+    AddCommonCodecs(remote_msection, &msection);
   }
 
   *answer = sdp->toString();
