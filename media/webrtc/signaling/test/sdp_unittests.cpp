@@ -965,7 +965,7 @@ TEST_F(NewSdpTest, CheckFingerprint) {
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kFingerprintAttribute));
   auto fingerprints = mSdp->GetAttributeList().GetFingerprint();
-  ASSERT_EQ(1, fingerprints.mFingerprints.size());
+  ASSERT_EQ(1U, fingerprints.mFingerprints.size());
   ASSERT_EQ(SdpFingerprintAttributeList::kSha256,
       fingerprints.mFingerprints.front().hashFunc)
     << "Wrong hash function";
