@@ -116,7 +116,7 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
           level,
           0,
           SDP_ATTR_DTLS_FINGERPRINT,
-          i++,
+          i,
           &value);
 
     if (result == SDP_SUCCESS) {
@@ -258,7 +258,7 @@ SipccSdpAttributeList::GetExtmap() const {
     MOZ_CRASH();
   }
 
-  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+  return *static_cast<const SdpExtmapAttributeList*>(GetAttribute(
         SdpAttribute::kExtmapAttribute));
 }
 
@@ -283,7 +283,7 @@ SipccSdpAttributeList::GetFmtp() const {
     MOZ_CRASH();
   }
 
-  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+  return *static_cast<const SdpFmtpAttributeList*>(GetAttribute(
         SdpAttribute::kFmtpAttribute));
 }
 
@@ -297,7 +297,7 @@ SipccSdpAttributeList::GetGroup() const {
     MOZ_CRASH();
   }
 
-  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+  return *static_cast<const SdpGroupAttributeList*>(GetAttribute(
         SdpAttribute::kGroupAttribute));
 }
 
