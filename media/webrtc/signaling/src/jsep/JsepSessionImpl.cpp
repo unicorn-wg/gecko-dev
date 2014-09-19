@@ -57,19 +57,14 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpMediaSection& msection =
       sdp->AddMediaSection(track->mTrack->media_type());
 
-    SdpRtpmapAttributeList* rtpmap = new SdpRtpmapAttributeList();
     for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
       if (codec->mEnabled && (codec->mType == track->mTrack->media_type())) {
-        char buf[10];
-        snprintf(buf, sizeof(buf), "%d", codec->mDefaultPt);
-
-        rtpmap->PushEntry(buf,
+        msection.AddCodec(codec->mDefaultPt,
                           codec->mName,
                           codec->mClock,
                           codec->mChannels);
       }
     }
-    msection.GetAttributeList().SetAttribute(rtpmap);
   }
 
   // TODO(ekr@rtfm.com): Do renegotiation.
@@ -115,9 +110,19 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
 
 void JsepSessionImpl::SetupDefaultCodecs() {
   mCodecs.push_back(JsepCodecDescription(
-      SdpMediaSection::kAudio, 109, "opus", 48000, 2));
+      SdpMediaSection::kAudio,
+      109,
+      "opus",
+      48000,
+      2
+                      ));
   mCodecs.push_back(JsepCodecDescription(
-      SdpMediaSection::kAudio, 0, "PCMU", 8000, 1));
+      SdpMediaSection::kAudio,
+      0,
+      "PCMU",
+      8000,
+      0  // This means default 1
+                      ));
 }
 
 }  // namespace jsep
