@@ -121,7 +121,7 @@ SipccSdp::Load(sdp_t* sdp, SdpErrorHolder& errorHolder) {
 void
 SipccSdp::Serialize(std::ostream& os) const {
   os << "v=0" << CRLF
-     << *mOrigin << CRLF
+     << *mOrigin
      << "s=-" << CRLF;
 
   // We don't support creating i=, u=, e=, p=
