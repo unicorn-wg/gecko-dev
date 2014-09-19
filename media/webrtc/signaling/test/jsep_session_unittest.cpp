@@ -10,6 +10,8 @@
 #include "nss.h"
 #include "ssl.h"
 
+#include "mozilla/RefPtr.h"
+
 #define GTEST_HAS_RTTI 0
 #include "gtest/gtest.h"
 #include "gtest_utils.h"
@@ -17,17 +19,21 @@
 #include "FakeMediaStreams.h"
 #include "FakeMediaStreamsImpl.h"
 
+#include "signaling/src/sdp/SdpMediaSection.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
+#include "signaling/src/jsep/JsepMediaStreamTrackFake.h"
 #include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/jsep/JsepSessionImpl.h"
 #include "signaling/src/jsep/JsepTrack.h"
 
 using mozilla::jsep::JsepSessionImpl;
 using mozilla::jsep::JsepOfferOptions;
+using mozilla::jsep::JsepMediaStreamTrackFake;
+using mozilla::jsep::JsepMediaStreamTrack;
 using mozilla::SipccSdpParser;
 
-namespace test {
+namespace mozilla {
 class JsepSessionTest : public ::testing::Test {
   public:
     JsepSessionTest() {}
@@ -43,13 +49,16 @@ TEST_F(JsepSessionTest, CreateOfferAudio1) {
   JsepOfferOptions options;
   std::string offer;
 
+  RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kAudio));
+  mSession.AddTrack(audio);
   nsresult rv = mSession.CreateOffer(options, &offer);
   ASSERT_EQ(NS_OK, rv);
 
   std::cerr << offer << std::endl;
 }
 
-} // namespace test
+} // namespace mozilla
 
 int main(int argc, char **argv) {
   NSS_NoDB_Init(nullptr);
