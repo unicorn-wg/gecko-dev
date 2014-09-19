@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "signaling/src/jsep/JsepCodecDescription.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepSession.h"
 
@@ -17,11 +18,16 @@ namespace jsep {
 class JsepSessionImpl : public JsepSession {
  public:
   JsepSessionImpl(const std::string& name) :
-      JsepSession(name) {}
+      JsepSession(name) {
+    Init();
+  }
+
   JsepSessionImpl() :
       JsepSession("anonymous"),
       mSessionId(0),
-      mSessionVersion(0) {}
+      mSessionVersion(0) {
+    Init();
+  }
 
    virtual ~JsepSessionImpl() {}
 
@@ -59,7 +65,9 @@ class JsepSessionImpl : public JsepSession {
       const MOZ_OVERRIDE { MOZ_CRASH(); }
 
  private:
+  void Init();
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
+  void SetupDefaultCodecs();
 
   struct JsepSendingTrack {
     RefPtr<JsepMediaStreamTrack> mTrack;
@@ -73,6 +81,7 @@ class JsepSessionImpl : public JsepSession {
   UniquePtr<Sdp> mCurrentRemoteDescription;
   UniquePtr<Sdp> mPendingLocalDescription;
   UniquePtr<Sdp> mPendingRemoteDescription;
+  std::vector<JsepCodecDescription> mCodecs;
 };
 
 }  // namespace jsep
