@@ -159,7 +159,7 @@ SipccSdpMediaSection::AddCodec(uint8_t ptv, const std::string& name,
                                uint32_t clockrate, uint16_t channels,
                                const std::string& fmtp) {
   std::ostringstream os;
-  os << ptv;
+  os << static_cast<uint32_t>(ptv);
   std::string pt = os.str();
 
   mFormats.push_back(pt);
