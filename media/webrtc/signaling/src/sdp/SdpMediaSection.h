@@ -74,6 +74,8 @@ public:
     kUnknownProtocol
   };
 
+  SdpMediaSection(size_t level) : mLevel(level) {}
+
   virtual MediaType GetMediaType() const = 0;
   virtual unsigned int GetPort() const = 0;
   virtual unsigned int GetPortCount() const = 0;
@@ -94,6 +96,10 @@ public:
   virtual void AddDataChannel(uint16_t pt = 5000U,
                               const std::string& sctpmap = "webrtc-datachannel") = 0;
 
+  size_t getLevel() const { return mLevel; }
+
+private:
+  size_t mLevel;
 };
 
 inline std::ostream& operator <<(std::ostream& os, const SdpMediaSection &ms)
