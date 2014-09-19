@@ -375,7 +375,14 @@ SipccSdpAttributeList::GetSctpmap() const {
 
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kSetupAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetSetup();
+    }
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kSetupAttribute);
+  return *static_cast<const SdpSetupAttribute*>(attr);
 }
 
 const SdpSsrcAttributeList&
