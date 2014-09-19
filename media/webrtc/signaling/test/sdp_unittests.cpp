@@ -888,7 +888,7 @@ const std::string kBasicAudioVideoOffer =
 "a=rtpmap:8 PCMA/8000\r\n"
 "a=rtpmap:101 telephone-event/8000\r\n"
 "a=fmtp:101 0-15\r\n"
-"a=sendrecv\r\n"
+"a=sendonly\r\n"
 "a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\n"
 "a=setup:actpass\r\n"
 "a=rtcp-mux\r\n"
@@ -903,7 +903,7 @@ const std::string kBasicAudioVideoOffer =
 "m=video 9 RTP/SAVPF 120\r\n"
 "c=IN IP6 ::1\r\n"
 "a=rtpmap:120 VP8/90000\r\n"
-"a=sendrecv\r\n"
+"a=recvonly\r\n"
 "a=rtcp-fb:120 nack\r\n"
 "a=rtcp-fb:120 nack pli\r\n"
 "a=rtcp-fb:120 ccm fir\r\n"
@@ -1042,6 +1042,12 @@ TEST_F(NewSdpTest, CheckConnectionLines) {
 TEST_F(NewSdpTest, CheckDirections) {
   ParseSdp(kBasicAudioVideoOffer);
 
+  ASSERT_EQ(SdpDirectionAttribute::kSendOnly,
+            mSdp->GetMediaSection(0).GetDirection());
+  ASSERT_EQ(SdpDirectionAttribute::kRecvOnly,
+            mSdp->GetMediaSection(1).GetDirection());
+  ASSERT_EQ(SdpDirectionAttribute::kSendRecv,
+            mSdp->GetMediaSection(2).GetDirection());
 }
 
 // TODO: Tests that parse above SDP, and check various things
