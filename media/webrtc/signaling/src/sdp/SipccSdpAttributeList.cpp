@@ -10,6 +10,10 @@
 #include "mozilla/Assertions.h"
 #include "signaling/src/sdp/SdpErrorHolder.h"
 
+extern "C" {
+#include "signaling/src/sdp/sipcc/sdp_private.h"
+}
+
 namespace mozilla {
 
 /* static */ std::string
@@ -189,7 +193,7 @@ void
 SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
   char *value;
   std::vector<std::string> fingerprints;
-  for (uint16_t i = 1; ; ++i) {
+  for (uint16_t i = 1; i < UINT16_MAX; ++i) {
     sdp_result_e result = sdp_attr_get_dtls_fingerprint_attribute(
           sdp,
           level,
@@ -272,7 +276,7 @@ SipccSdpAttributeList::LoadCandidate(sdp_t* sdp, uint16_t level) {
   char *value;
   auto candidates = new SdpMultiStringAttribute(
       SdpAttribute::kCandidateAttribute);
-  for (uint16_t i = 1; ; ++i) {
+  for (uint16_t i = 1; i < UINT16_MAX; ++i) {
     sdp_result_e result = sdp_attr_get_ice_attribute(
           sdp,
           level,
@@ -384,6 +388,40 @@ SipccSdpAttributeList::LoadGroups(sdp_t* sdp, uint16_t level,
   return true;
 }
 
+void
+SipccSdpAttributeList::LoadFmtp(sdp_t* sdp, uint16_t level) {
+  auto *fmtps = new SdpFmtpAttributeList;
+  for (uint16_t i = 1; i < UINT16_MAX; ++i) {
+    sdp_attr_t *attr = sdp_find_attr(sdp, level, 0, SDP_ATTR_FMTP, i);
+
+    if (attr) {
+      sdp_fmtp_t *fmtp = &(attr->attr.fmtp);
+      flex_string fs;
+      flex_string_init(&fs);
+
+      std::stringstream os;
+      os << fmtp->payload_num;
+
+      // Very lame, but we need direct access so we can get the serialized form
+      sdp_result_e sdpres = sdp_build_attr_fmtp_params(sdp, fmtp, &fs);
+
+      if (sdpres == SDP_SUCCESS) {
+        fmtps->mFmtps.push_back({os.str(), std::string(fs.buffer)});
+      }
+
+      flex_string_free(&fs);
+    } else {
+      break;
+    }
+  }
+
+  if (fmtps->mFmtps.empty()) {
+    delete fmtps;
+  } else {
+    SetAttribute(fmtps);
+  }
+}
+
 bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
@@ -405,9 +443,11 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
     if (!LoadRtpmap(sdp, level, errorHolder)) {
       return false;
     }
+    LoadCandidate(sdp, level);
+    LoadFmtp(sdp, level);
   }
+
   LoadIceAttributes(sdp, level);
-  LoadCandidate(sdp, level);
   LoadFingerprint(sdp, level);
   LoadSetup(sdp, level);
 

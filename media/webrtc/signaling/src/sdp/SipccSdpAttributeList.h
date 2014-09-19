@@ -90,6 +90,7 @@ private:
   void LoadSetup(sdp_t* sdp, uint16_t level);
   bool LoadGroups(sdp_t* sdp, uint16_t level,
                   SdpErrorHolder& errorHolder);
+  void LoadFmtp(sdp_t* sdp, uint16_t level);
 
   bool AtSessionLevel() const { return !mSessionLevel; }
   const SipccSdpAttributeList* mSessionLevel;
