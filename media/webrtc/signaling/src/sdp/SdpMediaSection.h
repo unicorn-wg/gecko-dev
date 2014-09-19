@@ -53,8 +53,10 @@ public:
     kDccpRtpSavpf,       // DCCP/RTP/SAVPF [RFC5762]
     kRtpSavpf,           // RTP/SAVPF [RFC5124]
     kUdpTlsRtpSavp,      // UDP/TLS/RTP/SAVP [RFC5764]
+    kTcpTlsRtpSavp,      // TCP/TLS/RTP/SAVP [JSEP-TBD]
     kDccpTlsRtpSavp,     // DCCP/TLS/RTP/SAVP [RFC5764]
     kUdpTlsRtpSavpf,     // UDP/TLS/RTP/SAVPF [RFC5764]
+    kTcpTlsRtpSavpf,     // TCP/TLS/RTP/SAVPF [JSEP-TBD]
     kDccpTlsRtpSavpf,    // DCCP/TLS/RTP/SAVPF [RFC5764]
     kUdpMbmsFecRtpAvp,   // UDP/MBMS-FEC/RTP/AVP [RFC6064]
     kUdpMbmsFecRtpSavp,  // UDP/MBMS-FEC/RTP/SAVP [RFC6064]
@@ -90,7 +92,7 @@ public:
   };
 
   SdpConnection(AddrType addrType, std::string addr,
-                int16_t ttl = -1, uint32_t count = 1)
+                uint8_t ttl = 0, uint32_t count = 1)
       : mAddrType(addrType), mAddr(addr),
         mTtl(ttl), mCount(count) {}
   ~SdpConnection() {}
@@ -98,14 +100,14 @@ public:
 
   AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
-  int16_t GetTtl() const { return mTtl; }
+  int8_t GetTtl() const { return mTtl; }
   uint32_t GetCount() const { return mCount; }
 
 private:
   AddrType mAddrType;
   const std::string mAddr;
-  int16_t mTtl; // 0-255; -1 for unset
-  uint32_t mCount;
+  int8_t mTtl; // 0-255; 0 when unset
+  uint32_t mCount; // 0 when unset
 };
 
 }

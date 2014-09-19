@@ -133,6 +133,7 @@
          './src/sdp/Sdp.h',
          './src/sdp/SdpAttribute.h',
          './src/sdp/SdpAttributeList.h',
+         './src/sdp/SdpErrorHolder.h',
          './src/sdp/SdpMediaSection.h',
          './src/sdp/SipccSdp.h',
          './src/sdp/SipccSdpAttributeList.h',

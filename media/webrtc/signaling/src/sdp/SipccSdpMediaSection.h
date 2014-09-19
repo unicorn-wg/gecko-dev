@@ -19,6 +19,7 @@ extern "C" {
 namespace mozilla {
 
 class SipccSdp;
+class SdpErrorHolder;
 
 class SipccSdpMediaSection MOZ_FINAL : public SdpMediaSection
 {
@@ -43,11 +44,11 @@ public:
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection(SipccSdpAttributeList *sessionLevel)
-      : mAttributes(sessionLevel) {}
+  SipccSdpMediaSection(const SipccSdpAttributeList *sessionLevel)
+      : mAttributeList(sessionLevel) {}
 
-  void Load(sdp_t* sdp, uint16_t level);
-  void LoadConnection(sdp_t* sdp, uint16_t level);
+  bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
+  bool LoadConnection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
 
   // the following values are cached on first get
   MediaType mMediaType;
@@ -55,7 +56,6 @@ private:
   uint16_t mPortCount;
   Protocol mProtocol;
   std::vector<std::string> mFormats;
-  SipccSdpAttributeList mAttributes;
 
   UniquePtr<SdpConnection> mConnection;
   std::map<std::string, std::string> mBandwidths;

@@ -7,6 +7,7 @@
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
 #include "mozilla/Assertions.h"
+#include "signaling/src/sdp/SdpErrorHolder.h"
 
 namespace mozilla {
 
@@ -14,7 +15,7 @@ namespace mozilla {
 SipccSdpAttributeList::sEmptyString = "";
 
 SipccSdpAttributeList::SipccSdpAttributeList(
-    SipccSdpAttributeList* sessionLevel /* = nullptr */)
+    const SipccSdpAttributeList* sessionLevel)
     : mSessionLevel(sessionLevel)
 {
   memset(&mAttributes, 0, sizeof(mAttributes));
@@ -56,37 +57,84 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
   }
 }
 
-void
+bool
 SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                                         AttributeType targetType, const std::string& name) {
   const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 0);
   if (value) {
     SetAttribute(new SdpOtherAttribute(targetType, name, std::string(value)));
   }
+  return value != nullptr;
+}
+
+bool
+SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
+                                     SdpErrorHolder& errorHolder) {
+  SdpDirectionAttribute::Direction dir;
+  switch(sdp_get_media_direction(sdp, level, 0)) {
+    case SDP_DIRECTION_SENDRECV:
+      dir = SdpDirectionAttribute::kSendrecv; break;
+    case SDP_DIRECTION_SENDONLY:
+      dir = SdpDirectionAttribute::kSendonly; break;
+    case SDP_DIRECTION_RECVONLY:
+      dir = SdpDirectionAttribute::kRecvonly; break;
+    case SDP_DIRECTION_INACTIVE:
+      dir = SdpDirectionAttribute::kInactive; break;
+    default:
+      errorHolder.AddParseError(0, "Bad direction attribute");
+      return false;
+  }
+  SetAttribute(new SdpDirectionAttribute(dir));
+  return true;
 }
 
 void
-SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level) {
-  LoadSimpleString(sdp, level, SDP_ATTR_MID,
-                   SdpAttribute::kMidAttribute, "mid");
-  LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
-                   SdpAttribute::kLabelAttribute, "label");
-  LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
-                   SdpAttribute::kIdentityAttribute, "identity");
-
-  char *value;
-  sdp_result_e result =
+SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
+    char *value;
+  sdp_result_e sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 1, &value);
-  if (result == SDP_SUCCESS) {
+  if (sdpres == SDP_SUCCESS) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIceUfragAttribute,
                                        "ice-ufrag", std::string(value)));
   }
-  result =
+  sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 1, &value);
-  if (result == SDP_SUCCESS) {
+  if (sdpres == SDP_SUCCESS) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
                                        "ice-pwd", std::string(value)));
   }
+}
+
+bool
+SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
+                            SdpErrorHolder& errorHolder) {
+  bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
+                                 SdpAttribute::kMidAttribute, "mid");
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "mid attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
+                            SdpAttribute::kLabelAttribute, "label");
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "label attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
+                            SdpAttribute::kIdentityAttribute, "identity");
+  if (result && !AtSessionLevel()) {
+    errorHolder.AddParseError(0, "identity attribute at the media level");
+    return false;
+  }
+
+  if (!AtSessionLevel()) {
+    if (!LoadDirection(sdp, level, errorHolder)) {
+      return false;
+    }
+  }
+  LoadIceAttributes(sdp, level);
+
+  return true;
 }
 
 const SdpCandidateAttributeList&
@@ -97,6 +145,12 @@ SipccSdpAttributeList::GetCandidate() const {
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
   MOZ_CRASH();
+}
+
+SdpDirectionAttribute::Direction
+SipccSdpAttributeList::GetDirection() const {
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kDirectionAttribute);
+  return static_cast<const SdpDirectionAttribute*>(attr)->mValue;
 }
 
 const SdpExtmapAttributeList&
