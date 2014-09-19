@@ -53,7 +53,8 @@ SipccSdp::AddMediaSection(SdpMediaSection::MediaType mediaType, uint16_t port,
                           SdpMediaSection::Protocol protocol,
                           sdp::AddrType addrType, const std::string &addr,
                           SdpDirectionAttribute::Direction dir) {
-  SipccSdpMediaSection *media = new SipccSdpMediaSection(&mAttributeList);
+  size_t level = mMediaSections.size();
+  SipccSdpMediaSection *media = new SipccSdpMediaSection(level,&mAttributeList);
   media->mMediaType = mediaType;
   media->mPort = port;
   media->mPortCount = 0;
@@ -109,7 +110,8 @@ SipccSdp::Load(sdp_t* sdp, SdpErrorHolder& errorHolder) {
   for (int i = 0; i < sdp_get_num_media_lines(sdp); ++i) {
     // note that we pass a "level" here that is one higher
     // sipcc counts media sections from 1, using 0 as the "session"
-    SipccSdpMediaSection* section = new SipccSdpMediaSection(&mAttributeList);
+    SipccSdpMediaSection* section =
+      new SipccSdpMediaSection(i, &mAttributeList);
     if (!section->Load(sdp, i + 1, errorHolder)) {
       return false;
     }
