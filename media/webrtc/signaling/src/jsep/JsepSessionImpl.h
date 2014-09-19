@@ -60,6 +60,8 @@ class JsepSessionImpl : public JsepSession {
 
   virtual nsresult CreateOffer(const JsepOfferOptions& options,
                                std::string* offer) MOZ_OVERRIDE;
+  virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
+                                std::string* answer) MOZ_OVERRIDE;
   virtual nsresult SetLocalDescription(JsepSdpType type,
                                        const std::string& sdp) MOZ_OVERRIDE;
 
@@ -67,9 +69,7 @@ class JsepSessionImpl : public JsepSession {
                                         const std::string& sdp) MOZ_OVERRIDE;
 
 // STUBS BELOW THIS POINT
-  virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
-                                std::string* answer) MOZ_OVERRIDE {
-    MOZ_CRASH(); }
+
 
   // Access the negotiated track pairs.
   virtual nsresult num_negotiated_track_pairs(size_t* pairs)

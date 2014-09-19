@@ -29,6 +29,7 @@
 
 using mozilla::jsep::JsepSessionImpl;
 using mozilla::jsep::JsepOfferOptions;
+using mozilla::jsep::JsepAnswerOptions;
 using mozilla::jsep::JsepMediaStreamTrackFake;
 using mozilla::jsep::JsepMediaStreamTrack;
 using mozilla::SipccSdpParser;
@@ -87,10 +88,28 @@ protected:
     nsresult rv = mSessionOff.CreateOffer(options, &offer);
     EXPECT_EQ(NS_OK, rv);
 
-    std::cerr << offer << std::endl;
+    std::cerr << "OFFER: " << offer << std::endl;
 
     return offer;
   }
+
+  std::string CreateAnswer() {
+    for (auto track = types.begin(); track != types.end(); ++track) {
+      RefPtr<JsepMediaStreamTrack> mst(new JsepMediaStreamTrackFake(
+          *track));
+      mSessionAns.AddTrack(mst);
+    }
+
+    JsepAnswerOptions options;
+    std::string answer;
+    nsresult rv = mSessionAns.CreateAnswer(options, &answer);
+    EXPECT_EQ(NS_OK, rv);
+
+    std::cerr << "ANSWER: " << answer << std::endl;
+
+    return answer;
+  }
+
 
   void SetLocal(const std::string& offer) {
     nsresult rv = mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
@@ -132,6 +151,13 @@ TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemote) {
   std::string offer = CreateOffer();
   SetLocal(offer);
   SetRemote(offer);
+}
+
+TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemoteCreateAnswer) {
+  std::string offer = CreateOffer();
+  SetLocal(offer);
+  SetRemote(offer);
+  std::string answer = CreateAnswer();
 }
 
 INSTANTIATE_TEST_CASE_P(Variants, JsepSessionTest,
