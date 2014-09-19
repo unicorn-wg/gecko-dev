@@ -139,7 +139,7 @@ SipccSdp::Serialize(std::ostream& os) const {
 
   // media sections
   for (auto i = mMediaSections.begin(); i != mMediaSections.end(); ++i) {
-    os << (*i);
+    os << (**i);
   }
 
 }
