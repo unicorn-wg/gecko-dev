@@ -84,7 +84,8 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
                                       sdp::kIPv4,
                                       "0.0.0.0");
 
-  //  *sdpp = Move(sdp);
+  *sdpp = MakeUnique<SipccSdp>(origin.release());
+
   return NS_OK;
 }
 
