@@ -190,10 +190,14 @@ nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
     const SdpMediaSection& msection = offer->GetMediaSection(i);
     JsepMediaStreamTrackRemote* remote = new JsepMediaStreamTrackRemote(
         msection.GetMediaType());
+    JsepReceivingTrack rtrack;
+    rtrack.mTrack = remote;
+    mRemoteTracks.push_back(rtrack);
   }
 
   mPendingRemoteDescription = Move(offer);
 
+  SetState(kJsepStateHaveRemoteOffer);
   return NS_OK;
 }
 
