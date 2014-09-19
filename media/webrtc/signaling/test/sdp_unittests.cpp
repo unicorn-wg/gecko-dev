@@ -863,6 +863,18 @@ TEST_F(NewSdpTest, ParseGarbage) {
     << "Expected at least one parse error.";
 }
 
+TEST_F(NewSdpTest, ParseGarbageTwice) {
+  ParseSdp("foobajooba", false);
+  ASSERT_FALSE(mSdp);
+  size_t errorCount = mParser.GetParseErrors().size();
+  ASSERT_NE(0U, errorCount)
+    << "Expected at least one parse error.";
+  ParseSdp("foobajooba", false);
+  ASSERT_FALSE(mSdp);
+  ASSERT_EQ(errorCount, mParser.GetParseErrors().size())
+    << "Expected same error count for same SDP.";
+}
+
 static const std::string kVideoSdp =
   "v=0\r\n"
   "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
@@ -1104,6 +1116,13 @@ TEST_F(NewSdpTest, CheckFormatParameters) {
     << "Wrong number of media sections";
 
 //  ASSERT_EQ(1U, mSdp->GetMediaSection(0).GetAttributeList().Count(kFmtp));
+}
+
+TEST_F(NewSdpTest, CheckPtime) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(20U, mSdp->GetMediaSection(0).GetAttributeList().GetPtime());
+  ASSERT_FALSE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+      SdpAttribute::kPtimeAttribute));
 }
 
 TEST_F(NewSdpTest, CheckConnectionLines) {

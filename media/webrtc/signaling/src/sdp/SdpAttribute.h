@@ -1184,12 +1184,25 @@ public:
   std::vector<std::string> mValues;
 };
 
+
+// Used for any other kind of attribute not otherwise specialized
+class SdpEmptyAttribute : public SdpAttribute
+{
+public:
+  explicit SdpEmptyAttribute(AttributeType type) :
+    SdpAttribute(type) {}
+
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
+    os << "a=" << mType << CRLF;
+  }
+};
+
 // Used for any other kind of attribute not otherwise specialized
 class SdpStringAttribute : public SdpAttribute
 {
 public:
   explicit SdpStringAttribute(AttributeType type,
-                              const std::string& value = "") :
+                              const std::string& value) :
     SdpAttribute(type), mValue(value) {}
 
   const std::string& GetValue() const {
@@ -1197,18 +1210,12 @@ public:
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mType;
-    if (mValue.length()) {
-      os << ":" << mValue;
-    }
-    os << CRLF;
+    os << "a=" << mType << ":" << mValue << CRLF;
   }
 
 private:
   std::string mValue;
 };
-
-
 
 // Used for any purely numeric attribute
 class SdpNumberAttribute : public SdpAttribute
