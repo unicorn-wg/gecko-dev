@@ -48,6 +48,22 @@ SipccSdp::GetMediaSection(uint16_t level)
   return *mMediaSections[level];
 }
 
+SdpMediaSection &
+SipccSdp::AddMediaSection(SdpMediaSection::MediaType mediaType, uint16_t port,
+                          SdpMediaSection::Protocol protocol,
+                          sdp::AddrType addrType, const std::string &addr,
+                          SdpDirectionAttribute::Direction dir) {
+  SipccSdpMediaSection *media = new SipccSdpMediaSection(&mAttributeList);
+  media->mMediaType = mediaType;
+  media->mPort = port;
+  media->mPortCount = 0;
+  media->mProtocol = protocol;
+  media->mConnection = MakeUnique<SdpConnection>(addrType, addr);
+  media->GetAttributeList().SetAttribute(new SdpDirectionAttribute(dir));
+  mMediaSections.push_back(media);
+  return *media;
+}
+
 bool
 SipccSdp::LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder) {
   std::string username = sdp_get_owner_username(sdp);
@@ -60,13 +76,13 @@ SipccSdp::LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder) {
     return false;
   }
 
-  SdpConnection::AddrType addrType;
+  sdp::AddrType addrType;
   switch (sdp_get_owner_address_type(sdp)) {
     case SDP_AT_IP4:
-      addrType = SdpConnection::kIPv4;
+      addrType = sdp::kIPv4;
       break;
     case SDP_AT_IP6:
-      addrType = SdpConnection::kIPv6;
+      addrType = sdp::kIPv6;
       break;
     default:
       errorHolder.AddParseError(0, "Unsupported address type");

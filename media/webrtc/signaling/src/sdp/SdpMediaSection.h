@@ -8,6 +8,7 @@
 #define _SDPMEDIASECTION_H_
 
 #include "mozilla/Maybe.h"
+#include "signaling/src/sdp/SdpEnum.h"
 
 #include <string>
 #include <vector>
@@ -85,26 +86,20 @@ public:
 class SdpConnection
 {
 public:
-  enum AddrType {
-    kIPv4,
-    kIPv6,
-    kAddrTypeUnknown
-  };
-
-  SdpConnection(AddrType addrType, std::string addr,
+  SdpConnection(sdp::AddrType addrType, std::string addr,
                 uint8_t ttl = 0, uint32_t count = 1)
       : mAddrType(addrType), mAddr(addr),
         mTtl(ttl), mCount(count) {}
   ~SdpConnection() {}
 
 
-  AddrType GetAddrType() const { return mAddrType; }
+  sdp::AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
   int8_t GetTtl() const { return mTtl; }
   uint32_t GetCount() const { return mCount; }
 
 private:
-  AddrType mAddrType;
+  sdp::AddrType mAddrType;
   const std::string mAddr;
   int8_t mTtl; // 0-255; 0 when unset
   uint32_t mCount; // 0 when unset
