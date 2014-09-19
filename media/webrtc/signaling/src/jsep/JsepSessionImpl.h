@@ -11,6 +11,7 @@
 #include "signaling/src/jsep/JsepCodecDescription.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/sdp/SipccSdpParser.h"
 
 namespace mozilla {
 namespace jsep {
@@ -46,42 +47,50 @@ class JsepSessionImpl : public JsepSession {
   virtual size_t num_tracks() const MOZ_OVERRIDE {
     return mSendingTracks.size();
   }
-  virtual nsresult track(size_t index, RefPtr<JsepMediaStreamTrack>* track) const MOZ_OVERRIDE;
+  virtual nsresult track(size_t index, RefPtr<JsepMediaStreamTrack>* track)
+      const MOZ_OVERRIDE;
   virtual nsresult CreateOffer(const JsepOfferOptions& options,
                                std::string* offer) MOZ_OVERRIDE;
+  virtual nsresult SetLocalDescription(JsepSdpType type,
+                                       const std::string& sdp) MOZ_OVERRIDE;
 
 
 // STUBS BELOW THIS POINT
   virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
-                                std::string* answer) MOZ_OVERRIDE { MOZ_CRASH(); }
-  virtual nsresult SetLocalDescription(JsepSdpType type,
-                                       const std::string& sdp) MOZ_OVERRIDE { MOZ_CRASH(); }
+                                std::string* answer) MOZ_OVERRIDE {
+    MOZ_CRASH(); }
   virtual nsresult SetRemoteDescription(JsepSdpType type,
-                                        const std::string& sdp) MOZ_OVERRIDE { MOZ_CRASH(); }
+                                        const std::string& sdp) MOZ_OVERRIDE {
+    MOZ_CRASH(); }
 
   // Access the negotiated track pairs.
-  virtual nsresult num_negotiated_track_pairs(size_t* pairs) const MOZ_OVERRIDE { MOZ_CRASH(); }
+  virtual nsresult num_negotiated_track_pairs(size_t* pairs)
+      const MOZ_OVERRIDE { MOZ_CRASH(); }
   virtual nsresult track_pair(size_t index, const JsepTrackPair** pair)
       const MOZ_OVERRIDE { MOZ_CRASH(); }
 
  private:
+  struct JsepSendingTrack {
+    RefPtr<JsepMediaStreamTrack> mTrack;
+    Maybe<size_t> mAssignedMLine;
+  };
+
   void Init();
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
   void SetupDefaultCodecs();
-
-  struct JsepSendingTrack {
-    RefPtr<JsepMediaStreamTrack> mTrack;
-  };
+  void SetState(JsepSignalingState state);
 
   std::vector<JsepSendingTrack> mSendingTracks;
 
   uint64_t mSessionId;
   uint64_t mSessionVersion;
+  UniquePtr<Sdp> mGeneratedLocalDescription; // Created but not set.
   UniquePtr<Sdp> mCurrentLocalDescription;
   UniquePtr<Sdp> mCurrentRemoteDescription;
   UniquePtr<Sdp> mPendingLocalDescription;
   UniquePtr<Sdp> mPendingRemoteDescription;
   std::vector<JsepCodecDescription> mCodecs;
+  SipccSdpParser mParser;
 };
 
 }  // namespace jsep
