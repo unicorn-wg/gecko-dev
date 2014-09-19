@@ -1116,7 +1116,7 @@ sdp_result_e sdp_parse_media (sdp_t *sdp_p, u16 level, const char *ptr)
     int32                 sctp_port;
 
     /* Allocate resource for new media stream. */
-    mca_p = sdp_alloc_mca();
+    mca_p = sdp_alloc_mca(sdp_p->parse_line);
     if (mca_p == NULL) {
         sdp_p->conf_p->num_no_resource++;
         return (SDP_NO_RESOURCE);

@@ -1321,7 +1321,8 @@ void sdp_parse_error(sdp_t* sdp, const char *format, ...) {
     flex_string_vsprintf(&fs, format, ap);
     va_end(ap);
 
-    CSFLogError("SDP Parse", "SDP Parse Error %s", fs.buffer);
+    CSFLogError("SDP Parse", "SDP Parse Error %s, line %d", fs.buffer,
+                sdp->parse_line);
 
     if (sdp->conf_p->error_handler) {
         sdp->conf_p->error_handler(sdp->conf_p->error_handler_context,

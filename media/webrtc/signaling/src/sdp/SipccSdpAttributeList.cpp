@@ -81,19 +81,22 @@ bool SipccSdpAttributeList::LoadSimpleStrings(sdp_t* sdp, uint16_t level,
   bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
                                  SdpAttribute::kMidAttribute);
   if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "mid attribute at the session level");
+    uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_MID, level, 0, 1);
+    errorHolder.AddParseError(lineNumber, "mid attribute at the session level");
     return false;
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
                             SdpAttribute::kLabelAttribute);
   if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "label attribute at the session level");
+    uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_LABEL, level, 0, 1);
+    errorHolder.AddParseError(lineNumber, "label attribute at the session level");
     return false;
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
                             SdpAttribute::kIdentityAttribute);
   if (result && !AtSessionLevel()) {
-    errorHolder.AddParseError(0, "identity attribute at the media level");
+    uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_IDENTITY, level, 0, 1);
+    errorHolder.AddParseError(lineNumber, "identity attribute at the media level");
     return false;
   }
   return true;
@@ -115,13 +118,15 @@ bool SipccSdpAttributeList::LoadSimpleNumbers(sdp_t* sdp, uint16_t level,
   bool result = LoadSimpleNumber(sdp, level, SDP_ATTR_PTIME,
                             SdpAttribute::kPtimeAttribute);
   if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "ptime attribute at the session level");
+    uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_PTIME, level, 0, 1);
+    errorHolder.AddParseError(lineNumber, "ptime attribute at the session level");
     return false;
   }
   result = LoadSimpleNumber(sdp, level, SDP_ATTR_MAXPTIME,
                             SdpAttribute::kMaxptimeAttribute);
   if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "maxptime attribute at the session level");
+    uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_MAXPTIME, level, 0, 1);
+    errorHolder.AddParseError(lineNumber, "maxptime attribute at the session level");
     return false;
   }
   return true;
@@ -154,7 +159,8 @@ SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
     case SDP_DIRECTION_INACTIVE:
       dir = SdpDirectionAttribute::kInactive; break;
     default:
-      errorHolder.AddParseError(0, "Bad direction attribute");
+      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                                "Internal error determining media direction");
       return false;
   }
   SetAttribute(new SdpDirectionAttribute(dir));

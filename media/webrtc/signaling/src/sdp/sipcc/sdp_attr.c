@@ -132,6 +132,7 @@ sdp_result_e sdp_parse_attribute (sdp_t *sdp_p, u16 level, const char *ptr)
         sdp_p->conf_p->num_no_resource++;
         return (SDP_NO_RESOURCE);
     }
+    attr_p->line_number = sdp_p->parse_line;
     attr_p->type = SDP_ATTR_INVALID;
     attr_p->next_p = NULL;
     for (i=0; i < SDP_MAX_ATTR_TYPES; i++) {
@@ -3017,7 +3018,7 @@ sdp_result_e sdp_parse_attr_cap (sdp_t *sdp_p, sdp_attr_t *attr_p,
     /* Allocate resource for new capability. Note that the capability
      * uses the same structure used for media lines.
      */
-    cap_p = sdp_alloc_mca();
+    cap_p = sdp_alloc_mca(sdp_p->parse_line);
     if (cap_p == NULL) {
         sdp_p->conf_p->num_no_resource++;
         return (SDP_NO_RESOURCE);
