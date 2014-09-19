@@ -810,12 +810,21 @@ class SdpTest : public ::testing::Test {
 //                                  SDP_SESSION_LEVEL, 0));
 //}
 
-class NewSdpTest : public ::testing::Test {
+class NewSdpTest : public ::testing::Test,
+                   public ::testing::WithParamInterface<bool> {
   public:
     NewSdpTest() {}
 
     void ParseSdp(const std::string &sdp, bool expectSuccess = true) {
       mSdp = mozilla::Move(mParser.Parse(sdp));
+
+      if (GetParam() && expectSuccess) {
+        std::stringstream str;
+        EXPECT_TRUE(mSdp) << "Parse failed on first pass: "
+                          << GetParseErrors();
+        mSdp->Serialize(str);
+        mSdp = mozilla::Move(mParser.Parse(str.str()));
+      }
 
       if (expectSuccess) {
         ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
@@ -833,23 +842,30 @@ class NewSdpTest : public ::testing::Test {
       return output.str();
     }
 
-  void CheckRtpmap(const std::string&pt, const std::string&name,
-                   uint32_t clock, uint16_t channels,
-                   const SdpRtpmapAttributeList::Rtpmap& attr) {
-    ASSERT_EQ(pt, attr.pt);
-    ASSERT_EQ(name, attr.name);
-    ASSERT_EQ(clock, attr.clock);
-    ASSERT_EQ(channels, attr.channels);
-  }
+    void CheckRtpmap(const std::string&pt, const std::string&name,
+                     uint32_t clock, uint16_t channels,
+                     const SdpRtpmapAttributeList::Rtpmap& attr) {
+      ASSERT_EQ(pt, attr.pt);
+      ASSERT_EQ(name, attr.name);
+      ASSERT_EQ(clock, attr.clock);
+      ASSERT_EQ(channels, attr.channels);
+    }
+
+    void CheckSerialize(const std::string& expected,
+                        const SdpAttribute& attr) {
+      std::stringstream str;
+      attr.Serialize(str);
+      ASSERT_EQ(expected, str.str());
+    }
 
     SipccSdpParser mParser;
     mozilla::UniquePtr<Sdp> mSdp;
 };
 
-TEST_F(NewSdpTest, CreateDestroy) {
+TEST_P(NewSdpTest, CreateDestroy) {
 }
 
-TEST_F(NewSdpTest, ParseEmpty) {
+TEST_P(NewSdpTest, ParseEmpty) {
   ParseSdp("", false);
   ASSERT_FALSE(mSdp);
   ASSERT_NE(0U, mParser.GetParseErrors().size())
@@ -858,7 +874,7 @@ TEST_F(NewSdpTest, ParseEmpty) {
 
 const std::string kBadSdp = "This is SPARTA!!!!";
 
-TEST_F(NewSdpTest, ParseGarbage) {
+TEST_P(NewSdpTest, ParseGarbage) {
   ParseSdp(kBadSdp, false);
   ASSERT_FALSE(mSdp);
   ASSERT_NE(0U, mParser.GetParseErrors().size())
@@ -886,49 +902,49 @@ static const std::string kVideoSdp =
   "m=video 56436 RTP/SAVPF 120\r\n"
   "a=rtpmap:120 VP8/90000\r\n";
 
-TEST_F(NewSdpTest, ParseMinimal) {
+TEST_P(NewSdpTest, ParseMinimal) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(0U, mParser.GetParseErrors().size()) <<
     "Got parse errors: " << GetParseErrors();
 }
 
-TEST_F(NewSdpTest, CheckOriginGetUsername) {
+TEST_P(NewSdpTest, CheckOriginGetUsername) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ("-", mSdp->GetOrigin().GetUsername())
     << "Wrong username in origin";
 }
 
-TEST_F(NewSdpTest, CheckOriginGetSessionId) {
+TEST_P(NewSdpTest, CheckOriginGetSessionId) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(137331303 , mSdp->GetOrigin().GetSessionId())
     << "Wrong session id in origin";
 }
 
-TEST_F(NewSdpTest, CheckOriginGetSessionVersion) {
+TEST_P(NewSdpTest, CheckOriginGetSessionVersion) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(2 , mSdp->GetOrigin().GetSessionVersion())
     << "Wrong version in origin";
 }
 
-TEST_F(NewSdpTest, CheckOriginGetAddrType) {
+TEST_P(NewSdpTest, CheckOriginGetAddrType) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(sdp::kIPv4, mSdp->GetOrigin().GetAddrType())
     << "Wrong address type in origin";
 }
 
-TEST_F(NewSdpTest, CheckOriginGetAddress) {
+TEST_P(NewSdpTest, CheckOriginGetAddress) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ("127.0.0.1" , mSdp->GetOrigin().GetAddress())
     << "Wrong address in origin";
 }
 
-TEST_F(NewSdpTest, CheckGetMissingBandwidth) {
+TEST_P(NewSdpTest, CheckGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
   ASSERT_TRUE((mSdp->GetBandwidth("CT")).empty())
     << "Wrong bandwidth in session";
 }
 
-TEST_F(NewSdpTest, CheckGetBandwidth) {
+TEST_P(NewSdpTest, CheckGetBandwidth) {
   ParseSdp("v=0\r\n"
            "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
            "b=CT:5000\r\n"
@@ -940,44 +956,44 @@ TEST_F(NewSdpTest, CheckGetBandwidth) {
     << "Wrong bandwidth in session";
 }
 
-TEST_F(NewSdpTest, CheckGetMediaSectionsCount) {
+TEST_P(NewSdpTest, CheckGetMediaSectionsCount) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(1U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetMediaType) {
+TEST_P(NewSdpTest, CheckMediaSectionGetMediaType) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(SdpMediaSection::kVideo, mSdp->GetMediaSection(0).GetMediaType())
     << "Wrong type for first media section";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetProtocol) {
+TEST_P(NewSdpTest, CheckMediaSectionGetProtocol) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(SdpMediaSection::kRtpSavpf, mSdp->GetMediaSection(0).GetProtocol())
     << "Wrong protocol for video";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetFormats) {
+TEST_P(NewSdpTest, CheckMediaSectionGetFormats) {
   ParseSdp(kVideoSdp);
   auto video_formats = mSdp->GetMediaSection(0).GetFormats();
   ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
   ASSERT_EQ("120", video_formats[0]);
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetPort) {
+TEST_P(NewSdpTest, CheckMediaSectionGetPort) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(56436U, mSdp->GetMediaSection(0).GetPort())
     << "Wrong port number in media section";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetMissingPortCount) {
+TEST_P(NewSdpTest, CheckMediaSectionGetMissingPortCount) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(0U, mSdp->GetMediaSection(0).GetPortCount())
     << "Wrong port count in media section";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetPortCount) {
+TEST_P(NewSdpTest, CheckMediaSectionGetPortCount) {
   ParseSdp(kVideoSdp + "m=audio 12345/2 RTP/SAVPF 0\r\n");
   ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
@@ -985,13 +1001,13 @@ TEST_F(NewSdpTest, CheckMediaSectionGetPortCount) {
     << "Wrong port count in media section";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetMissingBandwidth) {
+TEST_P(NewSdpTest, CheckMediaSectionGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
   ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty())
     << "Wrong bandwidth in media section";
 }
 
-TEST_F(NewSdpTest, CheckMediaSectionGetBandwidth) {
+TEST_P(NewSdpTest, CheckMediaSectionGetBandwidth) {
   ParseSdp("v=0\r\n"
            "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
            "c=IN IP4 198.51.100.7\r\n"
@@ -1058,29 +1074,31 @@ const std::string kBasicAudioVideoOffer =
 "a=rtpmap:0 PCMU/8000" CRLF
 "a=ice-lite" CRLF;
 
-
-TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
+TEST_P(NewSdpTest, BasicAudioVideoSdpParse) {
   ParseSdp(kBasicAudioVideoOffer);
 }
 
-TEST_F(NewSdpTest, CheckIceUfrag) {
+TEST_P(NewSdpTest, CheckIceUfrag) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kIceUfragAttribute));
   auto ice_ufrag = mSdp->GetAttributeList().GetIceUfrag();
   ASSERT_EQ("4a799b2e", ice_ufrag) << "Wrong ice-ufrag value";
 }
 
-TEST_F(NewSdpTest, CheckIcePwd) {
+TEST_P(NewSdpTest, CheckIcePwd) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kIcePwdAttribute));
   auto ice_pwd = mSdp->GetAttributeList().GetIcePwd();
   ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
 }
 
-TEST_F(NewSdpTest, CheckFingerprint) {
+TEST_P(NewSdpTest, CheckFingerprint) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kFingerprintAttribute));
   auto fingerprints = mSdp->GetAttributeList().GetFingerprint();
@@ -1094,13 +1112,15 @@ TEST_F(NewSdpTest, CheckFingerprint) {
     << "Wrong fingerprint";
 }
 
-TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
+TEST_P(NewSdpTest, CheckNumberOfMediaSections) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
 }
 
-TEST_F(NewSdpTest, CheckMlines) {
+TEST_P(NewSdpTest, CheckMlines) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
   ASSERT_EQ(SdpMediaSection::kAudio, mSdp->GetMediaSection(0).GetMediaType())
     << "Wrong type for first media section";
@@ -1125,7 +1145,7 @@ TEST_F(NewSdpTest, CheckMlines) {
   ASSERT_EQ("120", video_formats[0]);
 }
 
-TEST_F(NewSdpTest, CheckSetup) {
+TEST_P(NewSdpTest, CheckSetup) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
@@ -1142,8 +1162,11 @@ TEST_F(NewSdpTest, CheckSetup) {
         SdpAttribute::kSetupAttribute));
 }
 
-TEST_F(NewSdpTest, CheckRtpmap) {
+TEST_P(NewSdpTest, CheckRtpmap) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
 
   const SdpMediaSection& audiosec = mSdp->GetMediaSection(0);
   const SdpRtpmapAttributeList& rtpmap = audiosec.GetAttributeList().GetRtpmap();
@@ -1164,22 +1187,23 @@ TEST_F(NewSdpTest, CheckRtpmap) {
                   videosec.GetFormats()[0]));
 }
 
-TEST_F(NewSdpTest, CheckFormatParameters) {
+TEST_P(NewSdpTest, CheckFormatParameters) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
 //  ASSERT_EQ(1U, mSdp->GetMediaSection(0).GetAttributeList().Count(kFmtp));
 }
 
-TEST_F(NewSdpTest, CheckPtime) {
+TEST_P(NewSdpTest, CheckPtime) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_EQ(20U, mSdp->GetMediaSection(0).GetAttributeList().GetPtime());
   ASSERT_FALSE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
       SdpAttribute::kPtimeAttribute));
 }
 
-TEST_F(NewSdpTest, CheckFlags) {
+TEST_P(NewSdpTest, CheckFlags) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
       SdpAttribute::kIceLiteAttribute, false));
@@ -1194,8 +1218,9 @@ TEST_F(NewSdpTest, CheckFlags) {
       SdpAttribute::kRtcpMuxAttribute));
 }
 
-TEST_F(NewSdpTest, CheckConnectionLines) {
+TEST_P(NewSdpTest, CheckConnectionLines) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
@@ -1219,9 +1244,10 @@ TEST_F(NewSdpTest, CheckConnectionLines) {
   ASSERT_EQ(12U, conn3.GetCount());
 }
 
-TEST_F(NewSdpTest, CheckDirections) {
+TEST_P(NewSdpTest, CheckDirections) {
   ParseSdp(kBasicAudioVideoOffer);
 
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(SdpDirectionAttribute::kSendonly,
             mSdp->GetMediaSection(0).GetAttributeList().GetDirection());
   ASSERT_EQ(SdpDirectionAttribute::kRecvonly,
@@ -1230,8 +1256,9 @@ TEST_F(NewSdpTest, CheckDirections) {
             mSdp->GetMediaSection(2).GetAttributeList().GetDirection());
 }
 
-TEST_F(NewSdpTest, CheckCandidates) {
+TEST_P(NewSdpTest, CheckCandidates) {
   ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
 
   ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
@@ -1273,6 +1300,8 @@ TEST_F(NewSdpTest, CheckCandidates) {
 //  Check setup
 //  Check rtcp-mux
 //  Check candidates
+
+INSTANTIATE_TEST_CASE_P(Variants, NewSdpTest, ::testing::Values(false, true));
 
 } // End namespace test.
 
