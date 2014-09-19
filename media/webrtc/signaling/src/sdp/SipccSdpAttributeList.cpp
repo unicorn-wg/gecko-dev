@@ -59,10 +59,10 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
 
 bool
 SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
-                                        AttributeType targetType, const std::string& name) {
+                                        AttributeType targetType) {
   const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 1);
   if (value) {
-    SetAttribute(new SdpOtherAttribute(targetType, name, std::string(value)));
+    SetAttribute(new SdpStringAttribute(targetType, std::string(value)));
   }
   return value != nullptr;
 }
@@ -94,14 +94,14 @@ SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
   sdp_result_e sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 1, &value);
   if (sdpres == SDP_SUCCESS) {
-    SetAttribute(new SdpOtherAttribute(SdpAttribute::kIceUfragAttribute,
-                                       "ice-ufrag", std::string(value)));
+    SetAttribute(new SdpStringAttribute(SdpAttribute::kIceUfragAttribute,
+                                        std::string(value)));
   }
   sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 1, &value);
   if (sdpres == SDP_SUCCESS) {
-    SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
-                                       "ice-pwd", std::string(value)));
+    SetAttribute(new SdpStringAttribute(SdpAttribute::kIcePwdAttribute,
+                                        std::string(value)));
   }
 
 }
@@ -214,19 +214,19 @@ bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
   bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
-                                 SdpAttribute::kMidAttribute, "mid");
+                                 SdpAttribute::kMidAttribute);
   if (result && AtSessionLevel()) {
     errorHolder.AddParseError(0, "mid attribute at the session level");
     return false;
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
-                            SdpAttribute::kLabelAttribute, "label");
+                            SdpAttribute::kLabelAttribute);
   if (result && AtSessionLevel()) {
     errorHolder.AddParseError(0, "label attribute at the session level");
     return false;
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
-                            SdpAttribute::kIdentityAttribute, "identity");
+                            SdpAttribute::kIdentityAttribute);
   if (result && !AtSessionLevel()) {
     errorHolder.AddParseError(0, "identity attribute at the media level");
     return false;
@@ -248,7 +248,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
 
 const SdpCandidateAttributeList&
 SipccSdpAttributeList::GetCandidate() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
 
@@ -263,7 +263,7 @@ SipccSdpAttributeList::GetCandidate() const {
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
   if (!HasAttribute(SdpAttribute::kConnectionAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetConnection();
     }
     MOZ_CRASH();
@@ -282,7 +282,7 @@ SipccSdpAttributeList::GetDirection() const {
 const SdpExtmapAttributeList&
 SipccSdpAttributeList::GetExtmap() const {
   if (!HasAttribute(SdpAttribute::kExtmapAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       mSessionLevel->GetExtmap();
     }
     MOZ_CRASH();
@@ -295,7 +295,7 @@ SipccSdpAttributeList::GetExtmap() const {
 const SdpFingerprintAttributeList&
 SipccSdpAttributeList::GetFingerprint() const {
   if (!HasAttribute(SdpAttribute::kFingerprintAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetFingerprint();
     }
   }
@@ -319,7 +319,7 @@ SipccSdpAttributeList::GetFmtp() const {
 
 const SdpGroupAttributeList&
 SipccSdpAttributeList::GetGroup() const {
-  if (mSessionLevel) {
+  if (!AtSessionLevel()) {
     MOZ_CRASH("This is session-level only foo!");
   }
 
@@ -339,37 +339,37 @@ SipccSdpAttributeList::GetIceOptions() const {
 const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
   if (!HasAttribute(SdpAttribute::kIcePwdAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetIcePwd();
     }
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIcePwdAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
   if (!HasAttribute(SdpAttribute::kIceUfragAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetIceUfrag();
     }
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIceUfragAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const std::string&
 SipccSdpAttributeList::GetIdentity() const {
-  if (mSessionLevel) {
+  if (!AtSessionLevel()) {
     MOZ_CRASH("This is session-level only foo!");
   }
   if (!HasAttribute(SdpAttribute::kIdentityAttribute)) {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIdentityAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const SdpImageattrAttributeList&
@@ -379,14 +379,14 @@ SipccSdpAttributeList::GetImageattr() const {
 
 const std::string&
 SipccSdpAttributeList::GetLabel() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
   if (!HasAttribute(SdpAttribute::kLabelAttribute)) {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kLabelAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 uint32_t
@@ -401,14 +401,14 @@ SipccSdpAttributeList::GetMaxptime() const {
 
 const std::string&
 SipccSdpAttributeList::GetMid() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
   if (!HasAttribute(SdpAttribute::kMidAttribute)) {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kMidAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const SdpMsidAttributeList&
@@ -450,7 +450,7 @@ SipccSdpAttributeList::GetSctpmap() const {
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
   if (!HasAttribute(SdpAttribute::kSetupAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetSetup();
     }
     MOZ_CRASH();
