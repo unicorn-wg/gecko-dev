@@ -250,15 +250,6 @@ class SdpTest : public ::testing::Test {
     sdp_t *sdp_ptr_;
 };
 
-static const std::string kVideoSdp =
-  "v=0\r\n"
-  "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
-  "s=SIP Call\r\n"
-  "t=0 0\r\n"
-  "m=video 56436 RTP/SAVPF 120\r\n"
-  "c=IN IP4 198.51.100.7\r\n"
-  "a=rtpmap:120 VP8/90000\r\n";
-
 //TEST_F(SdpTest, parseRtcpFbAckRpsi) {
 //  ParseSdp(kVideoSdp + "a=rtcp-fb:120 ack rpsi\r\n");
 //  ASSERT_EQ(sdp_attr_get_rtcp_fb_ack(sdp_ptr_, 1, 120, 1),
@@ -872,11 +863,71 @@ TEST_F(NewSdpTest, ParseGarbage) {
     << "Expected at least one parse error.";
 }
 
+static const std::string kVideoSdp =
+  "v=0\r\n"
+  "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
+  "s=SIP Call\r\n"
+  "c=IN IP4 198.51.100.7\r\n"
+  "t=0 0\r\n"
+  "m=video 56436 RTP/SAVPF 120\r\n"
+  "a=rtpmap:120 VP8/90000\r\n";
+
 TEST_F(NewSdpTest, ParseMinimal) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(0U, mParser.GetParseErrors().size()) <<
     "Got parse errors: " << GetParseErrors();
 }
+
+TEST_F(NewSdpTest, CheckGetMediaSectionsCount) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(1U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetMediaType) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(SdpMediaSection::kVideo, mSdp->GetMediaSection(0).GetMediaType())
+    << "Wrong type for first media section";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetProtocol) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(SdpMediaSection::kRtpSavpf, mSdp->GetMediaSection(0).GetProtocol())
+    << "Wrong protocol for video";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetFormats) {
+  ParseSdp(kVideoSdp);
+  auto video_formats = mSdp->GetMediaSection(0).GetFormats();
+  ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
+  ASSERT_EQ("120", video_formats[0]);
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetPort) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(56436U, mSdp->GetMediaSection(0).GetPort()) << "Wrong port number in media section";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetMissingPortCount) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(0U, mSdp->GetMediaSection(0).GetPortCount()) << "Wrong port count in media section";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetPortCount) {
+  ParseSdp(kVideoSdp + "m=audio 12345/2 RTP/SAVPF 0\r\n");
+  ASSERT_EQ(2U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ(2U, mSdp->GetMediaSection(1).GetPortCount()) << "Wrong port count in media section";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetMissingBandwidth) {
+  ParseSdp(kVideoSdp);
+  ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("foo")).empty()) << "Wrong bandwidth in media section";
+}
+
+TEST_F(NewSdpTest, CheckMediaSectionGetBandwidth) {
+  ParseSdp(kVideoSdp + "b=foo:1000");
+  ASSERT_FALSE((mSdp->GetMediaSection(0).GetBandwidth("foo")).empty()) << "Wrong bandwidth in media section";
+}
+
 
 // SDP from a basic A/V apprtc call FFX/FFX
 const std::string kBasicAudioVideoOffer =
