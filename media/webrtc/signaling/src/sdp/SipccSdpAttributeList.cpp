@@ -312,8 +312,7 @@ SipccSdpAttributeList::GetSsrcGroup() const {
 void
 SipccSdpAttributeList::Serialize(std::ostream& os) const {
   // Known attributes
-  for (SdpAttribute::AttributeType i = SdpAttribute::kFirstAttribute;
-       i < kMaxAttributeIndex; i++) {
+  for (size_t i = 0; i < kMaxAttributeIndex; ++i) {
     if (mAttributes[i]) {
       os << *mAttributes[i];
     }
