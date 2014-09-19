@@ -6,6 +6,7 @@
 
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
+#include <ostream>
 #include "mozilla/Assertions.h"
 #include "signaling/src/sdp/SdpErrorHolder.h"
 
@@ -321,7 +322,7 @@ SipccSdpAttributeList::LoadSetup(sdp_t* sdp, uint16_t level) {
 
   SdpSetupAttribute::Role role;
   switch (setup_type) {
-    case SDP_SETUP_ACTIVE: role = SdpSetupAttribute::kActive; break; 
+    case SDP_SETUP_ACTIVE: role = SdpSetupAttribute::kActive; break;
     case SDP_SETUP_PASSIVE: role = SdpSetupAttribute::kPassive; break;
     case SDP_SETUP_ACTPASS: role = SdpSetupAttribute::kActpass; break;
     case SDP_SETUP_HOLDCONN: role = SdpSetupAttribute::kHoldconn; break;
@@ -330,6 +331,51 @@ SipccSdpAttributeList::LoadSetup(sdp_t* sdp, uint16_t level) {
   }
 
   SetAttribute(new SdpSetupAttribute(role));
+}
+
+bool
+SipccSdpAttributeList::LoadGroups(sdp_t* sdp, uint16_t level,
+                                  SdpErrorHolder& errorHolder) {
+  uint16_t attrCount = 0;
+  if(sdp_attr_num_instances(sdp, level, 0, SDP_ATTR_GROUP, &attrCount)
+     != SDP_SUCCESS) {
+    errorHolder.AddParseError(0, "a=group instances aren't correct");
+    return false;
+  }
+
+  SdpGroupAttributeList* groups = new SdpGroupAttributeList();
+  for (uint16_t attr = 1; attr <= attrCount; ++attr) {
+    SdpGroupAttributeList::Semantics semantics;
+    std::vector<std::string> tags;
+
+    switch (sdp_get_group_attr(sdp, level, 0, attr)) {
+      case SDP_GROUP_ATTR_FID:
+        semantics = SdpGroupAttributeList::kFid; break;
+      case SDP_GROUP_ATTR_LS:
+        semantics = SdpGroupAttributeList::kLs; break;
+      case SDP_GROUP_ATTR_ANAT:
+        semantics = SdpGroupAttributeList::kAnat; break;
+      case SDP_GROUP_ATTR_BUNDLE:
+        semantics = SdpGroupAttributeList::kBundle; break;
+      default: continue;
+    }
+
+    uint16_t idCount = sdp_get_group_num_id(sdp, level, 0, attr);
+    for (uint16_t id = 1; id <= idCount; ++id) {
+      const char* idStr = sdp_get_group_id(sdp, level, 0, attr, id);
+      if (!idStr) {
+        std::ostringstream os;
+        os << "bad a=group identifier at " << (attr - 1) << ", " << (id - 1);
+        errorHolder.AddParseError(0, os.str());
+        delete groups;
+        return false;
+      }
+      tags.push_back(std::string(idStr));
+    }
+    groups->PushEntry(semantics, tags);
+  }
+  SetAttribute(groups);
+  return true;
 }
 
 bool
@@ -342,7 +388,11 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
   }
   LoadFlags(sdp, level);
 
-  if (!AtSessionLevel()) {
+  if (AtSessionLevel()) {
+    if (!LoadGroups(sdp, level, errorHolder)) {
+      return false;
+    }
+  } else {
     if (!LoadDirection(sdp, level, errorHolder)) {
       return false;
     }

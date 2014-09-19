@@ -7,7 +7,6 @@
 #ifndef _SDPATTRIBUTE_H_
 #define _SDPATTRIBUTE_H_
 
-#include <list>
 #include <vector>
 #include <ostream>
 #include <sstream>
@@ -233,7 +232,7 @@ inline std::ostream& operator <<(std::ostream& os, const SdpAttribute::Attribute
 //    }
 //  }
 //
-//  std::list<Candidate> mCandidates;
+//  std::vector<Candidate> mCandidates;
 //};
 //
 //inline std::ostream& operator <<(std::ostream& os,
@@ -395,7 +394,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<Extmap> mExtmaps;
+  std::vector<Extmap> mExtmaps;
 };
 
 inline std::ostream& operator <<(std::ostream& os,
@@ -455,7 +454,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<Fingerprint> mFingerprints;
+  std::vector<Fingerprint> mFingerprints;
 };
 
 inline std::ostream& operator <<(std::ostream& os,
@@ -498,7 +497,7 @@ public:
     mFmtps.push_back({ format, parameters });
   }
 
-  std::list<Fmtp> mFmtps;
+  std::vector<Fmtp> mFmtps;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -524,28 +523,26 @@ public:
     kFecFr,   // RFC5956
     kCs,      // draft-mehta-rmt-flute-sdp-05
     kDdp,     // RFC5583
-    kDup      // RFC7104
+    kDup,     // RFC7104
+    kBundle   // draft-ietf-mmusic-bundle
   };
 
   struct Group {
     Semantics semantics;
-    std::string identifier;
     std::vector<std::string> tags;
   };
 
   void PushEntry(Semantics semantics,
-                 const std::string& identifier,
                  const std::vector<std::string>& tags) {
     mGroups.push_back({
       semantics,
-      identifier,
       tags
     });
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<Group> mGroups;
+  std::vector<Group> mGroups;
 };
 
 inline std::ostream& operator <<(std::ostream& os,
@@ -561,6 +558,7 @@ inline std::ostream& operator <<(std::ostream& os,
     case SdpGroupAttributeList::kCs: os << "CS"; break;
     case SdpGroupAttributeList::kDdp: os << "DDP"; break;
     case SdpGroupAttributeList::kDup: os << "DUP"; break;
+    case SdpGroupAttributeList::kBundle: os << "BUNDLE"; break;
     default: MOZ_ASSERT(false); os << "?";
   }
   return os;
@@ -824,7 +822,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<Feedback> mFeedback;
+  std::vector<Feedback> mFeedback;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -873,7 +871,7 @@ public:
     MOZ_CRASH();
   }
 
-  std::list<Rtpmap> mRtpmaps;
+  std::vector<Rtpmap> mRtpmaps;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -912,7 +910,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<Sctpmap> mSctpmaps;
+  std::vector<Sctpmap> mSctpmaps;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -982,7 +980,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<Ssrc> mSsrcs;
+  std::vector<Ssrc> mSsrcs;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1017,7 +1015,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::list<SsrcGroup> mSsrcGroups;
+  std::vector<SsrcGroup> mSsrcGroups;
 };
 
 inline std::ostream& operator <<(std::ostream& os,

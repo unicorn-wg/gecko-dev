@@ -51,9 +51,7 @@ void SdpFmtpAttributeList::Serialize(std::ostream& os) const
 void SdpGroupAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mGroups.begin(); i != mGroups.end(); ++i) {
-    os << "a=" << mType << ":"
-      << i->semantics << " "
-      << i->identifier;
+    os << "a=" << mType << ":" << i->semantics;
     for (auto j = i->tags.begin(); j != i->tags.end(); ++j) {
       os << " " << (*j);
     }
@@ -189,4 +187,3 @@ void SdpNumberAttribute::Serialize(std::ostream& os) const
 }
 
 } // namespace mozilla
-
