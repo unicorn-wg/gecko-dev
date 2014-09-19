@@ -58,6 +58,22 @@ TEST_F(JsepSessionTest, CreateOfferAudio1) {
   std::cerr << offer << std::endl;
 }
 
+TEST_F(JsepSessionTest, CreateOfferAudio1SetLocal) {
+  JsepOfferOptions options;
+  std::string offer;
+
+  RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kAudio));
+  mSession.AddTrack(audio);
+  nsresult rv = mSession.CreateOffer(options, &offer);
+  ASSERT_EQ(NS_OK, rv);
+
+  std::cerr << offer << std::endl;
+
+  rv = mSession.SetLocalDescription(jsep::kJsepSdpOffer, offer);
+  ASSERT_EQ(NS_OK, rv);
+}
+
 TEST_F(JsepSessionTest, CreateOfferVideo1) {
   JsepOfferOptions options;
   std::string offer;

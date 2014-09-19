@@ -2,22 +2,36 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "logging.h"
+
 #include "signaling/src/jsep/JsepSessionImpl.h"
 
 #include "nspr.h"
 #include "nss.h"
 #include "pk11pub.h"
 
+
 #include <mozilla/Move.h>
 #include <mozilla/UniquePtr.h>
 
 #include "signaling/src/sdp/Sdp.h"
 #include "signaling/src/sdp/SipccSdp.h"
+#include "signaling/src/sdp/SipccSdpParser.h"
 
 namespace mozilla {
 namespace jsep {
 
+MOZ_MTLOG_MODULE("jsep")
+
+// TODO(ekr@rtfm.com): Add state checks.
+
 void JsepSessionImpl::Init() {
+  SECStatus rv = PK11_GenerateRandom(
+      reinterpret_cast<unsigned char *>(&mSessionId), sizeof(mSessionId));
+  if (rv != SECSuccess) {
+    MOZ_CRASH();
+  }
+
   SetupDefaultCodecs();
 }
 
@@ -51,6 +65,8 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     return rv;
 
   // Now add all the m-lines that we are attempting to negotiate.
+  size_t mline_index = 0;
+
   for (auto track = mSendingTracks.begin();
        track != mSendingTracks.end(); ++track) {
     // TODO(ekr@rtfm.com): process options for sendrecv versus sendonly.
@@ -65,12 +81,26 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
                           codec->mChannels);
       }
     }
+    track->mAssignedMLine = Some(mline_index);
+    ++mline_index;
   }
 
   // TODO(ekr@rtfm.com): Do renegotiation.
-
   *offer = sdp->toString();
+  mGeneratedLocalDescription = Move(sdp);
 
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
+                                              const std::string& sdp) {
+  // Parse.
+  UniquePtr<Sdp> parsed = mParser.Parse(sdp);
+
+  // TODO(ekr@rtfm.com): Compare the generated offer to the passed
+  // in argument.
+
+  SetState(kJsepStateHaveLocalOffer);
   return NS_OK;
 }
 
@@ -88,14 +118,6 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
   //     entire o= line needs to be unique, but selecting a random number
   //     for <sess-id> is sufficient to accomplish this.
 
-  // Generate the sess-id if it is zero (the chance of getting that randomly
-  // is vanishing.
-  SECStatus rv = PK11_GenerateRandom(
-      reinterpret_cast<unsigned char *>(&mSessionId), sizeof(mSessionId));
-  if (rv != SECSuccess) {
-    MOZ_CRASH();
-    return NS_ERROR_UNEXPECTED;
-  }
 
   auto origin = MakeUnique<SdpOrigin>("-",
                                       mSessionId,
@@ -150,6 +172,15 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       9000,
       0  // This means default 1
                       ));
+}
+
+void JsepSessionImpl::SetState(JsepSignalingState state) {
+  if (state == mState)
+    return;
+
+  MOZ_MTLOG(ML_NOTICE, "[" << mName << "]: State change " <<
+            state_str(mState) << " -> " << state_str(state));
+  mState = state;
 }
 
 }  // namespace jsep

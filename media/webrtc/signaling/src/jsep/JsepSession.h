@@ -44,13 +44,14 @@ class JsepAnswerOptions : public JsepOAOptions {};
 
 class JsepSession {
  public:
-  JsepSession(const std::string& name) : mName(name) {}
+  JsepSession(const std::string& name)
+      : mName(name),
+        mState(kJsepStateStable) {}
   virtual ~JsepSession() {}
 
   // Accessors for basic properties.
   virtual const std::string& name() const { return mName; }
   virtual JsepSignalingState state() const { return mState; }
-
   // Manage tracks. We take shared ownership of any track.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;
   virtual nsresult RemoveTrack(size_t track_index) = 0;
@@ -75,7 +76,20 @@ class JsepSession {
   virtual nsresult track_pair(size_t index, const JsepTrackPair** pair)
       const = 0;
 
- private:
+  static const char* state_str(JsepSignalingState state) {
+    static const char *states[] = {
+        "stable",
+        "have-local-offer",
+        "have-remote-offer",
+        "have-local-pranswer",
+        "have-remote-pranswer",
+        "closed"
+    };
+
+    return states[state];
+  }
+
+ protected:
   const std::string mName;
   JsepSignalingState mState;
 };
