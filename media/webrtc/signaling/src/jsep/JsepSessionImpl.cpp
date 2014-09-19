@@ -124,6 +124,63 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
+                                       std::string* answer) {
+  // This is the heart of the negotiation code. Depressing that it's
+  // so bad.
+  //
+  // Here's the current algorithm:
+  // 1. Walk through all the m-lines on the other side.
+  // 2. For each m-line, walk through all of our local tracks
+  //    in sequence and see if any are unassigned. If so, assign
+  //    them and mark it sendrecv, otherwise it's recvonly.
+  // 3. Just replicate their media attributes.
+  // 4. Profit.
+  UniquePtr<Sdp> sdp;
+
+  // Make the basic SDP that is common to offer/answer.
+  nsresult rv = CreateGenericSDP(&sdp);
+  if (NS_FAILED(rv))
+    return rv;
+
+  const Sdp& offer = *mPendingRemoteDescription;
+
+  size_t num_m_lines = offer.GetMediaSectionCount();
+
+  for (size_t i = 0; i < num_m_lines; ++i) {
+    const SdpMediaSection& remote_msection = offer.GetMediaSection(i);
+    SdpMediaSection& msection =
+      sdp->AddMediaSection(remote_msection.GetMediaType());
+
+    bool matched = false;
+
+    for (auto track = mLocalTracks.begin();
+       track != mLocalTracks.end(); ++track) {
+      if (track->mAssignedMLine.isSome())
+        continue;
+      if (track->mTrack->media_type() != remote_msection.GetMediaType())
+        continue;
+
+      matched = true;
+      track->mAssignedMLine = Some(i);
+      break;
+    }
+
+    // If we matched, then it's sendrecv, else recvonly. No way to
+    // do sendonly here. inactive would be used if we had a codec
+    // mismatch, but we don't have that worked out yet.
+    msection.GetAttributeList().SetAttribute(
+      new SdpDirectionAttribute(matched ?
+                                SdpDirectionAttribute::kSendrecv :
+                                SdpDirectionAttribute::kRecvonly));
+  }
+
+  *answer = sdp->toString();
+  mGeneratedLocalDescription = Move(sdp);
+
+  return NS_OK;
+}
+
 nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
                                               const std::string& sdp) {
   // TODO(ekr@rtfm.com): Check state.
