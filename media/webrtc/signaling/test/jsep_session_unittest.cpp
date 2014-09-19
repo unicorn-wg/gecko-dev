@@ -32,6 +32,7 @@ using mozilla::jsep::JsepOfferOptions;
 using mozilla::jsep::JsepAnswerOptions;
 using mozilla::jsep::JsepMediaStreamTrackFake;
 using mozilla::jsep::JsepMediaStreamTrack;
+using mozilla::jsep::JsepTrackPair;
 using mozilla::SipccSdpParser;
 
 namespace mozilla {
@@ -133,6 +134,15 @@ protected:
     nsresult rv = mSessionAns.SetLocalDescription(jsep::kJsepSdpAnswer,
                                                   answer);
     ASSERT_EQ(NS_OK, rv);
+
+    // Verify that the right stuff is in the tracks.
+    ASSERT_EQ(types.size(), mSessionAns.num_negotiated_track_pairs());
+    for (size_t i = 0; i < types.size(); ++i) {
+      const JsepTrackPair* pair;
+      ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
+      ASSERT_EQ(types[i], pair->mSending->media_type());
+      ASSERT_EQ(types[i], pair->mReceiving->media_type());
+    }
   }
 
   JsepSessionImpl mSessionOff;
