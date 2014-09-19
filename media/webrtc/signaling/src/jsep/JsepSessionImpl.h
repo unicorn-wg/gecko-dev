@@ -11,6 +11,7 @@
 #include "signaling/src/jsep/JsepCodecDescription.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepTrack.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
 
 namespace mozilla {
@@ -60,6 +61,8 @@ class JsepSessionImpl : public JsepSession {
 
   virtual nsresult CreateOffer(const JsepOfferOptions& options,
                                std::string* offer) MOZ_OVERRIDE;
+  virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
+                                std::string* answer) MOZ_OVERRIDE;
   virtual nsresult SetLocalDescription(JsepSdpType type,
                                        const std::string& sdp) MOZ_OVERRIDE;
 
@@ -67,9 +70,7 @@ class JsepSessionImpl : public JsepSession {
                                         const std::string& sdp) MOZ_OVERRIDE;
 
 // STUBS BELOW THIS POINT
-  virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
-                                std::string* answer) MOZ_OVERRIDE {
-    MOZ_CRASH(); }
+
 
   // Access the negotiated track pairs.
   virtual nsresult num_negotiated_track_pairs(size_t* pairs)
@@ -93,9 +94,19 @@ class JsepSessionImpl : public JsepSession {
   void SetupDefaultCodecs();
   void SetState(JsepSignalingState state);
   nsresult ParseSdp(const std::string& sdp, UniquePtr<Sdp>* parsedp);
+  nsresult SetLocalDescriptionOffer(UniquePtr<Sdp> offer);
+  nsresult SetLocalDescriptionAnswer(JsepSdpType type,
+                                      UniquePtr<Sdp> answer);
   nsresult SetRemoteDescriptionOffer(UniquePtr<Sdp> offer);
   nsresult SetRemoteDescriptionAnswer(JsepSdpType type,
                                       UniquePtr<Sdp> answer);
+  nsresult HandleNegotiatedSession(const UniquePtr<Sdp>& local,
+                                   const UniquePtr<Sdp>& remote,
+                                   bool is_offerer);
+  nsresult DetermineSendingDirection(SdpDirectionAttribute::Direction offer,
+                                    SdpDirectionAttribute::Direction answer,
+                                    bool is_offerer,
+                                    bool* sending, bool* receiving);
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
