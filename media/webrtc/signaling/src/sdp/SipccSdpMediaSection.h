@@ -44,6 +44,10 @@ public:
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
   virtual SdpDirectionAttribute GetDirectionAttribute() const MOZ_OVERRIDE;
 
+  virtual void AddCodec(const std::string& pt, const std::string& name,
+                        uint32_t clockrate, uint16_t channels = 0,
+                        const std::string& fmtp = "") MOZ_OVERRIDE;
+
   virtual void AddCodec(uint8_t pt, const std::string& name,
                         uint32_t clockrate, uint16_t channels,
                         const std::string& fmtp) MOZ_OVERRIDE;
