@@ -856,20 +856,22 @@ TEST_F(NewSdpTest, ParseEmpty) {
     << "Expected at least one parse error.";
 }
 
+const std::string kBadSdp = "This is SPARTA!!!!";
+
 TEST_F(NewSdpTest, ParseGarbage) {
-  ParseSdp("foobajooba", false);
+  ParseSdp(kBadSdp, false);
   ASSERT_FALSE(mSdp);
   ASSERT_NE(0U, mParser.GetParseErrors().size())
     << "Expected at least one parse error.";
 }
 
 TEST_F(NewSdpTest, ParseGarbageTwice) {
-  ParseSdp("foobajooba", false);
+  ParseSdp(kBadSdp, false);
   ASSERT_FALSE(mSdp);
   size_t errorCount = mParser.GetParseErrors().size();
   ASSERT_NE(0U, errorCount)
     << "Expected at least one parse error.";
-  ParseSdp("foobajooba", false);
+  ParseSdp(kBadSdp, false);
   ASSERT_FALSE(mSdp);
   ASSERT_EQ(errorCount, mParser.GetParseErrors().size())
     << "Expected same error count for same SDP.";
