@@ -147,6 +147,7 @@
          './src/sdp/SipccSdpParser.cpp',
 
          # JSEP
+         './src/jsep/JsepCodecDescription.h',
          './src/jsep/JsepMediaStreamTrack.h',
          './src/jsep/JsepMediaStreamTrackFake.h',
          './src/jsep/JsepSession.h',
