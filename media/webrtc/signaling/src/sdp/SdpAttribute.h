@@ -276,14 +276,10 @@ class SdpDirectionAttribute : public SdpAttribute
   Direction mValue;
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mTypeName << ":" << mValue << CRLF;
+    os << "a=" << mTypeName << CRLF;
   }
 
-  static std::string GetString(Direction v) {
-    std::ostringstream ss;
-    ss << v;
-    return ss.str();
-  }
+  static std::string GetString(Direction v);
 };
 
 inline std::ostream& operator <<(std::ostream& os,
@@ -297,6 +293,13 @@ inline std::ostream& operator <<(std::ostream& os,
     default: MOZ_ASSERT(false); os << "?";
   }
   return os;
+}
+
+inline std::string
+SdpDirectionAttribute::GetString(SdpDirectionAttribute::Direction v) {
+  std::ostringstream ss;
+  ss << v;
+  return ss.str();
 }
 
 ///////////////////////////////////////////////////////////////////////////
