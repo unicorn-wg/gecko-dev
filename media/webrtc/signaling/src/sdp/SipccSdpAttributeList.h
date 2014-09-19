@@ -40,7 +40,7 @@ public:
 
   // These attributes can appear multiple times, so the returned
   // classes actually represent a collection of values.
-  virtual const SdpCandidateAttributeList& GetCandidate() const MOZ_OVERRIDE;
+  virtual const std::vector<std::string>& GetCandidate() const MOZ_OVERRIDE;
   virtual const SdpExtmapAttributeList& GetExtmap() const MOZ_OVERRIDE;
   virtual const SdpFmtpAttributeList& GetFmtp() const MOZ_OVERRIDE;
   virtual const SdpImageattrAttributeList& GetImageattr() const MOZ_OVERRIDE;
@@ -80,9 +80,8 @@ private:
   bool LoadDirection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadRtpmap(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   void LoadIceAttributes(sdp_t* sdp, uint16_t level);
-  void LoadMultiString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
-                       AttributeType targetType, const std::string& name);
   void LoadFingerprint(sdp_t* sdp, uint16_t level);
+  void LoadCandidate(sdp_t* sdp, uint16_t level);
 
   bool AtSessionLevel() const { return !mSessionLevel; }
   const SipccSdpAttributeList* mSessionLevel;

@@ -1091,6 +1091,42 @@ TEST_F(NewSdpTest, CheckDirections) {
             mSdp->GetMediaSection(2).GetAttributeList().GetDirection());
 }
 
+TEST_F(NewSdpTest, CheckCandidates) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kCandidateAttribute));
+  auto audio_candidates =
+      mSdp->GetMediaSection(0).GetAttributeList().GetCandidate();
+  ASSERT_EQ(8U, audio_candidates.size());
+  ASSERT_EQ("0 1 UDP 2130379007 10.0.0.36 62453 typ host", audio_candidates[0]);
+  ASSERT_EQ("2 1 UDP 1694236671 24.6.134.204 62453 typ srflx raddr 10.0.0.36 rport 62453", audio_candidates[1]);
+  ASSERT_EQ("3 1 UDP 100401151 162.222.183.171 49761 typ relay raddr 162.222.183.171 rport 49761", audio_candidates[2]);
+  ASSERT_EQ("6 1 UDP 16515071 162.222.183.171 51858 typ relay raddr 162.222.183.171 rport 51858", audio_candidates[3]);
+  ASSERT_EQ("3 2 UDP 100401150 162.222.183.171 62454 typ relay raddr 162.222.183.171 rport 62454", audio_candidates[4]);
+  ASSERT_EQ("2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428", audio_candidates[5]);
+  ASSERT_EQ("6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340", audio_candidates[6]);
+  ASSERT_EQ("0 2 UDP 2130379006 10.0.0.36 55428 typ host", audio_candidates[7]);
+
+  ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+      SdpAttribute::kCandidateAttribute));
+  auto video_candidates =
+      mSdp->GetMediaSection(1).GetAttributeList().GetCandidate();
+  ASSERT_EQ(8U, video_candidates.size());
+  ASSERT_EQ("0 1 UDP 2130379007 10.0.0.36 59530 typ host", video_candidates[0]);
+  ASSERT_EQ("0 2 UDP 2130379006 10.0.0.36 64378 typ host", video_candidates[1]);
+  ASSERT_EQ("2 2 UDP 1694236670 24.6.134.204 64378 typ srflx raddr 10.0.0.36 rport 64378", video_candidates[2]);
+  ASSERT_EQ("6 2 UDP 16515070 162.222.183.171 64941 typ relay raddr 162.222.183.171 rport 64941", video_candidates[3]);
+  ASSERT_EQ("6 1 UDP 16515071 162.222.183.171 64800 typ relay raddr 162.222.183.171 rport 64800", video_candidates[4]);
+  ASSERT_EQ("2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530", video_candidates[5]);
+  ASSERT_EQ("3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935", video_candidates[6]);
+  ASSERT_EQ("3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026", video_candidates[7]);
+
+  ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kCandidateAttribute));
+}
+
 // TODO: Tests that parse above SDP, and check various things
 // For media sections 1 and 2:
 //  Check fmtp
