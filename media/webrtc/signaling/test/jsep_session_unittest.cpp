@@ -6,6 +6,10 @@
 
 #include <iostream>
 
+#include "nspr.h"
+#include "nss.h"
+#include "ssl.h"
+
 #define GTEST_HAS_RTTI 0
 #include "gtest/gtest.h"
 #include "gtest_utils.h"
