@@ -52,14 +52,19 @@ class JsepSession {
   // Accessors for basic properties.
   virtual const std::string& name() const { return mName; }
   virtual JsepSignalingState state() const { return mState; }
+
   // Manage tracks. We take shared ownership of any track.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;
   virtual nsresult RemoveTrack(size_t track_index) = 0;
   virtual nsresult ReplaceTrack(size_t track_index,
                                 const RefPtr<JsepMediaStreamTrack>& track) = 0;
-  virtual size_t num_tracks() const = 0;
-  virtual nsresult track(size_t index, RefPtr<JsepMediaStreamTrack>* track)
-      const = 0;
+  virtual size_t num_local_tracks() const = 0;
+  virtual nsresult local_track(
+    size_t index, RefPtr<JsepMediaStreamTrack>* track) const = 0;
+
+  virtual size_t num_remote_tracks() const = 0;
+  virtual nsresult remote_track(
+    size_t index, RefPtr<JsepMediaStreamTrack>* track) const = 0;
 
   // Basic JSEP operations.
   virtual nsresult CreateOffer(const JsepOfferOptions& options,
