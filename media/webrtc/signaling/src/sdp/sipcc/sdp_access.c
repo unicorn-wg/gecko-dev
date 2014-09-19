@@ -1298,6 +1298,31 @@ sdp_media_e sdp_get_media_type (void *sdp_ptr, u16 level)
     return (mca_p->media);
 }
 
+/* Function:    sdp_get_media_line_number
+ * Description: Returns the line number in the SDP the media
+ *              section starts on. Only set if SDP has been parsed
+ *              (rather than built).
+ * Parameters:  sdp_ptr     The SDP handle returned by sdp_init_description.
+ *              level       The level to of the m= media line.  Will be 1-n.
+ * Returns:     Line number (0 if not found or if locally built)
+ */
+u32 sdp_get_media_line_number (void *sdp_ptr, u16 level)
+{
+    sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
+    sdp_mca_t  *mca_p;
+
+    if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
+        return 0;
+    }
+
+    mca_p = sdp_find_media_level(sdp_p, level);
+    if (mca_p == NULL) {
+        return 0;
+    }
+
+    return (mca_p->line_number);
+}
+
 /* Function:    sdp_get_media_port_format
  * Description: Returns the port format type associated with the m=
  *              media token line.  If port format type has not been
@@ -1862,7 +1887,7 @@ sdp_result_e sdp_insert_media_line (void *sdp_ptr, u16 level)
     }
 
     /* Allocate resource for new media stream. */
-    new_mca_p = sdp_alloc_mca();
+    new_mca_p = sdp_alloc_mca(0);
     if (new_mca_p == NULL) {
         sdp_p->conf_p->num_no_resource++;
         return (SDP_NO_RESOURCE);

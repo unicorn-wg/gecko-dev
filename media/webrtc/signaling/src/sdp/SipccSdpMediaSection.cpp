@@ -67,7 +67,8 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
   case SDP_MEDIA_TEXT: mMediaType = kText; break;
 
   default:
-    errorHolder.AddParseError(0, "Unsupported media section type");
+    errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                              "Unsupported media section type");
     return false;
   }
 
@@ -104,7 +105,8 @@ bool SipccSdpMediaSection::LoadProtocol(sdp_t* sdp, uint16_t level,
     case SDP_TRANSPORT_TCPTLSRTPSAVPF: mProtocol = kTcpTlsRtpSavpf; break;
 
     default:
-      errorHolder.AddParseError(0, "Unsupported media transport type");
+      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                                "Unsupported media transport type");
       return false;
   }
   return true;
@@ -129,14 +131,16 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
   if (!sdp_connection_valid(sdp, level)) {
     level = SDP_SESSION_LEVEL;
     if (!sdp_connection_valid(sdp, level)) {
-      errorHolder.AddParseError(0, "Missing c= line");
+      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                                "Missing c= line");
       return false;
     }
   }
 
   sdp_nettype_e type = sdp_get_conn_nettype(sdp, level);
   if (type != SDP_NT_INTERNET) {
-    errorHolder.AddParseError(0, "Unsupported network type");
+    errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                              "Unsupported network type");
     return false;
   }
 
@@ -149,7 +153,8 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
       addrType = sdp::kIPv6;
       break;
     default:
-      errorHolder.AddParseError(0, "Unsupported address type");
+      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                                "Unsupported address type");
       return false;
   }
 
