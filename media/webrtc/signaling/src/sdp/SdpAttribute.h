@@ -483,6 +483,10 @@ public:
     }
   }
 
+  void PushEntry(const std::string& format, const std::string& parameters) {
+    mFmtps.push_back({ format, parameters });
+  }
+
   std::list<Fmtp> mFmtps;
 };
 
@@ -908,6 +912,24 @@ public:
       }
       os << CRLF;
     }
+  }
+
+  bool HasEntry(const std::string& pt) const {
+    for (auto it = mRtpmaps.begin(); it != mRtpmaps.end(); ++it) {
+      if (it->pt == pt) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const Rtpmap&GetEntry(const std::string& pt) const {
+    for (auto it = mRtpmaps.begin(); it != mRtpmaps.end(); ++it) {
+      if (it->pt == pt) {
+        return *it;
+      }
+    }
+    MOZ_CRASH();
   }
 
   std::list<Rtpmap> mRtpmaps;

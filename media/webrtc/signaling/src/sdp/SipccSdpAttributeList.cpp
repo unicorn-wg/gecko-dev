@@ -90,7 +90,7 @@ SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
 
 void
 SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
-    char *value;
+  char *value;
   sdp_result_e sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 1, &value);
   if (sdpres == SDP_SUCCESS) {
@@ -189,6 +189,28 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
 }
 
 bool
+SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
+                                  SdpErrorHolder& errorHolder) {
+  SdpRtpmapAttributeList* rtpmap = new SdpRtpmapAttributeList();
+  uint16_t count = sdp_get_media_num_payload_types(sdp, level);
+  for (uint16_t i = 0; i < count; ++i) {
+    uint16_t pt = sdp_attr_get_rtpmap_payload_type(sdp, level, 0, i + 1);
+    const char* ccName = sdp_attr_get_rtpmap_encname(sdp, level, 0, i + 1);
+    std::string name;
+    if (ccName) {
+      name = ccName;
+    }
+    uint32_t clock = sdp_attr_get_rtpmap_clockrate(sdp, level, 0, i + 1);
+    uint16_t channels = sdp_attr_get_rtpmap_num_chan(sdp, level, 0, i + 1);
+    std::ostringstream ospt;
+    ospt << pt;
+    rtpmap->PushEntry(ospt.str(), name, clock, channels);
+  }
+  SetAttribute(rtpmap);
+  return true;
+}
+
+bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
   bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
@@ -212,6 +234,9 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
 
   if (!AtSessionLevel()) {
     if (!LoadDirection(sdp, level, errorHolder)) {
+      return false;
+    }
+    if (!LoadRtpmap(sdp, level, errorHolder)) {
       return false;
     }
   }
@@ -280,7 +305,7 @@ SipccSdpAttributeList::GetFingerprint() const {
 
 const SdpFmtpAttributeList&
 SipccSdpAttributeList::GetFmtp() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
 
@@ -413,7 +438,8 @@ SipccSdpAttributeList::GetRemoteCandidates() const {
 
 const SdpRtpmapAttributeList&
 SipccSdpAttributeList::GetRtpmap() const {
-  MOZ_CRASH();
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kRtpmapAttribute);
+  return *static_cast<const SdpRtpmapAttributeList*>(attr);
 }
 
 const SdpSctpmapAttributeList&
