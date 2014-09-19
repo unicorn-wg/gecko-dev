@@ -842,6 +842,15 @@ class NewSdpTest : public ::testing::Test {
       return output.str();
     }
 
+  void CheckRtpmap(const std::string&pt, const std::string&name,
+                   uint32_t clock, uint16_t channels,
+                   const SdpRtpmapAttributeList::Rtpmap& attr) {
+    ASSERT_EQ(pt, attr.pt);
+    ASSERT_EQ(name, attr.name);
+    ASSERT_EQ(clock, attr.clock);
+    ASSERT_EQ(channels, attr.channels);
+  }
+
     SipccSdpParser mParser;
     mozilla::UniquePtr<Sdp> mSdp;
 };
@@ -1019,18 +1028,23 @@ TEST_F(NewSdpTest, CheckRtpmap) {
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
-//  ASSERT_EQ(5U, mSdp->GetMediaSection(0).GetAttributeList().CountAttributes(SdpAttribute::kRtpmapAttribute))
-//    << "Wrong number of rtpmap attributes for audio";
-//
+  const SdpMediaSection& audiosec = mSdp->GetMediaSection(0);
+  const SdpRtpmapAttributeList& rtpmap = audiosec.GetAttributeList().GetRtpmap();
+  ASSERT_EQ(5U, rtpmap.mRtpmaps.size())
+    << "Wrong number of rtpmap attributes for audio";
+
   // TODO: Write a CheckRtpmap(rtpmap, payloadType, encodingName, rate)
   // Need to know name of type
-  // CheckRtpmap("109", "opus",           48000, mSdp.GetMediaSection(0).GetRtpmap(0));
-  // CheckRtpmap("9",   "G722",            8000, mSdp.GetMediaSection(0).GetRtpmap(1));
-  // CheckRtpmap("0",   "PCMU",            8000, mSdp.GetMediaSection(0).GetRtpmap(2));
-  // CheckRtpmap("8",   "PCMA",            8000, mSdp.GetMediaSection(0).GetRtpmap(3));
-  // CheckRtpmap("101", "telephone-event", 8000, mSdp.GetMediaSection(0).GetRtpmap(4));
+  CheckRtpmap("109", "opus",           48000, 2, rtpmap.GetEntry(audiosec.GetFormats()[0]));
+  CheckRtpmap("9",   "G722",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[1]));
+  CheckRtpmap("0",   "PCMU",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[2]));
+  CheckRtpmap("8",   "PCMA",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[3]));
+  CheckRtpmap("101", "telephone-event", 8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[4]));
 
-  // CheckRtpmap("120", "VP8",            90000, mSdp.GetMediaSection(0).GetRtpmap(0));
+  const SdpMediaSection& videosec = mSdp->GetMediaSection(1);
+  CheckRtpmap("120", "VP8",            90000, 1,
+              videosec.GetAttributeList().GetRtpmap().GetEntry(
+                  videosec.GetFormats()[0]));
 }
 
 TEST_F(NewSdpTest, CheckFormatParameters) {

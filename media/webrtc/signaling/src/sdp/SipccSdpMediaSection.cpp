@@ -6,6 +6,7 @@
 
 #include "signaling/src/sdp/SipccSdpMediaSection.h"
 
+#include <ostream>
 #include "signaling/src/sdp/SdpErrorHolder.h"
 
 namespace mozilla {
@@ -152,6 +153,45 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
   mConnection = MakeUnique<SdpConnection>(addrType, address, ttl, numAddr);
   return true;
 }
+
+void
+SipccSdpMediaSection::AddCodec(uint8_t ptv, const std::string& name,
+                               uint32_t clockrate, uint16_t channels,
+                               const std::string& fmtp) {
+  std::ostringstream os;
+  os << ptv;
+  std::string pt = os.str();
+
+  mFormats.push_back(pt);
+
+  SdpRtpmapAttributeList *rtpmap = new SdpRtpmapAttributeList();
+  if (mAttributeList.HasAttribute(SdpAttribute::kRtpmapAttribute)) {
+    const SdpRtpmapAttributeList& old = mAttributeList.GetRtpmap();
+    for (auto it = old.mRtpmaps.begin(); it != old.mRtpmaps.end(); ++it) {
+      rtpmap->mRtpmaps.push_back(*it);
+    }
+  }
+  rtpmap->PushEntry(pt, name, clockrate, channels);
+  mAttributeList.SetAttribute(rtpmap);
+
+  if (!fmtp.empty()) {
+    SdpFmtpAttributeList *fmtps = new SdpFmtpAttributeList();
+    if (mAttributeList.HasAttribute(SdpAttribute::kFmtpAttribute)) {
+      const SdpFmtpAttributeList& old = mAttributeList.GetFmtp();
+      for (auto it = old.mFmtps.begin(); it != old.mFmtps.end(); ++it) {
+        fmtps->mFmtps.push_back(*it);
+      }
+    }
+    fmtps->PushEntry(pt, fmtp);
+    mAttributeList.SetAttribute(fmtps);
+  }
+}
+
+void SipccSdpMediaSection::AddDataChannel(uint16_t pt,
+                                          const std::string& sctpmap) {
+  MOZ_CRASH();
+}
+
 
 void
 SipccSdpMediaSection::Serialize(std::ostream& os) const {

@@ -86,6 +86,14 @@ public:
   virtual SdpAttributeList &GetAttributeList() = 0;
 
   virtual void Serialize(std::ostream&) const = 0;
+
+  virtual void AddCodec(uint8_t pt, const std::string& name,
+                        uint32_t clockrate, uint16_t channels = 0,
+                        const std::string& fmtp = "") = 0;
+
+  virtual void AddDataChannel(uint16_t pt = 5000U,
+                              const std::string& sctpmap = "webrtc-datachannel") = 0;
+
 };
 
 inline std::ostream& operator <<(std::ostream& os, const SdpMediaSection &ms)
