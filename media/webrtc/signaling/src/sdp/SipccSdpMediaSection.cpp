@@ -162,7 +162,6 @@ SipccSdpMediaSection::Serialize(std::ostream& os) const {
   if (mPortCount) {
     os << "/" << mPortCount;
   }
-  os << " " << mProtocol;
   for (auto i = mFormats.begin(); i != mFormats.end(); ++i) {
     os << " " << (*i);
   }
