@@ -218,12 +218,29 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
 
 const SdpCandidateAttributeList&
 SipccSdpAttributeList::GetCandidate() const {
-  MOZ_CRASH();
+  if (!mSessionLevel) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+
+  if (!HasAttribute(SdpAttribute::kCandidateAttribute)) {
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpCandidateAttributeList*>(GetAttribute(
+        SdpAttribute::kCandidateAttribute));
 }
 
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kConnectionAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetConnection();
+    }
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+        SdpAttribute::kConnectionAttribute));
 }
 
 SdpDirectionAttribute::Direction
@@ -234,7 +251,15 @@ SipccSdpAttributeList::GetDirection() const {
 
 const SdpExtmapAttributeList&
 SipccSdpAttributeList::GetExtmap() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kExtmapAttribute)) {
+    if (mSessionLevel) {
+      mSessionLevel->GetExtmap();
+    }
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+        SdpAttribute::kExtmapAttribute));
 }
 
 const SdpFingerprintAttributeList&
@@ -250,12 +275,30 @@ SipccSdpAttributeList::GetFingerprint() const {
 
 const SdpFmtpAttributeList&
 SipccSdpAttributeList::GetFmtp() const {
-  MOZ_CRASH();
+  if (!mSessionLevel) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+
+  if (!HasAttribute(SdpAttribute::kFmtpAttribute)) {
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+        SdpAttribute::kFmtpAttribute));
 }
 
 const SdpGroupAttributeList&
 SipccSdpAttributeList::GetGroup() const {
-  MOZ_CRASH();
+  if (mSessionLevel) {
+    MOZ_CRASH("This is session-level only foo!");
+  }
+
+  if (!HasAttribute(SdpAttribute::kGroupAttribute)) {
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+        SdpAttribute::kGroupAttribute));
 }
 
 const SdpIceOptionsAttribute&
