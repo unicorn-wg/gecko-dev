@@ -1874,6 +1874,7 @@ extern sdp_result_e sdp_copy_all_bw_lines(void *src_sdp_ptr, void *dst_sdp_ptr,
                                           u16 src_level, u16 dst_level);
 extern sdp_bw_modifier_e sdp_get_bw_modifier(void *sdp_ptr, u16 level,
                                              u16 inst_num);
+extern const char *sdp_get_bw_modifier_name(sdp_bw_modifier_e bw_modifier);
 extern int32 sdp_get_bw_value(void *sdp_ptr, u16 level, u16 inst_num);
 extern int32 sdp_get_num_bw_lines (void *sdp_ptr, u16 level);
 

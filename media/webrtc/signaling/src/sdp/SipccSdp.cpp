@@ -20,12 +20,12 @@ const SdpOrigin& SipccSdp::GetOrigin() const {
   return *mOrigin;
 }
 
-const std::string&
+uint32_t
 SipccSdp::GetBandwidth(const std::string& type) const {
   static std::string emptyString("");
   auto found = mBandwidths.find(type);
   if (found == mBandwidths.end()) {
-    return emptyString;
+    return 0;
   }
   return found->second;
 }
@@ -104,6 +104,11 @@ SipccSdp::Load(sdp_t* sdp, SdpErrorHolder& errorHolder) {
   }
 
   if (!LoadOrigin(sdp, errorHolder)) {
+    return false;
+  }
+
+  if (!SipccSdpMediaSection::LoadBandwidth(mBandwidths, sdp,
+                                           SDP_SESSION_LEVEL, errorHolder)) {
     return false;
   }
 
