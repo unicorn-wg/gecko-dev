@@ -483,6 +483,10 @@ public:
     }
   }
 
+  void PushEntry(const std::string& format, const std::string& parameters) {
+    mFmtps.push_back({ format, parameters });
+  }
+
   std::list<Fmtp> mFmtps;
 };
 
