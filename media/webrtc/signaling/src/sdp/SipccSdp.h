@@ -54,6 +54,8 @@ public:
 
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
+  virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
+
 private:
   explicit SipccSdp() {}
 
