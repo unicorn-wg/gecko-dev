@@ -191,13 +191,11 @@ public:
        << mAddr;
 
     if (mTtl) {
-      os << "/" << mTtl;
+      os << "/" << static_cast<uint32_t>(mTtl);
+      if (mCount) {
+        os << "/" << mCount;
+      }
     }
-
-    if (mCount) {
-      os << "/" << mCount;
-    }
-
     os << CRLF;
   }
 private:
