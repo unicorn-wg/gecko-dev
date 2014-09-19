@@ -1440,14 +1440,17 @@ TEST_P(NewSdpTest, CheckApplicationParameters) {
   auto app_formats = mSdp->GetMediaSection(2).GetFormats();
   ASSERT_EQ(1U, app_formats.size()) << "Wrong number of formats for audio";
   ASSERT_EQ("5000", app_formats[0]);
-  /*
-  */
 
   const SdpConnection& conn3 = mSdp->GetMediaSection(2).GetConnection();
   ASSERT_EQ(sdp::kIPv4, conn3.GetAddrType());
   ASSERT_EQ("0.0.0.0", conn3.GetAddress());
   ASSERT_EQ(0U, conn3.GetTtl());
   ASSERT_EQ(0U, conn3.GetCount());
+
+  ASSERT_TRUE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kSetupAttribute));
+  ASSERT_EQ(SdpSetupAttribute::kActpass,
+      mSdp->GetMediaSection(2).GetAttributeList().GetSetup().mRole);
 }
 
 // TODO: Tests that parse above SDP, and check various things
