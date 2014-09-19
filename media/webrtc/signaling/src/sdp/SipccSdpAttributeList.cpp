@@ -310,6 +310,11 @@ SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
     std::string name;
     if (ccName) {
       name = ccName;
+    } else {
+      // Probably no rtpmap attribute for a pt in an m-line
+      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                                "No rtpmap attribute for payload type");
+      continue;
     }
     uint32_t clock = sdp_attr_get_rtpmap_clockrate(sdp, level, 0, i + 1);
     uint16_t channels = sdp_attr_get_rtpmap_num_chan(sdp, level, 0, i + 1);
@@ -317,7 +322,13 @@ SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
     ospt << pt;
     rtpmap->PushEntry(ospt.str(), name, clock, channels);
   }
-  SetAttribute(rtpmap);
+
+  if (rtpmap->mRtpmaps.empty()) {
+    delete rtpmap;
+  } else {
+    SetAttribute(rtpmap);
+  }
+
   return true;
 }
 
@@ -384,7 +395,13 @@ SipccSdpAttributeList::LoadGroups(sdp_t* sdp, uint16_t level,
     }
     groups->PushEntry(semantics, tags);
   }
-  SetAttribute(groups);
+
+  if (groups->mGroups.empty()) {
+    delete groups;
+  } else {
+    SetAttribute(groups);
+  }
+
   return true;
 }
 
