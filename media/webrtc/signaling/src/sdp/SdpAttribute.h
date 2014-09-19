@@ -161,108 +161,107 @@ inline std::ostream& operator <<(std::ostream& os, const SdpAttribute::Attribute
 // extension-att-name    = byte-string    ;from RFC 4566
 // extension-att-value   = byte-string
 // ice-char              = ALPHA / DIGIT / "+" / "/"
-class SdpCandidateAttributeList : public SdpAttribute
-{
-public:
-  SdpCandidateAttributeList() :
-    SdpAttribute(kCandidateAttribute) {}
-
-  enum Transport {
-    kUdp,
-    kTcp
-  };
-
-  enum Type {
-    kHost,
-    kSrflx,
-    kPrflx,
-    kRelay
-  };
-
-  struct Candidate
-  {
-    std::string foundation;
-    uint16_t componentId;
-    Transport transport;
-    uint32_t priority;
-    std::string address;
-    uint16_t port;
-    Type type;
-    std::string raddr;
-    uint16_t rport;
-  };
-
-  void PushEntry(const std::string& foundation,
-                 uint16_t componentId,
-                 Transport transport,
-                 uint32_t priority,
-                 const std::string& address,
-                 uint16_t port,
-                 Type type,
-                 const std::string& raddr = "",
-                 uint16_t rport = 0) {
-    mCandidates.push_back({
-      foundation,
-      componentId,
-      transport,
-      priority,
-      address,
-      port,
-      type,
-      raddr,
-      rport
-    });
-  }
-
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    for (auto i = mCandidates.begin(); i != mCandidates.end(); ++i) {
-      os << "a=" << mType << ":"
-         << i->foundation << " "
-         << i->componentId << " "
-         << i->transport << " "
-         << i->priority << " "
-         << i->address << " "
-         << i->port << " "
-         << i->type;
-      if (i->raddr.length()) {
-        os << " " << i->raddr;
-      }
-      if (i->rport) {
-        os << " " << i->rport;
-      }
-      os << CRLF;
-    }
-  }
-
-  std::list<Candidate> mCandidates;
-};
-
-inline std::ostream& operator <<(std::ostream& os,
-                                 SdpCandidateAttributeList::Transport t)
-{
-  switch (t) {
-    case SdpCandidateAttributeList::kUdp: os << "UDP"; break;
-    case SdpCandidateAttributeList::kTcp: os << "TCP"; break;
-    default: MOZ_ASSERT(false); os << "?";
-
-  }
-  return os;
-}
-
-inline std::ostream& operator <<(std::ostream& os,
-                                 SdpCandidateAttributeList::Type t)
-{
-  switch (t) {
-    case SdpCandidateAttributeList::kHost: os << "host"; break;
-    case SdpCandidateAttributeList::kSrflx: os << "srflx"; break;
-    case SdpCandidateAttributeList::kPrflx: os << "prflx"; break;
-    case SdpCandidateAttributeList::kRelay: os << "relay"; break;
-    default: MOZ_ASSERT(false); os << "?";
-  }
-  return os;
-}
-
+//class SdpCandidateAttributeList : public SdpAttribute
+//{
+//public:
+//  SdpCandidateAttributeList() :
+//    SdpAttribute(kCandidateAttribute) {}
+//
+//  enum Transport {
+//    kUdp,
+//    kTcp
+//  };
+//
+//  enum Type {
+//    kHost,
+//    kSrflx,
+//    kPrflx,
+//    kRelay
+//  };
+//
+//  struct Candidate
+//  {
+//    std::string foundation;
+//    uint16_t componentId;
+//    Transport transport;
+//    uint32_t priority;
+//    std::string address;
+//    uint16_t port;
+//    Type type;
+//    std::string raddr;
+//    uint16_t rport;
+//  };
+//
+//  void PushEntry(const std::string& foundation,
+//                 uint16_t componentId,
+//                 Transport transport,
+//                 uint32_t priority,
+//                 const std::string& address,
+//                 uint16_t port,
+//                 Type type,
+//                 const std::string& raddr = "",
+//                 uint16_t rport = 0) {
+//    mCandidates.push_back({
+//      foundation,
+//      componentId,
+//      transport,
+//      priority,
+//      address,
+//      port,
+//      type,
+//      raddr,
+//      rport
+//    });
+//  }
+//
+//  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
+//  {
+//    for (auto i = mCandidates.begin(); i != mCandidates.end(); ++i) {
+//      os << "a=" << mType << ":"
+//         << i->foundation << " "
+//         << i->componentId << " "
+//         << i->transport << " "
+//         << i->priority << " "
+//         << i->address << " "
+//         << i->port << " "
+//         << i->type;
+//      if (i->raddr.length()) {
+//        os << " " << i->raddr;
+//      }
+//      if (i->rport) {
+//        os << " " << i->rport;
+//      }
+//      os << CRLF;
+//    }
+//  }
+//
+//  std::list<Candidate> mCandidates;
+//};
+//
+//inline std::ostream& operator <<(std::ostream& os,
+//                                 SdpCandidateAttributeList::Transport t)
+//{
+//  switch (t) {
+//    case SdpCandidateAttributeList::kUdp: os << "UDP"; break;
+//    case SdpCandidateAttributeList::kTcp: os << "TCP"; break;
+//    default: MOZ_ASSERT(false); os << "?";
+//
+//  }
+//  return os;
+//}
+//
+//inline std::ostream& operator <<(std::ostream& os,
+//                                 SdpCandidateAttributeList::Type t)
+//{
+//  switch (t) {
+//    case SdpCandidateAttributeList::kHost: os << "host"; break;
+//    case SdpCandidateAttributeList::kSrflx: os << "srflx"; break;
+//    case SdpCandidateAttributeList::kPrflx: os << "prflx"; break;
+//    case SdpCandidateAttributeList::kRelay: os << "relay"; break;
+//    default: MOZ_ASSERT(false); os << "?";
+//  }
+//  return os;
+//}
 
 ///////////////////////////////////////////////////////////////////////////
 // a=conection, RFC4145
@@ -1168,12 +1167,18 @@ inline std::ostream& operator <<(std::ostream& os,
 ///////////////////////////////////////////////////////////////////////////
 class SdpMultiStringAttribute : public SdpAttribute
 {
-  public:
+public:
   explicit SdpMultiStringAttribute(AttributeType type) :
       SdpAttribute(type) {}
 
   void PushEntry(const std::string& entry) {
     mValues.push_back(entry);
+  }
+
+  virtual void Serialize(std::ostream& os) const {
+    for (auto i = mValues.begin(); i != mValues.end(); ++i) {
+      os << mType << ":" << *i << CRLF;
+    }
   }
 
   std::vector<std::string> mValues;

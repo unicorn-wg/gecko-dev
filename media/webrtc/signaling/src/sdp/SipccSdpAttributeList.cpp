@@ -196,6 +196,34 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
   }
 }
 
+void
+SipccSdpAttributeList::LoadCandidate(sdp_t* sdp, uint16_t level) {
+  char *value;
+  auto candidates = new SdpMultiStringAttribute(
+      SdpAttribute::kCandidateAttribute);
+  for (uint16_t i = 1; ; ++i) {
+    sdp_result_e result = sdp_attr_get_ice_attribute(
+          sdp,
+          level,
+          0,
+          SDP_ATTR_ICE_CANDIDATE,
+          i,
+          &value);
+
+    if (result == SDP_SUCCESS) {
+      candidates->mValues.push_back(value);
+    } else {
+      break;
+    }
+  }
+
+  if (candidates->mValues.empty()) {
+    delete candidates;
+  } else {
+    SetAttribute(candidates);
+  }
+}
+
 bool
 SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
                                   SdpErrorHolder& errorHolder) {
@@ -216,6 +244,28 @@ SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
   }
   SetAttribute(rtpmap);
   return true;
+}
+
+void
+SipccSdpAttributeList::LoadSetup(sdp_t* sdp, uint16_t level) {
+  sdp_setup_type_e setup_type;
+  auto sdpres = sdp_attr_get_setup_attribute(sdp, level, 0, 1, &setup_type);
+
+  if (sdpres != SDP_SUCCESS) {
+    return;
+  }
+
+  SdpSetupAttribute::Role role;
+  switch (setup_type) {
+    case SDP_SETUP_ACTIVE: role = SdpSetupAttribute::kActive; break; 
+    case SDP_SETUP_PASSIVE: role = SdpSetupAttribute::kPassive; break;
+    case SDP_SETUP_ACTPASS: role = SdpSetupAttribute::kActpass; break;
+    case SDP_SETUP_HOLDCONN: role = SdpSetupAttribute::kHoldconn; break;
+    default:
+      return;
+  }
+
+  SetAttribute(new SdpSetupAttribute(role));
 }
 
 bool
@@ -249,12 +299,14 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
     }
   }
   LoadIceAttributes(sdp, level);
+  LoadCandidate(sdp, level);
   LoadFingerprint(sdp, level);
+  LoadSetup(sdp, level);
 
   return true;
 }
 
-const SdpCandidateAttributeList&
+const std::vector<std::string>&
 SipccSdpAttributeList::GetCandidate() const {
   if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
@@ -264,8 +316,8 @@ SipccSdpAttributeList::GetCandidate() const {
     MOZ_CRASH();
   }
 
-  return *static_cast<const SdpCandidateAttributeList*>(GetAttribute(
-        SdpAttribute::kCandidateAttribute));
+  return static_cast<const SdpMultiStringAttribute*>(GetAttribute(
+        SdpAttribute::kCandidateAttribute))->mValues;
 }
 
 const SdpConnectionAttribute&
@@ -283,6 +335,8 @@ SipccSdpAttributeList::GetConnection() const {
 
 SdpDirectionAttribute::Direction
 SipccSdpAttributeList::GetDirection() const {
+  // Do we need to implement fallthrough/default, or does sipcc do that
+  // correctly for us?
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kDirectionAttribute);
   return static_cast<const SdpDirectionAttribute*>(attr)->mValue;
 }
