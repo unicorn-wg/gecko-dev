@@ -43,6 +43,8 @@ public:
   virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE;
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
+  virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
+
 private:
   SipccSdpMediaSection(const SipccSdpAttributeList *sessionLevel)
       : mAttributeList(sessionLevel) {}

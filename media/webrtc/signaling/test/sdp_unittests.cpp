@@ -1020,20 +1020,20 @@ TEST_F(NewSdpTest, CheckConnectionLines) {
     << "Wrong number of media sections";
 
   const SdpConnection& conn1 = mSdp->GetMediaSection(0).GetConnection();
-  ASSERT_EQ(SdpConnection::kIPv4, conn1.GetAddrType());
+  ASSERT_EQ(sdp::kIPv4, conn1.GetAddrType());
   ASSERT_EQ("0.0.0.0", conn1.GetAddress());
   ASSERT_EQ(0, conn1.GetTtl());
   ASSERT_EQ(0, conn1.GetCount());
 
   const SdpConnection& conn2 = mSdp->GetMediaSection(1).GetConnection();
-  ASSERT_EQ(SdpConnection::kIPv6, conn2.GetAddrType());
+  ASSERT_EQ(sdp::kIPv6, conn2.GetAddrType());
   ASSERT_EQ("::1", conn2.GetAddress());
   ASSERT_EQ(0, conn2.GetTtl());
   ASSERT_EQ(0, conn2.GetCount());
 
   // tests that we can fall through to session level as appropriate
   const SdpConnection& conn3 = mSdp->GetMediaSection(2).GetConnection();
-  ASSERT_EQ(SdpConnection::kIPv4, conn3.GetAddrType());
+  ASSERT_EQ(sdp::kIPv4, conn3.GetAddrType());
   ASSERT_EQ("224.0.0.1", conn3.GetAddress());
   ASSERT_EQ(100, conn3.GetTtl());
   ASSERT_EQ(12U, conn3.GetCount());

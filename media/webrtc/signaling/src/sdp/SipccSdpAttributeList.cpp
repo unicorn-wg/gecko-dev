@@ -309,5 +309,20 @@ SipccSdpAttributeList::GetSsrcGroup() const {
   MOZ_CRASH();
 }
 
+void
+SipccSdpAttributeList::Serialize(std::ostream& os) const {
+  // Known attributes
+  for (SdpAttribute::AttributeType i = SdpAttribute::kFirstAttribute;
+       i < kMaxAttributeIndex; i++) {
+    if (mAttributes[i]) {
+      os << *mAttributes[i];
+    }
+  }
+
+  // Other attributes
+  for (auto i = mOtherAttributes.begin(); i != mOtherAttributes.end(); ++i) {
+    os << (**i);
+  }
+}
 
 } // namespace mozilla

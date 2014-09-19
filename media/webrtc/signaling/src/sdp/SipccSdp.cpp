@@ -60,13 +60,13 @@ SipccSdp::LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder) {
     return false;
   }
 
-  SdpConnection::AddrType addrType;
+  sdp::AddrType addrType;
   switch (sdp_get_owner_address_type(sdp)) {
     case SDP_AT_IP4:
-      addrType = SdpConnection::kIPv4;
+      addrType = sdp::kIPv4;
       break;
     case SDP_AT_IP6:
-      addrType = SdpConnection::kIPv6;
+      addrType = sdp::kIPv6;
       break;
     default:
       errorHolder.AddParseError(0, "Unsupported address type");
@@ -104,8 +104,28 @@ SipccSdp::Load(sdp_t* sdp, SdpErrorHolder& errorHolder) {
 
 void
 SipccSdp::Serialize(std::ostream& os) const {
-  os << "THIS IS SPARTA\r\n";
-  MOZ_CRASH();
+  os << "v=0" << CRLF
+     << mOrigin << CRLF
+     << "s=-" << CRLF;
+
+  // We don't support creating i=, u=, e=, p=
+  // We don't generate c= at the session level (only in media)
+
+  for (auto i = mBandwidths.begin(); i != mBandwidths.end(); ++i) {
+    os << "b=" << i->first << ":" << i->second << CRLF;
+  }
+  os << "t=0 0" << CRLF;
+
+  // We don't support r= or z=
+
+  // attributes
+  os << mAttributeList;
+
+  // media sections
+  for (auto i = mMediaSections.begin(); i != mMediaSections.end(); ++i) {
+    os << (*i);
+  }
+
 }
 
 } // namespace mozilla
