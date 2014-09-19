@@ -32,13 +32,21 @@ SipccSdpAttributeList::~SipccSdpAttributeList() {
 }
 
 bool
-SipccSdpAttributeList::HasAttribute(AttributeType type) const {
-  return mAttributes[static_cast<size_t>(type)] != nullptr;
+SipccSdpAttributeList::HasAttribute(AttributeType type, bool sessionFallback) const {
+  bool isHere = mAttributes[static_cast<size_t>(type)] != nullptr;
+  if (!isHere && !AtSessionLevel() && sessionFallback) {
+    return mSessionLevel->HasAttribute(type, false);
+  }
+  return isHere;
 }
 
 const SdpAttribute*
-SipccSdpAttributeList::GetAttribute(AttributeType type) const {
-  return mAttributes[static_cast<size_t>(type)];
+SipccSdpAttributeList::GetAttribute(AttributeType type, bool sessionFallback) const {
+  const SdpAttribute* value = mAttributes[static_cast<size_t>(type)];
+  if (!value && !AtSessionLevel() && sessionFallback) {
+    return mSessionLevel->GetAttribute(type);
+  }
+  return value;
 }
 
 void SipccSdpAttributeList::RemoveAttribute(AttributeType type) {
@@ -109,12 +117,6 @@ bool SipccSdpAttributeList::LoadSimpleNumbers(sdp_t* sdp, uint16_t level,
     errorHolder.AddParseError(0, "ptime attribute at the session level");
     return false;
   }
-  result = LoadSimpleNumber(sdp, level, SDP_ATTR_MAXPRATE,
-                            SdpAttribute::kMaxprateAttribute);
-  if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "maxprates attribute at the session level");
-    return false;
-  }
   result = LoadSimpleNumber(sdp, level, SDP_ATTR_MAXPTIME,
                             SdpAttribute::kMaxptimeAttribute);
   if (result && AtSessionLevel()) {
@@ -125,10 +127,14 @@ bool SipccSdpAttributeList::LoadSimpleNumbers(sdp_t* sdp, uint16_t level,
 }
 
 void
-SipccSdpAttributeList::LoadEmpties(sdp_t* sdp, uint16_t level) {
+SipccSdpAttributeList::LoadFlags(sdp_t* sdp, uint16_t level) {
   bool exists = sdp_attr_valid(sdp, SDP_ATTR_RTCP_MUX, level, 0, 1);
   if (exists) {
-    SetAttribute(new SdpEmptyAttribute(SdpAttribute::kRtcpMuxAttribute));
+    SetAttribute(new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
+  }
+  exists = sdp_attr_valid(sdp, SDP_ATTR_ICE_LITE, level, 0, 1);
+  if (exists) {
+    SetAttribute(new SdpFlagAttribute(SdpAttribute::kIceLiteAttribute));
   }
 }
 
@@ -334,7 +340,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
       !LoadSimpleNumbers(sdp, level, errorHolder)) {
     return false;
   }
-  LoadEmpties(sdp, level);
+  LoadFlags(sdp, level);
 
   if (!AtSessionLevel()) {
     if (!LoadDirection(sdp, level, errorHolder)) {
@@ -369,9 +375,6 @@ SipccSdpAttributeList::GetCandidate() const {
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
   if (!HasAttribute(SdpAttribute::kConnectionAttribute)) {
-    if (!AtSessionLevel()) {
-      return mSessionLevel->GetConnection();
-    }
     MOZ_CRASH();
   }
 
@@ -390,9 +393,6 @@ SipccSdpAttributeList::GetDirection() const {
 const SdpExtmapAttributeList&
 SipccSdpAttributeList::GetExtmap() const {
   if (!HasAttribute(SdpAttribute::kExtmapAttribute)) {
-    if (!AtSessionLevel()) {
-      mSessionLevel->GetExtmap();
-    }
     MOZ_CRASH();
   }
 
@@ -403,9 +403,7 @@ SipccSdpAttributeList::GetExtmap() const {
 const SdpFingerprintAttributeList&
 SipccSdpAttributeList::GetFingerprint() const {
   if (!HasAttribute(SdpAttribute::kFingerprintAttribute)) {
-    if (!AtSessionLevel()) {
-      return mSessionLevel->GetFingerprint();
-    }
+    MOZ_CRASH();
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kFingerprintAttribute);
   return *static_cast<const SdpFingerprintAttributeList*>(attr);
@@ -422,7 +420,7 @@ SipccSdpAttributeList::GetFmtp() const {
   }
 
   return *static_cast<const SdpFmtpAttributeList*>(GetAttribute(
-        SdpAttribute::kFmtpAttribute));
+      SdpAttribute::kFmtpAttribute));
 }
 
 const SdpGroupAttributeList&
@@ -447,9 +445,6 @@ SipccSdpAttributeList::GetIceOptions() const {
 const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
   if (!HasAttribute(SdpAttribute::kIcePwdAttribute)) {
-    if (!AtSessionLevel()) {
-      return mSessionLevel->GetIcePwd();
-    }
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIcePwdAttribute);
@@ -459,9 +454,6 @@ SipccSdpAttributeList::GetIcePwd() const {
 const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
   if (!HasAttribute(SdpAttribute::kIceUfragAttribute)) {
-    if (!AtSessionLevel()) {
-      return mSessionLevel->GetIceUfrag();
-    }
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIceUfragAttribute);
@@ -495,15 +487,6 @@ SipccSdpAttributeList::GetLabel() const {
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kLabelAttribute);
   return static_cast<const SdpStringAttribute*>(attr)->GetValue();
-}
-
-uint32_t
-SipccSdpAttributeList::GetMaxprate() const {
-  if (!HasAttribute(SdpAttribute::kMaxprateAttribute)) {
-    MOZ_CRASH();
-  }
-  const SdpAttribute* attr = GetAttribute(SdpAttribute::kMaxprateAttribute);
-  return static_cast<const SdpNumberAttribute*>(attr)->GetValue();
 }
 
 uint32_t
@@ -570,9 +553,6 @@ SipccSdpAttributeList::GetSctpmap() const {
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
   if (!HasAttribute(SdpAttribute::kSetupAttribute)) {
-    if (!AtSessionLevel()) {
-      return mSessionLevel->GetSetup();
-    }
     MOZ_CRASH();
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kSetupAttribute);

@@ -23,8 +23,9 @@ class SipccSdpAttributeList : public SdpAttributeList
   friend class SipccSdpMediaSection;
   friend class SipccSdp;
 public:
-  virtual bool HasAttribute(AttributeType type) const MOZ_OVERRIDE;
-  virtual const SdpAttribute* GetAttribute(AttributeType type) const MOZ_OVERRIDE;
+  virtual bool HasAttribute(AttributeType type, bool sessionFallback = true) const MOZ_OVERRIDE;
+  virtual const SdpAttribute* GetAttribute(AttributeType type,
+                                           bool sessionFallback = true) const MOZ_OVERRIDE;
   virtual void SetAttribute(SdpAttribute* attr) MOZ_OVERRIDE;
   virtual void RemoveAttribute(AttributeType type) MOZ_OVERRIDE;
 
@@ -55,7 +56,6 @@ public:
   virtual const std::string& GetIceUfrag() const MOZ_OVERRIDE;
   virtual const std::string& GetIdentity() const MOZ_OVERRIDE;
   virtual const std::string& GetLabel() const MOZ_OVERRIDE;
-  virtual unsigned int GetMaxprate() const MOZ_OVERRIDE;
   virtual unsigned int GetMaxptime() const MOZ_OVERRIDE;
   virtual const std::string& GetMid() const MOZ_OVERRIDE;
   virtual unsigned int GetPtime() const MOZ_OVERRIDE;
@@ -81,7 +81,7 @@ private:
                          SdpErrorHolder& errorHolder);
   bool LoadSimpleNumber(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                         AttributeType targetType);
-  void LoadEmpties(sdp_t* sdp, uint16_t level);
+  void LoadFlags(sdp_t* sdp, uint16_t level);
   bool LoadDirection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadRtpmap(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   void LoadIceAttributes(sdp_t* sdp, uint16_t level);
