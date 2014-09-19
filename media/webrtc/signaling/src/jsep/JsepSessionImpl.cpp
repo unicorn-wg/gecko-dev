@@ -50,7 +50,12 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   for (auto track = mSendingTracks.begin();
        track != mSendingTracks.end(); ++track) {
     // TODO(ekr@rtfm.com): process options for sendrecv versus sendonly.
-    sdp->AddMediaSection(track->mTrack->media_type());
+    SdpMediaSection& msection =
+      sdp->AddMediaSection(track->mTrack->media_type());
+
+    SdpRtpmapAttributeList* rtpmap = new SdpRtpmapAttributeList();
+    rtpmap->PushEntry("109", "opus", 48000, 2);
+    msection.GetAttributeList().SetAttribute(rtpmap);
   }
 
   // TODO(ekr@rtfm.com): Do renegotiation.
