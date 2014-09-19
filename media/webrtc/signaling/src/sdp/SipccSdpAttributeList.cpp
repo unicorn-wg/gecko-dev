@@ -177,9 +177,14 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
           !fingerprint.empty()) {
         fingerprint_attrs->PushEntry(algorithm, fingerprint);
       }
-
     }
-    SetAttribute(fingerprint_attrs);
+
+    if (!fingerprint_attrs->mFingerprints.empty()) {
+      SetAttribute(fingerprint_attrs);
+    } else {
+      // Can happen if we only find unknown algorithms
+      delete fingerprint_attrs;
+    }
   }
 }
 
