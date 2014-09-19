@@ -82,6 +82,7 @@ private:
   void LoadIceAttributes(sdp_t* sdp, uint16_t level);
   void LoadFingerprint(sdp_t* sdp, uint16_t level);
   void LoadCandidate(sdp_t* sdp, uint16_t level);
+  void LoadSetup(sdp_t* sdp, uint16_t level);
 
   bool AtSessionLevel() const { return !mSessionLevel; }
   const SipccSdpAttributeList* mSessionLevel;
