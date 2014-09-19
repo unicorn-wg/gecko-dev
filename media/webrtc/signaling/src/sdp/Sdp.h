@@ -100,7 +100,7 @@ public:
     return mAddress;
   }
 
-  virtual void Serialize(std::ostream& os) const {
+  void Serialize(std::ostream& os) const {
     sdp::NetType netType = sdp::kInternet;
     os << "o="
        << mUsername << " "
@@ -110,8 +110,6 @@ public:
        << mAddrType << " "
        << mAddress << CRLF;
   }
-
-  virtual ~SdpOrigin() {}
 
 private:
   std::string mUsername;
