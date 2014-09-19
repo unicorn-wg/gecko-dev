@@ -59,7 +59,15 @@ public:
 
   // This is "special", because it's multiple things
   virtual SdpDirectionAttribute::Direction GetDirection() const = 0;
+
+  virtual void Serialize(std::ostream&) const = 0;
 };
+
+inline std::ostream& operator <<(std::ostream& os, const SdpAttributeList &al)
+{
+  al.Serialize(os);
+  return os;
+}
 
 }
 

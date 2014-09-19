@@ -63,7 +63,7 @@ class SdpOrigin
 {
 public:
   SdpOrigin(const std::string& username, uint64_t sessId, uint64_t sessVer,
-            SdpConnection::AddrType addrType, const std::string& addr) :
+            sdp::AddrType addrType, const std::string& addr) :
       mUsername(username),
       mSessionId(sessId),
       mSessionVersion(sessVer),
@@ -83,7 +83,7 @@ public:
     return mSessionVersion;
   }
 
-  const SdpConnection::AddrType GetAddrType() const {
+  const sdp::AddrType GetAddrType() const {
     return mAddrType;
   }
 
@@ -91,13 +91,32 @@ public:
     return mAddress;
   }
 
+  virtual void Serialize(std::ostream& os) const {
+    sdp::NetType netType = sdp::kInternet;
+    os << "o="
+       << mUsername << " "
+       << mSessionId << " "
+       << mSessionVersion << " "
+       << netType << " "
+       << mAddrType << " "
+       << mAddress << CRLF;
+  }
+
+  virtual ~SdpOrigin() {}
+
 private:
   std::string mUsername;
   uint64_t mSessionId;
   uint64_t mSessionVersion;
-  SdpConnection::AddrType mAddrType;
+  sdp::AddrType mAddrType;
   std::string mAddress;
 };
+
+inline std::ostream& operator <<(std::ostream& os, const SdpOrigin &origin)
+{
+  origin.Serialize(os);
+  return os;
+}
 
 } // namespace mozilla
 
