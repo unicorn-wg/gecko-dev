@@ -6,6 +6,7 @@
 #define _JSEPMEDIASTREAMTRACK_H_
 
 #include <mozilla/RefPtr.h>
+#include "nsCOMPtr.h"
 
 #include "signaling/src/sdp/SdpMediaSection.h"
 
