@@ -48,6 +48,9 @@ TEST_F(JsepSessionTest, CreateOfferAudio1) {
 } // namespace test
 
 int main(int argc, char **argv) {
+  NSS_NoDB_Init(nullptr);
+  NSS_SetDomesticPolicy();
+
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

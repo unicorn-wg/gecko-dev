@@ -50,7 +50,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
   // TODO(ekr@rtfm.com): Do renegotiation.
 
-  *offer = "XXX";
+  *offer = sdp.toString();
 
   return NS_OK;
 }
@@ -78,18 +78,11 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
     return NS_ERROR_UNEXPECTED;
   }
 
-  auto origin = MakeUnique<SdpOrigin>();
-
-
-  //  UniquePtr<Sdp> sdp = MakeUnique<SipccSdp>();
-
-#if 0
-  origin.SetUsername("-");
-  origin.SetSessionVersion(mSessionVersion);
-  origin.SetNetType(sdp::kInternet);
-  origin.SetAddrType(sdp::kIPv4);
-  origin.SetAddr("0.0.0.0");
-#endif
+  auto origin = MakeUnique<SdpOrigin>("-",
+                                      mSessionId,
+                                      mSessionVersion,
+                                      sdp::kIPv4,
+                                      "0.0.0.0");
 
   //  *sdpp = Move(sdp);
   return NS_OK;
