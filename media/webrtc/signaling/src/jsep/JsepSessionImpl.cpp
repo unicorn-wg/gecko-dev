@@ -166,7 +166,7 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
   UniquePtr<Sdp> parsed = mParser.Parse(sdp);
   if (!parsed) {
     MOZ_MTLOG(ML_ERROR, "Bogus SDP = " + sdp);
-    const std::vector<std::pair<uint32_t, std::string>>& errors =
+    const std::vector<std::pair<size_t, std::string>>& errors =
         mParser.GetParseErrors();
     for (auto err = errors.begin(); err != errors.end(); ++err) {
       MOZ_MTLOG(ML_ERROR, " Error at "
