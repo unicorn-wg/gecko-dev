@@ -106,7 +106,7 @@ public:
 
   sdp::AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
-  int8_t GetTtl() const { return mTtl; }
+  uint8_t GetTtl() const { return mTtl; }
   uint32_t GetCount() const { return mCount; }
 
   void Serialize(std::ostream& os) const {
@@ -130,7 +130,7 @@ public:
 private:
   sdp::AddrType mAddrType;
   const std::string mAddr;
-  int8_t mTtl; // 0-255; 0 when unset
+  uint8_t mTtl; // 0-255; 0 when unset
   uint32_t mCount; // 0 when unset
 };
 

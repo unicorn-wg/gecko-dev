@@ -72,27 +72,48 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
 
   mPort = sdp_get_media_portnum(sdp, level);
   mPortCount = sdp_get_media_portcount(sdp, level);
-
-  switch (sdp_get_media_transport(sdp, level)) {
-  case SDP_TRANSPORT_RTPAVP: mProtocol = kRtpAvp; break;
-  case SDP_TRANSPORT_RTPSAVP: mProtocol = kRtpSavp; break;
-  case SDP_TRANSPORT_RTPAVPF: mProtocol = kRtpAvpf; break;
-  case SDP_TRANSPORT_RTPSAVPF: mProtocol = kRtpSavpf; break;
-  case SDP_TRANSPORT_UDPTLSRTPSAVP: mProtocol = kUdpTlsRtpSavp; break;
-  case SDP_TRANSPORT_UDPTLSRTPSAVPF: mProtocol = kUdpTlsRtpSavpf; break;
-  case SDP_TRANSPORT_TCPTLSRTPSAVP: mProtocol = kTcpTlsRtpSavp; break;
-  case SDP_TRANSPORT_TCPTLSRTPSAVPF: mProtocol = kTcpTlsRtpSavpf; break;
-
-  default:
-    errorHolder.AddParseError(0, "Unsupported media transport type");
+  if (!LoadProtocol(sdp, level, errorHolder)) {
     return false;
   }
+  LoadFormats(sdp, level);
 
   if (!mAttributeList.Load(sdp, level, errorHolder)) {
     return false;
   }
 
   return LoadConnection(sdp, level, errorHolder);
+}
+
+bool SipccSdpMediaSection::LoadProtocol(sdp_t* sdp, uint16_t level,
+                                        SdpErrorHolder& errorHolder) {
+  switch (sdp_get_media_transport(sdp, level)) {
+    case SDP_TRANSPORT_RTPAVP: mProtocol = kRtpAvp; break;
+    case SDP_TRANSPORT_RTPSAVP: mProtocol = kRtpSavp; break;
+    case SDP_TRANSPORT_RTPAVPF: mProtocol = kRtpAvpf; break;
+    case SDP_TRANSPORT_RTPSAVPF: mProtocol = kRtpSavpf; break;
+    case SDP_TRANSPORT_UDPTLSRTPSAVP: mProtocol = kUdpTlsRtpSavp; break;
+    case SDP_TRANSPORT_UDPTLSRTPSAVPF: mProtocol = kUdpTlsRtpSavpf; break;
+    case SDP_TRANSPORT_TCPTLSRTPSAVP: mProtocol = kTcpTlsRtpSavp; break;
+    case SDP_TRANSPORT_TCPTLSRTPSAVPF: mProtocol = kTcpTlsRtpSavpf; break;
+
+    default:
+      errorHolder.AddParseError(0, "Unsupported media transport type");
+      return false;
+  }
+  return true;
+}
+
+void
+SipccSdpMediaSection::LoadFormats(sdp_t* sdp, uint16_t level) {
+  uint16_t count = sdp_get_media_num_payload_types(sdp, level);
+  for (uint16_t i = 0; i < count; ++i) {
+    sdp_payload_ind_e indicator; // we ignore this, which might be bad
+    uint32_t ptype = sdp_get_media_payload_type(sdp, level, i + 1, &indicator);
+
+    std::ostringstream ospt;
+    ospt << ((ptype & 0xff00) ? ((ptype >> 8) & 0xff) : ptype); // OMFG
+    mFormats.push_back(ospt.str());
+  }
 }
 
 bool

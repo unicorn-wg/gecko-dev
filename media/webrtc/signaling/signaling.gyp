@@ -115,6 +115,7 @@
         './src/mediapipeline/MediaPipelineFilter.h',
         './src/mediapipeline/MediaPipelineFilter.cpp',
          # SDP
+         './src/sdp/sipcc/ccsdp.h',
          './src/sdp/sipcc/cpr_string.c',
          './src/sdp/sipcc/sdp_access.c',
          './src/sdp/sipcc/sdp_attr.c',
