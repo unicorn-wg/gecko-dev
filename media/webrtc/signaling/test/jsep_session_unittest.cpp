@@ -58,6 +58,37 @@ TEST_F(JsepSessionTest, CreateOfferAudio1) {
   std::cerr << offer << std::endl;
 }
 
+TEST_F(JsepSessionTest, CreateOfferVideo1) {
+  JsepOfferOptions options;
+  std::string offer;
+
+  RefPtr<JsepMediaStreamTrack> video(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kVideo));
+  mSession.AddTrack(video);
+  nsresult rv = mSession.CreateOffer(options, &offer);
+  ASSERT_EQ(NS_OK, rv);
+
+  std::cerr << offer << std::endl;
+}
+
+TEST_F(JsepSessionTest, CreateOfferAudio1Video1) {
+  JsepOfferOptions options;
+  std::string offer;
+
+  RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kAudio));
+  mSession.AddTrack(audio);
+
+  RefPtr<JsepMediaStreamTrack> video(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kVideo));
+  mSession.AddTrack(video);
+  nsresult rv = mSession.CreateOffer(options, &offer);
+  ASSERT_EQ(NS_OK, rv);
+
+  std::cerr << offer << std::endl;
+}
+
+
 } // namespace mozilla
 
 int main(int argc, char **argv) {
