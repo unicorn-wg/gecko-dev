@@ -819,19 +819,26 @@ class NewSdpTest : public ::testing::Test,
       mSdp = mozilla::Move(mParser.Parse(sdp));
 
       if (expectSuccess && GetParam()) {
-        std::stringstream str;
+        std::stringstream os;
         ASSERT_TRUE(mSdp) << "Parse failed on first pass: "
                           << GetParseErrors();
-        mSdp->Serialize(str);
-        mSdp = mozilla::Move(mParser.Parse(str.str()));
+
+        // Serialize and re-parse
+        mSdp->Serialize(os);
+        mSdp = mozilla::Move(mParser.Parse(os.str()));
         ASSERT_TRUE(mSdp) << "Parse failed on second pass, SDP was: "
-                          << std::endl << str.str() <<  std::endl
+                          << std::endl << os.str() <<  std::endl
                           << "Errors were: " << GetParseErrors();
         ASSERT_EQ(0U, mParser.GetParseErrors().size())
                   << "Got unexpected parse errors/warnings on second pass,"
                       " SDP was: "
-                  << std::endl << str.str() <<  std::endl
+                  << std::endl << os.str() <<  std::endl
                   << "Errors were: " << GetParseErrors();
+
+        // Serialize again and compare
+        std::stringstream os2;
+        mSdp->Serialize(os2);
+        ASSERT_EQ(os.str(), os2.str());
       }
 
       if (expectSuccess) {
@@ -956,13 +963,15 @@ TEST_P(NewSdpTest, CheckGetMissingBandwidth) {
 }
 
 TEST_P(NewSdpTest, CheckGetBandwidth) {
-  ParseSdp("v=0\r\n"
-           "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
-           "s=SIP Call\r\n"
-           "c=IN IP4 198.51.100.7\r\n"
-           "b=CT:5000\r\n"
-           "t=0 0\r\n"
-           "m=video 56436 RTP/SAVPF 120\r\n");
+  ParseSdp("v=0" CRLF
+           "o=- 137331303 2 IN IP4 127.0.0.1" CRLF
+           "s=SIP Call" CRLF
+           "c=IN IP4 198.51.100.7" CRLF
+           "b=CT:5000" CRLF
+           "t=0 0" CRLF
+           "m=video 56436 RTP/SAVPF 120" CRLF
+           "a=rtpmap:120 VP8/90000" CRLF
+           );
   ASSERT_EQ(5000U, mSdp->GetBandwidth("CT"))
     << "Wrong bandwidth in session";
 }
