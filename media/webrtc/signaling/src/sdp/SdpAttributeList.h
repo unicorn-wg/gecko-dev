@@ -33,7 +33,7 @@ public:
 
   // These attributes can appear multiple times, so the returned
   // classes actually represent a collection of values.
-  virtual const SdpCandidateAttributeList& GetCandidate() const = 0;
+  virtual const std::vector<std::string>& GetCandidate() const = 0;
   virtual const SdpExtmapAttributeList& GetExtmap() const = 0;
   virtual const SdpFingerprintAttributeList& GetFingerprint() const = 0;
   virtual const SdpFmtpAttributeList& GetFmtp() const = 0;
