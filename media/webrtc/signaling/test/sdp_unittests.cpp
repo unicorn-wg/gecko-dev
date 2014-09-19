@@ -1173,6 +1173,9 @@ TEST_P(NewSdpTest, CheckMlines) {
   auto video_formats = mSdp->GetMediaSection(1).GetFormats();
   ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
   ASSERT_EQ("120", video_formats[0]);
+
+  ASSERT_EQ(SdpMediaSection::kAudio, mSdp->GetMediaSection(2).GetMediaType())
+    << "Wrong type for third media section";
 }
 
 TEST_P(NewSdpTest, CheckSetup) {
@@ -1368,11 +1371,75 @@ TEST_P(NewSdpTest, CheckGroups) {
   ASSERT_EQ("third", group3.tags[1]);
 }
 
+// SDP from a basic A/V call with data channel FFX/FFX
+const std::string kBasicAudioVideoDataOffer =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 27987 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"t=0 0" CRLF
+"a=ice-ufrag:8a39d2ae" CRLF
+"a=ice-pwd:601d53aba51a318351b3ecf5ee00048f" CRLF
+"a=fingerprint:sha-256 30:FF:8E:2B:AC:9D:ED:70:18:10:67:C8:AE:9E:68:F3:86:53:51:B0:AC:31:B7:BE:6D:CF:A4:2E:D3:6E:B4:28" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF
+"a=ptime:20" CRLF
+"a=rtpmap:9 G722/8000" CRLF
+"a=rtpmap:0 PCMU/8000" CRLF
+"a=rtpmap:8 PCMA/8000" CRLF
+"a=rtpmap:101 telephone-event/8000" CRLF
+"a=fmtp:101 0-15" CRLF
+"a=sendrecv" CRLF
+"a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level" CRLF
+"a=setup:actpass" CRLF
+"a=rtcp-mux" CRLF
+"m=video 9 RTP/SAVPF 120 126 97" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF
+"a=rtpmap:126 H264/90000" CRLF
+"a=fmtp:126 profile-level-id=42e01f;packetization-mode=1" CRLF
+"a=rtpmap:97 H264/90000" CRLF
+"a=fmtp:97 profile-level-id=42e01f" CRLF
+"a=sendrecv" CRLF
+"a=rtcp-fb:120 nack" CRLF
+"a=rtcp-fb:120 nack pli" CRLF
+"a=rtcp-fb:120 ccm fir" CRLF
+"a=rtcp-fb:126 nack" CRLF
+"a=rtcp-fb:126 nack pli" CRLF
+"a=rtcp-fb:126 ccm fir" CRLF
+"a=rtcp-fb:97 nack" CRLF
+"a=rtcp-fb:97 nack pli" CRLF
+"a=rtcp-fb:97 ccm fir" CRLF
+"a=setup:actpass" CRLF
+"a=rtcp-mux" CRLF
+"m=application 9 DTLS/SCTP 5000" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=sctpmap:5000 webrtc-datachannel 16" CRLF
+"a=setup:actpass" CRLF;
+
+TEST_P(NewSdpTest, BasicAudioVideoDataSdpParse) {
+  ParseSdp(kBasicAudioVideoDataOffer);
+  ASSERT_EQ(0U, mParser.GetParseErrors().size()) <<
+    "Got parse errors: " << GetParseErrors();
+}
+
+TEST_P(NewSdpTest, CheckApplicationParameters) {
+  ParseSdp(kBasicAudioVideoDataOffer);
+  ASSERT_TRUE(mSdp);
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ(SdpMediaSection::kAudio, mSdp->GetMediaSection(0).GetMediaType())
+    << "Wrong type for first media section";
+  ASSERT_EQ(SdpMediaSection::kVideo, mSdp->GetMediaSection(1).GetMediaType())
+    << "Wrong type for second media section";
+  ASSERT_EQ(SdpMediaSection::kApplication, mSdp->GetMediaSection(2).GetMediaType())
+    << "Wrong type for third media section";
+}
 
 // TODO: Tests that parse above SDP, and check various things
 // For media sections 1 and 2:
 //  Check fmtp
 //  Check extmap
+//  Check rtcp-mux
 
 INSTANTIATE_TEST_CASE_P(RoundTripSerialize,
                         NewSdpTest,
