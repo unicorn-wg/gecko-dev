@@ -218,6 +218,13 @@ SipccSdpMediaSection::AddCodec(uint8_t ptv, const std::string& name,
   os << static_cast<uint32_t>(ptv);
   std::string pt = os.str();
 
+  AddCodec(pt, name, clockrate, channels, fmtp);
+}
+
+void
+SipccSdpMediaSection::AddCodec(const std::string& pt, const std::string& name,
+                               uint32_t clockrate, uint16_t channels,
+                               const std::string& fmtp) {
   mFormats.push_back(pt);
 
   SdpRtpmapAttributeList *rtpmap = new SdpRtpmapAttributeList();
