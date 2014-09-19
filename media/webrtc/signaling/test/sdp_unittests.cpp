@@ -820,14 +820,20 @@ class NewSdpTest : public ::testing::Test,
 
       if (expectSuccess && GetParam()) {
         std::stringstream str;
-        EXPECT_TRUE(mSdp) << "Parse failed on first pass: "
+        ASSERT_TRUE(mSdp) << "Parse failed on first pass: "
                           << GetParseErrors();
         mSdp->Serialize(str);
         mSdp = mozilla::Move(mParser.Parse(str.str()));
+        ASSERT_TRUE(mSdp) << "Parse failed on second pass, SDP was: "
+                          << str.str() <<  std::endl
+                          << "Errors were: " << GetParseErrors();
       }
 
       if (expectSuccess) {
         ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+        ASSERT_EQ(0U, mParser.GetParseErrors().size())
+                  << "Got unexpected parse errors/warnings: "
+                  << GetParseErrors();
       }
     }
 
@@ -1061,6 +1067,7 @@ const std::string kBasicAudioVideoOffer =
 "c=IN IP6 ::1" CRLF
 "a=mid:second" CRLF
 "a=rtpmap:120 VP8/90000" CRLF
+"a=fmtp:120 PROFILE=0;LEVEL=0;profile-level-id=42A01E;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0" CRLF
 "a=recvonly" CRLF
 "a=rtcp-fb:120 nack" CRLF
 "a=rtcp-fb:120 nack pli" CRLF
@@ -1198,7 +1205,24 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
 
-//  ASSERT_EQ(1U, mSdp->GetMediaSection(0).GetAttributeList().Count(kFmtp));
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kFmtpAttribute));
+  auto audio_format_params =
+      mSdp->GetMediaSection(0).GetAttributeList().GetFmtp().mFmtps;
+  ASSERT_EQ(1U, audio_format_params.size());
+  ASSERT_EQ("101", audio_format_params[0].format);
+  ASSERT_EQ("0-15", audio_format_params[0].parameters);
+
+  ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+      SdpAttribute::kFmtpAttribute));
+  auto video_format_params =
+      mSdp->GetMediaSection(1).GetAttributeList().GetFmtp().mFmtps;
+  ASSERT_EQ(1U, video_format_params.size());
+  ASSERT_EQ("120", video_format_params[0].format);
+  ASSERT_EQ("PROFILE=0;LEVEL=0;profile-level-id=42A01E;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0", video_format_params[0].parameters);
+
+  ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kFmtpAttribute));
 }
 
 TEST_P(NewSdpTest, CheckPtime) {

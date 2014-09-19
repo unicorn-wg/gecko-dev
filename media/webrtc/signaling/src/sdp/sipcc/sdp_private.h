@@ -49,6 +49,9 @@ extern sdp_mca_t *sdp_find_media_level(sdp_t *sdp_p, u16 level);
 extern sdp_bw_data_t* sdp_find_bw_line (void *sdp_ptr, u16 level, u16 inst_num);
 
 /* sdp_attr.c */
+extern sdp_result_e
+sdp_build_attr_fmtp_params (sdp_t *sdp_p, sdp_fmtp_t *attr_p, flex_string *fs);
+
 extern sdp_result_e sdp_parse_attribute(sdp_t *sdp_p, u16 level,
                                         const char *ptr);
 extern sdp_result_e sdp_parse_attr_simple_string(sdp_t *sdp_p,

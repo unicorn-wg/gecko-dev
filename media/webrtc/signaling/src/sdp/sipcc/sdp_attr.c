@@ -1910,7 +1910,8 @@ sdp_result_e sdp_parse_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_build_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs)
+sdp_result_e
+sdp_build_attr_fmtp_params (sdp_t *sdp_p, sdp_fmtp_t *fmtp_p, flex_string *fs)
 {
   u16         event_id;
   u32         mask;
@@ -1920,13 +1921,7 @@ sdp_result_e sdp_build_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string 
   tinybool    range_start = FALSE;
   tinybool    range_end = FALSE;
   tinybool    semicolon = FALSE;
-  sdp_fmtp_t *fmtp_p;
 
-  flex_string_sprintf(fs, "a=%s:%u ",
-    sdp_attr[attr_p->type].name,
-    attr_p->attr.fmtp.payload_num);
-
-  fmtp_p = &(attr_p->attr.fmtp);
   switch (fmtp_p->fmtp_format) {
     case SDP_FMTP_MODE:
       sdp_append_name_and_unsigned(fs, "mode", fmtp_p->mode, FALSE);
@@ -2131,10 +2126,28 @@ sdp_result_e sdp_build_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string 
             }
         }
     }
-
-    flex_string_append(fs, "\r\n");
-
     return SDP_SUCCESS;
+}
+
+sdp_result_e sdp_build_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs)
+{
+  sdp_fmtp_t *fmtp_p;
+
+  flex_string_sprintf(fs, "a=%s:%u ",
+    sdp_attr[attr_p->type].name,
+    attr_p->attr.fmtp.payload_num);
+
+  fmtp_p = &(attr_p->attr.fmtp);
+
+  sdp_result_e result = sdp_build_attr_fmtp_params(sdp_p, fmtp_p, fs);
+
+  if (result != SDP_SUCCESS) {
+    return result;
+  }
+
+  flex_string_append(fs, "\r\n");
+
+  return SDP_SUCCESS;
 }
 
 sdp_result_e sdp_parse_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
