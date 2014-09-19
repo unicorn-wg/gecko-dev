@@ -98,8 +98,16 @@ protected:
   }
 
   void SetRemote(const std::string& offer) {
-    nsresult rv = mSessionOff.SetRemoteDescription(jsep::kJsepSdpOffer, offer);
+    nsresult rv = mSessionAns.SetRemoteDescription(jsep::kJsepSdpOffer, offer);
     ASSERT_EQ(NS_OK, rv);
+
+    // Now verify that the right stuff is in the tracks.
+    ASSERT_EQ(types.size(), mSessionAns.num_remote_tracks());
+    for (size_t i = 0; i < types.size(); ++i) {
+      RefPtr<JsepMediaStreamTrack> rtrack;
+      ASSERT_EQ(NS_OK, mSessionAns.remote_track(i, &rtrack));
+      ASSERT_EQ(types[i], rtrack->media_type());
+    }
   }
 
 
@@ -127,7 +135,7 @@ TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemote) {
 }
 
 INSTANTIATE_TEST_CASE_P(Variants, JsepSessionTest,
-                        ::testing::Values("audio", "video"));
+                        ::testing::Values("audio", "video", "audio,video"));
 
 } // namespace mozilla
 
