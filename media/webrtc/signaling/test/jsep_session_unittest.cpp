@@ -35,11 +35,13 @@ using mozilla::SipccSdpParser;
 
 namespace mozilla {
 class JsepSessionTest : public ::testing::Test {
-  public:
-    JsepSessionTest() {}
+ public:
+  JsepSessionTest() :
+      mSessionOff("Offerer"),
+      mSessionAns("Answerer") {}
 
-    JsepSessionImpl mSession;
-    SipccSdpParser mParser;
+  JsepSessionImpl mSessionOff;
+  JsepSessionImpl mSessionAns;
 };
 
 TEST_F(JsepSessionTest, CreateDestroy) {
@@ -51,8 +53,8 @@ TEST_F(JsepSessionTest, CreateOfferAudio1) {
 
   RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
       SdpMediaSection::kAudio));
-  mSession.AddTrack(audio);
-  nsresult rv = mSession.CreateOffer(options, &offer);
+  mSessionOff.AddTrack(audio);
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
   ASSERT_EQ(NS_OK, rv);
 
   std::cerr << offer << std::endl;
@@ -64,13 +66,13 @@ TEST_F(JsepSessionTest, CreateOfferAudio1SetLocal) {
 
   RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
       SdpMediaSection::kAudio));
-  mSession.AddTrack(audio);
-  nsresult rv = mSession.CreateOffer(options, &offer);
+  mSessionOff.AddTrack(audio);
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
   ASSERT_EQ(NS_OK, rv);
 
   std::cerr << offer << std::endl;
 
-  rv = mSession.SetLocalDescription(jsep::kJsepSdpOffer, offer);
+  rv = mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
   ASSERT_EQ(NS_OK, rv);
 }
 
@@ -80,8 +82,8 @@ TEST_F(JsepSessionTest, CreateOfferVideo1) {
 
   RefPtr<JsepMediaStreamTrack> video(new JsepMediaStreamTrackFake(
       SdpMediaSection::kVideo));
-  mSession.AddTrack(video);
-  nsresult rv = mSession.CreateOffer(options, &offer);
+  mSessionOff.AddTrack(video);
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
   ASSERT_EQ(NS_OK, rv);
 
   std::cerr << offer << std::endl;
@@ -93,17 +95,37 @@ TEST_F(JsepSessionTest, CreateOfferAudio1Video1) {
 
   RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
       SdpMediaSection::kAudio));
-  mSession.AddTrack(audio);
+  mSessionOff.AddTrack(audio);
 
   RefPtr<JsepMediaStreamTrack> video(new JsepMediaStreamTrackFake(
       SdpMediaSection::kVideo));
-  mSession.AddTrack(video);
-  nsresult rv = mSession.CreateOffer(options, &offer);
+  mSessionOff.AddTrack(video);
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
   ASSERT_EQ(NS_OK, rv);
 
   std::cerr << offer << std::endl;
 }
 
+TEST_F(JsepSessionTest, CreateOfferSetRemoteAudio1) {
+  JsepOfferOptions options;
+  std::string offer;
+
+  RefPtr<JsepMediaStreamTrack> audio(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kAudio));
+  mSessionOff.AddTrack(audio);
+
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
+  ASSERT_EQ(NS_OK, rv);
+
+  rv = mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
+  ASSERT_EQ(NS_OK, rv);
+
+  std::cerr << offer << std::endl;
+
+  rv = mSessionAns.SetRemoteDescription(jsep::kJsepSdpOffer, offer);
+  ASSERT_EQ(NS_OK, rv);
+
+}
 
 } // namespace mozilla
 
