@@ -75,6 +75,8 @@ private:
   bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                         AttributeType targetType);
+  bool LoadSimpleNumber(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+                        AttributeType targetType);
   bool LoadDirection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadRtpmap(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   void LoadIceAttributes(sdp_t* sdp, uint16_t level);
