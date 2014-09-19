@@ -69,6 +69,10 @@ class JsepSessionImpl : public JsepSession {
 
   uint64_t mSessionId;
   uint64_t mSessionVersion;
+  UniquePtr<Sdp> mCurrentLocalDescription;
+  UniquePtr<Sdp> mCurrentRemoteDescription;
+  UniquePtr<Sdp> mPendingLocalDescription;
+  UniquePtr<Sdp> mPendingRemoteDescription;
 };
 
 }  // namespace jsep
