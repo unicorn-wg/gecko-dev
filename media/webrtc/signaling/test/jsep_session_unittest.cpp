@@ -172,6 +172,17 @@ TEST_P(JsepSessionTest, CreateOffer) {
   CreateOffer();
 }
 
+TEST_P(JsepSessionTest, CreateOfferWithExtraOffers) {
+  JsepOfferOptions options;
+  options.mOfferToReceiveAudio = Some(static_cast<size_t>(1U));
+  options.mOfferToReceiveVideo = Some(static_cast<size_t>(2U));
+  std::string offer;
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
+  EXPECT_EQ(NS_OK, rv);
+
+  std::cerr << "OFFER: " << offer << std::endl;
+}
+
 TEST_P(JsepSessionTest, CreateOfferSetLocal) {
   std::string offer = CreateOffer();
   SetLocalOffer(offer);
@@ -219,4 +230,3 @@ int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
-

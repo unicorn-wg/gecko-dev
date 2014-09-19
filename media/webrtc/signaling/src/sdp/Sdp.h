@@ -42,11 +42,11 @@ public:
 
   virtual SdpMediaSection &AddMediaSection(
       SdpMediaSection::MediaType media = SdpMediaSection::kAudio,
+      SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv,
       uint16_t port = 9,
       SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf,
       sdp::AddrType addrType = sdp::kIPv4,
-      const std::string &addr = "0.0.0.0",
-      SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv) = 0;
+      const std::string &addr = "0.0.0.0") = 0;
 
   virtual void Serialize(std::ostream&) const = 0;
 
