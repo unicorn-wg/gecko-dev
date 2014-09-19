@@ -819,19 +819,26 @@ class NewSdpTest : public ::testing::Test,
       mSdp = mozilla::Move(mParser.Parse(sdp));
 
       if (expectSuccess && GetParam()) {
-        std::stringstream str;
+        std::stringstream os;
         ASSERT_TRUE(mSdp) << "Parse failed on first pass: "
                           << GetParseErrors();
-        mSdp->Serialize(str);
-        mSdp = mozilla::Move(mParser.Parse(str.str()));
+
+        // Serialize and re-parse
+        mSdp->Serialize(os);
+        mSdp = mozilla::Move(mParser.Parse(os.str()));
         ASSERT_TRUE(mSdp) << "Parse failed on second pass, SDP was: "
-                          << std::endl << str.str() <<  std::endl
+                          << std::endl << os.str() <<  std::endl
                           << "Errors were: " << GetParseErrors();
         ASSERT_EQ(0U, mParser.GetParseErrors().size())
                   << "Got unexpected parse errors/warnings on second pass,"
                       " SDP was: "
-                  << std::endl << str.str() <<  std::endl
+                  << std::endl << os.str() <<  std::endl
                   << "Errors were: " << GetParseErrors();
+
+        // Serialize again and compare
+        std::stringstream os2;
+        mSdp->Serialize(os2);
+        ASSERT_EQ(os.str(), os2.str());
       }
 
       if (expectSuccess) {
