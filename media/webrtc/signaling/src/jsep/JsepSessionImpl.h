@@ -100,7 +100,10 @@ class JsepSessionImpl : public JsepSession {
 
   void Init();
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
-  void AddCodec(SdpMediaSection& msection, SdpMediaSection::MediaType mediatype);
+  void AddCodecs(SdpMediaSection::MediaType mediatype,
+                 SdpMediaSection* msection);
+  void AddCommonCodecs(const SdpMediaSection& remote_section,
+                       SdpMediaSection* msection);
   void SetupDefaultCodecs();
   void SetState(JsepSignalingState state);
   nsresult ParseSdp(const std::string& sdp, UniquePtr<Sdp>* parsedp);
@@ -121,7 +124,8 @@ class JsepSessionImpl : public JsepSession {
                        const SdpMediaSection& send,
                        UniquePtr<JsepTrack>* track);
   void ClearNegotiatedPairs() {
-    for (auto p = mNegotiatedTrackPairs.begin(); p != mNegotiatedTrackPairs.end(); ++p) {
+    for (auto p = mNegotiatedTrackPairs.begin();
+         p != mNegotiatedTrackPairs.end(); ++p) {
       delete *p;
     }
     mNegotiatedTrackPairs.clear();
