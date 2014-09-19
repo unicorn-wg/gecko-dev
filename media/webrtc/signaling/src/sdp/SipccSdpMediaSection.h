@@ -53,8 +53,9 @@ public:
   virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection(const SipccSdpAttributeList *sessionLevel)
-      : mAttributeList(sessionLevel) {}
+  SipccSdpMediaSection(size_t level,
+                       const SipccSdpAttributeList *sessionLevel)
+      : SdpMediaSection(level), mAttributeList(sessionLevel) {}
 
   bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadConnection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
