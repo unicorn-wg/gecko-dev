@@ -18,19 +18,21 @@ public:
   SdpErrorHolder() {}
   ~SdpErrorHolder() {}
 
-  void AddParseError(uint32_t line, const std::string& message) {
+  void AddParseError(size_t line, const std::string& message) {
     mErrors.push_back(std::make_pair(line, message));
   }
+
+  void ClearParseErrors() { mErrors.clear(); }
 
   /**
    * Returns a reference to the list of parse errors.
    * This gets cleared out when you call Parse.
    */
-  const std::vector<std::pair<uint32_t, std::string> >&
+  const std::vector<std::pair<size_t, std::string> >&
   GetParseErrors() const { return mErrors; }
 
 private:
-  std::vector<std::pair<uint32_t, std::string> > mErrors;
+  std::vector<std::pair<size_t, std::string> > mErrors;
 };
 
 } // namespace mozilla
