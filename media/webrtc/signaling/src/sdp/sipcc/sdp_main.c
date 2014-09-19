@@ -998,6 +998,8 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, const char *buf, size_t len)
     sdp_p->cap_valid = FALSE;
     sdp_p->last_cap_inst = 0;
 
+    sdp_p->parse_line = 0;
+
     /* We want to try to find the end of the SDP description, even if
      * we find a parsing error.
      */
@@ -1006,6 +1008,7 @@ sdp_result_e sdp_parse (sdp_t *sdp_p, const char *buf, size_t len)
          * we don't parse it.
          */
         ptr = next_ptr;
+        sdp_p->parse_line++;
         line_end = sdp_findchar(ptr, "\n");
         if (line_end >= (*bufp + len)) {
             sdp_parse_error(sdp_p,
@@ -1322,7 +1325,7 @@ void sdp_parse_error(sdp_t* sdp, const char *format, ...) {
 
     if (sdp->conf_p->error_handler) {
         sdp->conf_p->error_handler(sdp->conf_p->error_handler_context,
-                                   0,
+                                   sdp->parse_line,
                                    fs.buffer);
     }
 
