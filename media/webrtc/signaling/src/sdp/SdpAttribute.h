@@ -15,6 +15,7 @@
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/Assertions.h"
+#include "mozilla/TypeTraits.h"
 
 #include "signaling/src/sdp/SdpEnum.h"
 
@@ -29,7 +30,6 @@ public:
     kCandidateAttribute,
     kConnectionAttribute,
     kDirectionAttribute,
-    kDtlsFingerprintAttribute,
     kExtmapAttribute,
     kFingerprintAttribute,
     kFmtpAttribute,
@@ -64,30 +64,73 @@ public:
     kOtherAttribute // we rely on this being the last element in the array
   };
 
-  SdpAttribute(AttributeType type, const std::string& typeName)
-      : mType(type), mTypeName(typeName) {}
+  explicit SdpAttribute(AttributeType type)
+      : mType(type) {}
   virtual ~SdpAttribute() {}
 
-  AttributeType GetType() const
-  {
+  AttributeType GetType() const {
     return mType;
   }
 
-  const std::string& GetTypeName() const
-  {
-    return mTypeName;
+  virtual const std::string GetTypeName() const {
+    return GetAttributeTypeString(mType);
   }
 
   virtual void Serialize(std::ostream&) const = 0;
 
+  static const std::string GetAttributeTypeString(AttributeType type) {
+    switch (type) {
+      case kBundleOnlyAttribute: return "bundle-only";
+      case kCandidateAttribute: return "candidate";
+      case kConnectionAttribute: return "connection";
+      case kExtmapAttribute: return "extmap";
+      case kFingerprintAttribute: return "fingerprint";
+      case kFmtpAttribute: return "fmtp";
+      case kGroupAttribute: return "group";
+      case kIceLiteAttribute: return "ice-lite";
+      case kIceMismatchAttribute: return "ice-mismatch";
+      case kIceOptionsAttribute: return "ice-options";
+      case kIcePwdAttribute: return "ice-pwd";
+      case kIceUfragAttribute: return "ice-ufrag";
+      case kIdentityAttribute: return "identity";
+      case kImageattrAttribute: return "imageattr";
+      case kInactiveAttribute: return "inactive";
+      case kLabelAttribute: return "label";
+      case kMaxprateAttribute: return "max-prate";
+      case kMaxptimeAttribute: return "max-ptime";
+      case kMidAttribute: return "mid";
+      case kMsidAttribute: return "msid";
+      case kPtimeAttribute: return "ptime";
+      case kRecvonlyAttribute: return "recvonly";
+      case kRemoteCandidatesAttribute: return "remote-candidates";
+      case kRtcpAttribute: return "rtcp";
+      case kRtcpFbAttribute: return "rtcp-fb";
+      case kRtcpMuxAttribute: return "rtcp-mux";
+      case kRtcpRsizeAttribute: return "rtcp-rsize";
+      case kRtpmapAttribute: return "rtpmap";
+      case kSctpmapAttribute: return "sctpmap";
+      case kSendonlyAttribute: return "sendonly";
+      case kSendrecvAttribute: return "sendrecv";
+      case kSetupAttribute: return "setup";
+      case kSsrcAttribute: return "ssrc";
+      case kSsrcGroupAttribute: return "ssrc-group";
+        // crash for kDirectionAttribute, kOtherAttribute and others
+      default: MOZ_CRASH();
+    }
+  }
+
 protected:
   AttributeType mType;
-  std::string mTypeName;
 };
 
 inline std::ostream& operator <<(std::ostream& os, const SdpAttribute &attr)
 {
   attr.Serialize(os);
+  return os;
+}
+
+inline std::ostream& operator <<(std::ostream& os, const SdpAttribute::AttributeType type) {
+  os << SdpAttribute::GetAttributeTypeString(type);
   return os;
 }
 
@@ -121,7 +164,7 @@ class SdpCandidateAttributeList : public SdpAttribute
 {
 public:
   SdpCandidateAttributeList() :
-    SdpAttribute(kCandidateAttribute, "candidate") {}
+    SdpAttribute(kCandidateAttribute) {}
 
   enum Transport {
     kUdp,
@@ -173,7 +216,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mCandidates.begin(); i != mCandidates.end(); ++i) {
-      os << "a=" << mTypeName << ":"
+      os << "a=" << GetTypeName() << ":"
          << i->foundation << " "
          << i->componentId << " "
          << i->transport << " "
@@ -234,12 +277,12 @@ public:
   };
 
   SdpConnectionAttribute(SdpConnectionAttribute::ConnValue value) :
-    SdpAttribute(kConnectionAttribute, "connection"),
+    SdpAttribute(kConnectionAttribute),
     mValue(value) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << ":" << mValue << CRLF;
+    os << "a=" << GetTypeName() << ":" << mValue << CRLF;
   }
 
   ConnValue mValue;
@@ -270,16 +313,16 @@ class SdpDirectionAttribute : public SdpAttribute
   };
 
   SdpDirectionAttribute(Direction value)
-      : SdpAttribute(kDirectionAttribute, GetString(value)),
+      : SdpAttribute(kDirectionAttribute),
         mValue(value) {}
 
   Direction mValue;
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mTypeName << CRLF;
+    os << "a=" << GetTypeName() << CRLF;
   }
 
-  static std::string GetString(Direction v);
+  const std::string GetTypeName() const MOZ_OVERRIDE;
 };
 
 inline std::ostream& operator <<(std::ostream& os,
@@ -295,10 +338,9 @@ inline std::ostream& operator <<(std::ostream& os,
   return os;
 }
 
-inline std::string
-SdpDirectionAttribute::GetString(SdpDirectionAttribute::Direction v) {
+inline const std::string SdpDirectionAttribute::GetTypeName() const {
   std::ostringstream ss;
-  ss << v;
+  ss << mValue;
   return ss.str();
 }
 
@@ -327,7 +369,7 @@ class SdpExtmapAttributeList : public SdpAttribute
 {
 public:
   SdpExtmapAttributeList() :
-    SdpAttribute(kExtmapAttribute, "extmap") {}
+    SdpAttribute(kExtmapAttribute) {}
 
   enum Direction {
     kNotSpecified,
@@ -360,7 +402,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mExtmaps.begin(); i != mExtmaps.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->entry;
+      os << "a=" << GetTypeName() << ":" << i->entry;
       if (i->direction != kNotSpecified) {
         os << "/" << i->direction;
       }
@@ -408,7 +450,7 @@ class SdpFingerprintAttributeList : public SdpAttribute
 {
 public:
   SdpFingerprintAttributeList():
-    SdpAttribute(kFingerprintAttribute, "fingerprint") {}
+    SdpAttribute(kFingerprintAttribute) {}
 
   enum HashAlgorithm {
     kSha1,
@@ -433,7 +475,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mFingerprints.begin(); i != mFingerprints.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->hashFunc
+      os << "a=" << GetTypeName() << ":" << i->hashFunc
          << " " << i->fingerprint << CRLF;
     }
   }
@@ -468,7 +510,7 @@ class SdpFmtpAttributeList : public SdpAttribute
 {
 public:
   SdpFmtpAttributeList() :
-    SdpAttribute(kFmtpAttribute, "fmtp") {}
+    SdpAttribute(kFmtpAttribute) {}
 
   struct Fmtp {
     std::string format;
@@ -478,7 +520,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mFmtps.begin(); i != mFmtps.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->format
+      os << "a=" << GetTypeName() << ":" << i->format
          << " " << i->parameters << CRLF;
     }
   }
@@ -502,7 +544,7 @@ class SdpGroupAttributeList : public SdpAttribute
 {
 public:
   SdpGroupAttributeList() :
-    SdpAttribute(kGroupAttribute, "group") {}
+    SdpAttribute(kGroupAttribute) {}
 
   enum Semantics {
     kLs,      // RFC5888
@@ -535,7 +577,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mGroups.begin(); i != mGroups.end(); ++i) {
-      os << "a=" << mTypeName << ":"
+      os << "a=" << GetTypeName() << ":"
          << i->semantics << " "
          << i->identifier;
       for (auto j = i->tags.begin(); j != i->tags.end(); ++j) {
@@ -576,12 +618,12 @@ class SdpIceOptionsAttribute : public SdpAttribute
 {
 public:
   SdpIceOptionsAttribute(const std::vector<std::string>& options) :
-    SdpAttribute(kIceOptionsAttribute, "ice-options"),
+    SdpAttribute(kIceOptionsAttribute),
     mOptions(options) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName;
+    os << "a=" << GetTypeName();
     for (auto i = mOptions.begin(); i != mOptions.end(); i++) {
       os << (i == mOptions.begin() ? ":" : " ") << (*i);
     }
@@ -609,13 +651,13 @@ public:
   SdpIdentityAttribute(const std::string &assertion,
                        const std::vector<std::string> &extensions =
                          std::vector<std::string>()) :
-    SdpAttribute(kIdentityAttribute, "identity"),
+    SdpAttribute(kIdentityAttribute),
     mAssertion(assertion),
     mExtensions(extensions) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << mAssertion;
+    os << "a=" << GetTypeName() << mAssertion;
     for (auto i = mExtensions.begin(); i != mExtensions.end(); i++) {
       os << (i == mExtensions.begin() ? " " : ";") << (*i);
     }
@@ -702,7 +744,7 @@ class SdpImageattrAttributeList : public SdpAttribute
 {
 public:
   SdpImageattrAttributeList() :
-    SdpAttribute(kImageattrAttribute, "imageattr") {}
+    SdpAttribute(kImageattrAttribute) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
@@ -721,13 +763,13 @@ class SdpMsidAttributeList : public SdpAttribute
 public:
   SdpMsidAttributeList(const std::string &identifier,
                        const std::string &appdata = "") :
-    SdpAttribute(kMsidAttribute, "msid"),
+    SdpAttribute(kMsidAttribute),
     mIdentifier(identifier),
     mAppdata(appdata) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << ":" << mIdentifier;
+    os << "a=" << GetTypeName() << ":" << mIdentifier;
     if (mAppdata.length()) {
       os << " " << mAppdata;
     }
@@ -754,12 +796,12 @@ public:
   };
 
   SdpRemoteCandidatesAttribute(const std::vector<Candidate>& candidates) :
-    SdpAttribute(kRemoteCandidatesAttribute, "remote-candidates"),
+    SdpAttribute(kRemoteCandidatesAttribute),
     mCandidates(candidates) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName;
+    os << "a=" << GetTypeName();
     for (auto i = mCandidates.begin(); i != mCandidates.end(); i++) {
       os << (i == mCandidates.begin() ? ":" : " ") << i->id
          << " " << i->address
@@ -783,7 +825,7 @@ public:
                    sdp::NetType netType = sdp::kNetTypeNone,
                    sdp::AddrType addrType = sdp::kAddrTypeNone,
                    const std::string& address = "") :
-    SdpAttribute(kRtcpAttribute, "rtcp"),
+    SdpAttribute(kRtcpAttribute),
     mPort(port),
     mNetType(netType),
     mAddrType(addrType),
@@ -791,7 +833,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << ":" << mPort;
+    os << "a=" << GetTypeName() << ":" << mPort;
     if (mNetType != sdp::kNetTypeNone && mAddrType != sdp::kAddrTypeNone) {
       os << " " << mNetType << " " << mAddrType << " " << mAddress;
     }
@@ -840,7 +882,7 @@ class SdpRtcpFbAttributeList : public SdpAttribute
 {
 public:
   SdpRtcpFbAttributeList() :
-    SdpAttribute(kRtcpFbAttribute, "rtcp-fb") {}
+    SdpAttribute(kRtcpFbAttribute) {}
 
   enum Type {
     kAck,
@@ -865,7 +907,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mFeedback.begin(); i != mFeedback.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->pt << " " << i->type;
+      os << "a=" << GetTypeName() << ":" << i->pt << " " << i->type;
       if (i->parameters.length()) {
         os << " " << i->parameters;
       }
@@ -884,7 +926,7 @@ class SdpRtpmapAttributeList : public SdpAttribute
 {
 public:
   SdpRtpmapAttributeList() :
-    SdpAttribute(kRtpmapAttribute, "rtpmap") {}
+    SdpAttribute(kRtpmapAttribute) {}
 
   struct Rtpmap {
     std::string pt;
@@ -905,7 +947,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mRtpmaps.begin(); i != mRtpmaps.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->pt << " " << i->name
+      os << "a=" << GetTypeName() << ":" << i->pt << " " << i->name
          << "/" << i->clock;
       if (i->channels) {
         os << "/" << i->channels;
@@ -953,7 +995,7 @@ class SdpSctpmapAttributeList : public SdpAttribute
 {
 public:
   SdpSctpmapAttributeList() :
-    SdpAttribute(kSctpmapAttribute, "sctpmap") {}
+    SdpAttribute(kSctpmapAttribute) {}
 
   struct Sctpmap {
     uint32_t number;
@@ -972,7 +1014,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSctpmaps.begin(); i != mSctpmaps.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->number << " " << i->app;
+      os << "a=" << GetTypeName() << ":" << i->number << " " << i->app;
       if (i->maxMessageSize) {
         os << " max-message-size=" << i->maxMessageSize;
       }
@@ -1002,12 +1044,12 @@ public:
   };
 
   SdpSetupAttribute(Role role) :
-    SdpAttribute(kSetupAttribute, "setup"),
+    SdpAttribute(kSetupAttribute),
     mRole(role) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << ":" << mRole << CRLF;
+    os << "a=" << GetTypeName() << ":" << mRole << CRLF;
   }
 
   Role mRole;
@@ -1043,7 +1085,7 @@ class SdpSsrcAttributeList : public SdpAttribute
 {
 public:
   SdpSsrcAttributeList() :
-    SdpAttribute(kSsrcAttribute, "ssrc") {}
+    SdpAttribute(kSsrcAttribute) {}
 
   struct Ssrc {
     uint32_t ssrc;
@@ -1057,7 +1099,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSsrcs.begin(); i != mSsrcs.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->ssrc << " " << i->attribute << CRLF;
+      os << "a=" << GetTypeName() << ":" << i->ssrc << " " << i->attribute << CRLF;
     }
   }
 
@@ -1088,7 +1130,7 @@ public:
   };
 
   SdpSsrcGroupAttributeList() :
-    SdpAttribute(kSsrcGroupAttribute, "ssrc-group") {}
+    SdpAttribute(kSsrcGroupAttribute) {}
 
   void PushEntry(Semantics semantics, const std::vector<uint32_t>& ssrcs) {
     mSsrcGroups.push_back({semantics, ssrcs});
@@ -1097,7 +1139,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSsrcGroups.begin(); i != mSsrcGroups.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->semantics;
+      os << "a=" << GetTypeName() << ":" << i->semantics;
       for (auto j = i->ssrcs.begin(); j != i->ssrcs.end(); ++j) {
         os << " " << (*j);
       }
@@ -1125,33 +1167,30 @@ inline std::ostream& operator <<(std::ostream& os,
 class SdpMultiStringAttribute : public SdpAttribute
 {
   public:
-    SdpMultiStringAttribute(AttributeType type,
-                            const std::string& typeName) :
-      SdpAttribute(type, typeName) {}
+  explicit SdpMultiStringAttribute(AttributeType type) :
+      SdpAttribute(type) {}
 
-    void PushEntry(const std::string& entry) {
-      mValues.push_back(entry);
-    }
+  void PushEntry(const std::string& entry) {
+    mValues.push_back(entry);
+  }
 
-    std::vector<std::string> mValues;
+  std::vector<std::string> mValues;
 };
 
 // Used for any other kind of attribute not otherwise specialized
-class SdpOtherAttribute : public SdpAttribute
+class SdpStringAttribute : public SdpAttribute
 {
 public:
-  SdpOtherAttribute(AttributeType type, std::string typeName, std::string value = "") :
-    SdpAttribute(type, typeName),
-    mValue(value) {}
+  explicit SdpStringAttribute(AttributeType type,
+                              const std::string& value = "") :
+    SdpAttribute(type), mValue(value) {}
 
-  const std::string& GetValue() const
-  {
+  const std::string& GetValue() const {
     return mValue;
   }
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
-  {
-    os << "a=" << mTypeName;
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
+    os << "a=" << GetTypeName();
     if (mValue.length()) {
       os << ":" << mValue;
     }
@@ -1159,8 +1198,30 @@ public:
   }
 
 private:
-  std::string mTypeName;
   std::string mValue;
+};
+
+
+
+// Used for any purely numeric attribute
+class SdpNumberAttribute : public SdpAttribute
+{
+public:
+  explicit SdpNumberAttribute(AttributeType type, uint32_t value = 0) :
+    SdpAttribute(type),
+    mValue(value) {}
+
+  uint32_t GetValue() const {
+    return mValue;
+  }
+
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
+  {
+    os << "a=" << GetTypeName() << ":" << mValue << CRLF;
+  }
+
+private:
+  uint32_t mValue;
 };
 
 }

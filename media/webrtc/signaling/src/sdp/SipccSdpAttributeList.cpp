@@ -59,10 +59,10 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
 
 bool
 SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
-                                        AttributeType targetType, const std::string& name) {
+                                        AttributeType targetType) {
   const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 1);
   if (value) {
-    SetAttribute(new SdpOtherAttribute(targetType, name, std::string(value)));
+    SetAttribute(new SdpStringAttribute(targetType, std::string(value)));
   }
   return value != nullptr;
 }
@@ -94,14 +94,14 @@ SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
   sdp_result_e sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_UFRAG, 1, &value);
   if (sdpres == SDP_SUCCESS) {
-    SetAttribute(new SdpOtherAttribute(SdpAttribute::kIceUfragAttribute,
-                                       "ice-ufrag", std::string(value)));
+    SetAttribute(new SdpStringAttribute(SdpAttribute::kIceUfragAttribute,
+                                        std::string(value)));
   }
   sdpres =
       sdp_attr_get_ice_attribute(sdp, level, 0, SDP_ATTR_ICE_PWD, 1, &value);
   if (sdpres == SDP_SUCCESS) {
-    SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
-                                       "ice-pwd", std::string(value)));
+    SetAttribute(new SdpStringAttribute(SdpAttribute::kIcePwdAttribute,
+                                        std::string(value)));
   }
 
 }
@@ -214,19 +214,19 @@ bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
   bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
-                                 SdpAttribute::kMidAttribute, "mid");
+                                 SdpAttribute::kMidAttribute);
   if (result && AtSessionLevel()) {
     errorHolder.AddParseError(0, "mid attribute at the session level");
     return false;
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
-                            SdpAttribute::kLabelAttribute, "label");
+                            SdpAttribute::kLabelAttribute);
   if (result && AtSessionLevel()) {
     errorHolder.AddParseError(0, "label attribute at the session level");
     return false;
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
-                            SdpAttribute::kIdentityAttribute, "identity");
+                            SdpAttribute::kIdentityAttribute);
   if (result && !AtSessionLevel()) {
     errorHolder.AddParseError(0, "identity attribute at the media level");
     return false;
@@ -345,7 +345,7 @@ SipccSdpAttributeList::GetIcePwd() const {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIcePwdAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const std::string&
@@ -357,7 +357,7 @@ SipccSdpAttributeList::GetIceUfrag() const {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIceUfragAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const std::string&
@@ -369,7 +369,7 @@ SipccSdpAttributeList::GetIdentity() const {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kIdentityAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const SdpImageattrAttributeList&
@@ -386,7 +386,7 @@ SipccSdpAttributeList::GetLabel() const {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kLabelAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 uint32_t
@@ -408,7 +408,7 @@ SipccSdpAttributeList::GetMid() const {
     return sEmptyString;
   }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kMidAttribute);
-  return static_cast<const SdpOtherAttribute*>(attr)->GetValue();
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 const SdpMsidAttributeList&
