@@ -28,6 +28,8 @@ sipcc_sdp_parser_error_handler(void *context, uint32_t line, const char *message
 UniquePtr<Sdp>
 SipccSdpParser::Parse(const std::string& sdpText)
 {
+  ClearParseErrors();
+
   sdp_conf_options_t *sipcc_config = sdp_init_config();
   if (!sipcc_config) {
     return nullptr;

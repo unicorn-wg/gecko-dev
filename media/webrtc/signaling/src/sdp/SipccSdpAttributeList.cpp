@@ -67,6 +67,14 @@ SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e a
   return value != nullptr;
 }
 
+bool SipccSdpAttributeList::LoadSimpleNumber(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+                                             AttributeType targetType) {
+  bool exists = sdp_attr_valid(sdp, attr, level, 0, 1);
+  //  uint32_t
+
+  return exists;
+}
+
 bool
 SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
                                      SdpErrorHolder& errorHolder) {
@@ -391,12 +399,20 @@ SipccSdpAttributeList::GetLabel() const {
 
 uint32_t
 SipccSdpAttributeList::GetMaxprate() const {
-  return 0;
+  if (!HasAttribute(SdpAttribute::kMaxprateAttribute)) {
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kMaxprateAttribute);
+  return static_cast<const SdpNumberAttribute*>(attr)->GetValue();
 }
 
 uint32_t
 SipccSdpAttributeList::GetMaxptime() const {
-  return 0;
+  if (!HasAttribute(SdpAttribute::kMaxptimeAttribute)) {
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kMaxptimeAttribute);
+  return static_cast<const SdpNumberAttribute*>(attr)->GetValue();
 }
 
 const std::string&
@@ -418,7 +434,11 @@ SipccSdpAttributeList::GetMsid() const {
 
 uint32_t
 SipccSdpAttributeList::GetPtime() const {
-  return 0;
+  if (!HasAttribute(SdpAttribute::kPtimeAttribute)) {
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kPtimeAttribute);
+  return static_cast<const SdpNumberAttribute*>(attr)->GetValue();
 }
 
 const SdpRtcpAttribute&
