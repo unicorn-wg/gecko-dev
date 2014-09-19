@@ -14,6 +14,8 @@
 #include <mozilla/Move.h>
 #include <mozilla/UniquePtr.h>
 
+#include "signaling/src/jsep/JsepTrack.h"
+#include "signaling/src/jsep/JsepTrackImpl.h"
 #include "signaling/src/sdp/Sdp.h"
 #include "signaling/src/sdp/SipccSdp.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
@@ -262,7 +264,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     return NS_ERROR_FAILURE;
   }
 
-  std::vector<JsepTrackPair> track_pairs;
+  std::vector<JsepTrackPair*> track_pairs;
 
   // Now walk through the m-sections, make sure they match, and create
   // track pairs that describe the media to be set up.
@@ -297,11 +299,39 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
     MOZ_MTLOG(ML_DEBUG, "Negotiated m= line sending=" << sending
               << " receiving=" << receiving);
+
+    UniquePtr<JsepTrackPair> jpair = MakeUnique<JsepTrackPair>();
+
+    if (sending) {
+      rv = CreateTrack(rm, lm, &jpair->mSending);
+      if (NS_FAILED(rv))
+        return rv;
+    }
+    if (receiving) {
+      rv = CreateTrack(lm, rm, &jpair->mReceiving);
+      if (NS_FAILED(rv))
+        return rv;
+    }
+
+    track_pairs.push_back(jpair.release());
   }
 
+  // Ouch, this probably needs some dirty bit instead of just clearing
+  // stuff for renegotiation.
+  ClearNegotiatedPairs();
+  mNegotiatedTrackPairs = track_pairs;
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
+                                      const SdpMediaSection& send,
+                                      UniquePtr<JsepTrack>* trackp) {
+  UniquePtr<JsepTrackImpl> track = MakeUnique<JsepTrackImpl>();
+  track->mMediaType = receive.GetMediaType();
+
+  *trackp = Move(track);
+  return NS_OK;
+}
 
 nsresult JsepSessionImpl::DetermineSendingDirection(
     SdpDirectionAttribute::Direction offer,

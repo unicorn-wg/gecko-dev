@@ -20,7 +20,9 @@ namespace jsep {
 class JsepSessionImpl : public JsepSession {
  public:
   JsepSessionImpl(const std::string& name) :
-      JsepSession(name) {
+      JsepSession(name),
+      mSessionId(0),
+      mSessionVersion(0) {
     Init();
   }
 
@@ -69,14 +71,21 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) MOZ_OVERRIDE;
 
-// STUBS BELOW THIS POINT
-
-
   // Access the negotiated track pairs.
-  virtual nsresult num_negotiated_track_pairs(size_t* pairs)
-      const MOZ_OVERRIDE { MOZ_CRASH(); }
-  virtual nsresult track_pair(size_t index, const JsepTrackPair** pair)
-      const MOZ_OVERRIDE { MOZ_CRASH(); }
+  virtual size_t num_negotiated_track_pairs()
+      const MOZ_OVERRIDE {
+    return mNegotiatedTrackPairs.size();
+  }
+
+  virtual nsresult negotiated_track_pair(size_t index,
+                                         const JsepTrackPair** pair) const {
+    if (index >= mNegotiatedTrackPairs.size())
+      return NS_ERROR_INVALID_ARG;
+
+    *pair = mNegotiatedTrackPairs[index];
+
+    return NS_OK;
+  }
 
  private:
   struct JsepSendingTrack {
@@ -107,9 +116,19 @@ class JsepSessionImpl : public JsepSession {
                                     SdpDirectionAttribute::Direction answer,
                                     bool is_offerer,
                                     bool* sending, bool* receiving);
+  nsresult CreateTrack(const SdpMediaSection& receive,
+                       const SdpMediaSection& send,
+                       UniquePtr<JsepTrack>* track);
+  void ClearNegotiatedPairs() {
+    for (auto p = mNegotiatedTrackPairs.begin(); p != mNegotiatedTrackPairs.end(); ++p) {
+      delete *p;
+    }
+    mNegotiatedTrackPairs.clear();
+  }
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
+  std::vector<JsepTrackPair*> mNegotiatedTrackPairs;  // TODO(ekr@rtfm.com): Add to dtor
 
   uint64_t mSessionId;
   uint64_t mSessionVersion;
