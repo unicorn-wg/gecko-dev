@@ -856,11 +856,25 @@ TEST_F(NewSdpTest, ParseEmpty) {
     << "Expected at least one parse error.";
 }
 
+const std::string kBadSdp = "This is SPARTA!!!!";
+
 TEST_F(NewSdpTest, ParseGarbage) {
-  ParseSdp("foobajooba", false);
+  ParseSdp(kBadSdp, false);
   ASSERT_FALSE(mSdp);
   ASSERT_NE(0U, mParser.GetParseErrors().size())
     << "Expected at least one parse error.";
+}
+
+TEST_F(NewSdpTest, ParseGarbageTwice) {
+  ParseSdp(kBadSdp, false);
+  ASSERT_FALSE(mSdp);
+  size_t errorCount = mParser.GetParseErrors().size();
+  ASSERT_NE(0U, errorCount)
+    << "Expected at least one parse error.";
+  ParseSdp(kBadSdp, false);
+  ASSERT_FALSE(mSdp);
+  ASSERT_EQ(errorCount, mParser.GetParseErrors().size())
+    << "Expected same error count for same SDP.";
 }
 
 static const std::string kVideoSdp =
@@ -943,55 +957,57 @@ TEST_F(NewSdpTest, CheckMediaSectionGetBandwidth) {
 
 // SDP from a basic A/V apprtc call FFX/FFX
 const std::string kBasicAudioVideoOffer =
-"v=0\r\n"
-"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0\r\n"
-"s=SIP Call\r\n"
-"c=IN IP4 224.0.0.1/100/12\r\n"
-"t=0 0\r\n"
-"a=ice-ufrag:4a799b2e\r\n"
-"a=ice-pwd:e4cc12a910f106a0a744719425510e17\r\n"
-"a=fingerprint:sha-256 DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C\r\n"
-"m=audio 9 RTP/SAVPF 109 9 0 8 101\r\n"
-"c=IN IP4 0.0.0.0\r\n"
-"a=rtpmap:109 opus/48000/2\r\n"
-"a=ptime:20\r\n"
-"a=rtpmap:9 G722/8000\r\n"
-"a=rtpmap:0 PCMU/8000\r\n"
-"a=rtpmap:8 PCMA/8000\r\n"
-"a=rtpmap:101 telephone-event/8000\r\n"
-"a=fmtp:101 0-15\r\n"
-"a=sendonly\r\n"
-"a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\n"
-"a=setup:actpass\r\n"
-"a=rtcp-mux\r\n"
-"a=candidate:0 1 UDP 2130379007 10.0.0.36 62453 typ host\r\n"
-"a=candidate:2 1 UDP 1694236671 24.6.134.204 62453 typ srflx raddr 10.0.0.36 rport 62453\r\n"
-"a=candidate:3 1 UDP 100401151 162.222.183.171 49761 typ relay raddr 162.222.183.171 rport 49761\r\n"
-"a=candidate:6 1 UDP 16515071 162.222.183.171 51858 typ relay raddr 162.222.183.171 rport 51858\r\n"
-"a=candidate:3 2 UDP 100401150 162.222.183.171 62454 typ relay raddr 162.222.183.171 rport 62454\r\n"
-"a=candidate:2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428\r\n"
-"a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340\r\n"
-"a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host\r\n"
-"m=video 9 RTP/SAVPF 120\r\n"
-"c=IN IP6 ::1\r\n"
-"a=rtpmap:120 VP8/90000\r\n"
-"a=recvonly\r\n"
-"a=rtcp-fb:120 nack\r\n"
-"a=rtcp-fb:120 nack pli\r\n"
-"a=rtcp-fb:120 ccm fir\r\n"
-"a=setup:active\r\n"
-"a=rtcp-mux\r\n"
-"a=candidate:0 1 UDP 2130379007 10.0.0.36 59530 typ host\r\n"
-"a=candidate:0 2 UDP 2130379006 10.0.0.36 64378 typ host\r\n"
-"a=candidate:2 2 UDP 1694236670 24.6.134.204 64378 typ srflx raddr 10.0.0.36 rport 64378\r\n"
-"a=candidate:6 2 UDP 16515070 162.222.183.171 64941 typ relay raddr 162.222.183.171 rport 64941\r\n"
-"a=candidate:6 1 UDP 16515071 162.222.183.171 64800 typ relay raddr 162.222.183.171 rport 64800\r\n"
-"a=candidate:2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530\r\n"
-"a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935\r\n"
-"a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026\r\n"
-"m=audio 9 RTP/SAVPF 0\r\n"
-// fallthrough on everything possible
-"a=rtpmap:0 PCMU/8000\r\n";
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=ice-ufrag:4a799b2e" CRLF
+"a=ice-pwd:e4cc12a910f106a0a744719425510e17" CRLF
+"a=ice-lite" CRLF
+"a=fingerprint:sha-256 DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF
+"a=ptime:20" CRLF
+"a=maxptime:20" CRLF
+"a=rtpmap:9 G722/8000" CRLF
+"a=rtpmap:0 PCMU/8000" CRLF
+"a=rtpmap:8 PCMA/8000" CRLF
+"a=rtpmap:101 telephone-event/8000" CRLF
+"a=fmtp:101 0-15" CRLF
+"a=sendonly" CRLF
+"a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level" CRLF
+"a=setup:actpass" CRLF
+"a=rtcp-mux" CRLF
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 62453 typ host" CRLF
+"a=candidate:2 1 UDP 1694236671 24.6.134.204 62453 typ srflx raddr 10.0.0.36 rport 62453" CRLF
+"a=candidate:3 1 UDP 100401151 162.222.183.171 49761 typ relay raddr 162.222.183.171 rport 49761" CRLF
+"a=candidate:6 1 UDP 16515071 162.222.183.171 51858 typ relay raddr 162.222.183.171 rport 51858" CRLF
+"a=candidate:3 2 UDP 100401150 162.222.183.171 62454 typ relay raddr 162.222.183.171 rport 62454" CRLF
+"a=candidate:2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428" CRLF
+"a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340" CRLF
+"a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP6 ::1" CRLF
+"a=rtpmap:120 VP8/90000" CRLF
+"a=recvonly" CRLF
+"a=rtcp-fb:120 nack" CRLF
+"a=rtcp-fb:120 nack pli" CRLF
+"a=rtcp-fb:120 ccm fir" CRLF
+"a=setup:active" CRLF
+"a=rtcp-mux" CRLF
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 59530 typ host" CRLF
+"a=candidate:0 2 UDP 2130379006 10.0.0.36 64378 typ host" CRLF
+"a=candidate:2 2 UDP 1694236670 24.6.134.204 64378 typ srflx raddr 10.0.0.36 rport 64378" CRLF
+"a=candidate:6 2 UDP 16515070 162.222.183.171 64941 typ relay raddr 162.222.183.171 rport 64941" CRLF
+"a=candidate:6 1 UDP 16515071 162.222.183.171 64800 typ relay raddr 162.222.183.171 rport 64800" CRLF
+"a=candidate:2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530" CRLF
+"a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935" CRLF
+"a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026" CRLF
+"m=audio 9 RTP/SAVPF 0" CRLF
+"a=rtpmap:0 PCMU/8000" CRLF
+"a=ice-lite" CRLF;
 
 
 TEST_F(NewSdpTest, BasicAudioVideoSdpParse) {
@@ -1013,15 +1029,6 @@ TEST_F(NewSdpTest, CheckIcePwd) {
   auto ice_pwd = mSdp->GetAttributeList().GetIcePwd();
   ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
 }
-
-//TEST_F(NewSdpTest, CheckIceLite) {
-//  ParseSdp(kBasicAudioVideoOffer);
-//  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
-//  ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
-//        SdpAttribute::kIceLiteAttribute));
-//  auto ice_pwd = mSdp->GetAttributeList().GetIceLite();
-//  ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
-//}
 
 TEST_F(NewSdpTest, CheckFingerprint) {
   ParseSdp(kBasicAudioVideoOffer);
@@ -1088,8 +1095,6 @@ TEST_F(NewSdpTest, CheckSetup) {
 
 TEST_F(NewSdpTest, CheckRtpmap) {
   ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
-    << "Wrong number of media sections";
 
   const SdpMediaSection& audiosec = mSdp->GetMediaSection(0);
   const SdpRtpmapAttributeList& rtpmap = audiosec.GetAttributeList().GetRtpmap();
@@ -1116,6 +1121,28 @@ TEST_F(NewSdpTest, CheckFormatParameters) {
     << "Wrong number of media sections";
 
 //  ASSERT_EQ(1U, mSdp->GetMediaSection(0).GetAttributeList().Count(kFmtp));
+}
+
+TEST_F(NewSdpTest, CheckPtime) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ(20U, mSdp->GetMediaSection(0).GetAttributeList().GetPtime());
+  ASSERT_FALSE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+      SdpAttribute::kPtimeAttribute));
+}
+
+TEST_F(NewSdpTest, CheckFlags) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kIceLiteAttribute, false));
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kIceLiteAttribute));
+  ASSERT_TRUE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kIceLiteAttribute));
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kRtcpMuxAttribute));
+  ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kRtcpMuxAttribute));
 }
 
 TEST_F(NewSdpTest, CheckConnectionLines) {

@@ -42,7 +42,6 @@ public:
     kImageattrAttribute,
     kInactiveAttribute,
     kLabelAttribute,
-    kMaxprateAttribute,
     kMaxptimeAttribute,
     kMidAttribute,
     kMsidAttribute,
@@ -95,8 +94,7 @@ public:
       case kImageattrAttribute: return "imageattr";
       case kInactiveAttribute: return "inactive";
       case kLabelAttribute: return "label";
-      case kMaxprateAttribute: return "max-prate";
-      case kMaxptimeAttribute: return "max-ptime";
+      case kMaxptimeAttribute: return "maxptime";
       case kMidAttribute: return "mid";
       case kMsidAttribute: return "msid";
       case kPtimeAttribute: return "ptime";
@@ -1184,12 +1182,25 @@ public:
   std::vector<std::string> mValues;
 };
 
+
+// Used for any other kind of attribute not otherwise specialized
+class SdpFlagAttribute : public SdpAttribute
+{
+public:
+  explicit SdpFlagAttribute(AttributeType type) :
+    SdpAttribute(type) {}
+
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
+    os << "a=" << mType << CRLF;
+  }
+};
+
 // Used for any other kind of attribute not otherwise specialized
 class SdpStringAttribute : public SdpAttribute
 {
 public:
   explicit SdpStringAttribute(AttributeType type,
-                              const std::string& value = "") :
+                              const std::string& value) :
     SdpAttribute(type), mValue(value) {}
 
   const std::string& GetValue() const {
@@ -1197,18 +1208,12 @@ public:
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mType;
-    if (mValue.length()) {
-      os << ":" << mValue;
-    }
-    os << CRLF;
+    os << "a=" << mType << ":" << mValue << CRLF;
   }
 
 private:
   std::string mValue;
 };
-
-
 
 // Used for any purely numeric attribute
 class SdpNumberAttribute : public SdpAttribute
