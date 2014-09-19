@@ -31,12 +31,12 @@ SipccSdpMediaSection::GetConnection() const {
   return *mConnection;
 }
 
-const std::string&
+uint32_t
 SipccSdpMediaSection::GetBandwidth(const std::string& type) const {
   static std::string emptyString("");
   auto found = mBandwidths.find(type);
   if (found == mBandwidths.end()) {
-    return emptyString;
+    return 0;
   }
   return found->second;
 }
@@ -94,6 +94,10 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
     return false;
   }
 
+  if (!LoadBandwidth(sdp, level, errorHolder)) {
+    return false;
+  }
+
   return LoadConnection(sdp, level, errorHolder);
 }
 
@@ -128,6 +132,30 @@ SipccSdpMediaSection::LoadFormats(sdp_t* sdp, uint16_t level) {
     ospt << ((ptype & 0xff00) ? ((ptype >> 8) & 0xff) : ptype); // OMFG
     mFormats.push_back(ospt.str());
   }
+}
+
+bool
+SipccSdpMediaSection::LoadBandwidth(std::map<std::string, uint32_t>& bw,
+                                    sdp_t* sdp, uint16_t level,
+                                    SdpErrorHolder& errorHolder) {
+
+  size_t count = sdp_get_num_bw_lines(sdp, level);
+  for (size_t i = 1; i <= count; ++i) {
+    sdp_bw_modifier_e bwtype = sdp_get_bw_modifier(sdp, level, i);
+    uint32_t bandwidth = sdp_get_bw_value(sdp, level, i);
+    if (bwtype != SDP_BW_MODIFIER_UNSUPPORTED) {
+      const char *typeName = sdp_get_bw_modifier_name(bwtype);
+      bw[typeName] = bandwidth;
+    }
+  }
+
+  return true;
+}
+
+bool
+SipccSdpMediaSection::LoadBandwidth(sdp_t* sdp, uint16_t level,
+                                    SdpErrorHolder& errorHolder) {
+  return LoadBandwidth(mBandwidths, sdp, level, errorHolder);
 }
 
 bool

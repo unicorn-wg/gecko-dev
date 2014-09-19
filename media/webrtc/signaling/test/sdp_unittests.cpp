@@ -928,7 +928,7 @@ TEST_P(NewSdpTest, CheckOriginGetSessionId) {
 
 TEST_P(NewSdpTest, CheckOriginGetSessionVersion) {
   ParseSdp(kVideoSdp);
-  ASSERT_EQ(2 , mSdp->GetOrigin().GetSessionVersion())
+  ASSERT_EQ(2U , mSdp->GetOrigin().GetSessionVersion())
     << "Wrong version in origin";
 }
 
@@ -946,19 +946,19 @@ TEST_P(NewSdpTest, CheckOriginGetAddress) {
 
 TEST_P(NewSdpTest, CheckGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE((mSdp->GetBandwidth("CT")).empty())
+  ASSERT_EQ(mSdp->GetBandwidth("CT"), 0U)
     << "Wrong bandwidth in session";
 }
 
 TEST_P(NewSdpTest, CheckGetBandwidth) {
   ParseSdp("v=0\r\n"
            "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
-           "b=CT:5000\r\n"
            "s=SIP Call\r\n"
            "c=IN IP4 198.51.100.7\r\n"
+           "b=CT:5000\r\n"
            "t=0 0\r\n"
            "m=video 56436 RTP/SAVPF 120\r\n");
-  ASSERT_EQ("5000", mSdp->GetBandwidth("CT"))
+  ASSERT_EQ(5000U, mSdp->GetBandwidth("CT"))
     << "Wrong bandwidth in session";
 }
 
@@ -1009,7 +1009,7 @@ TEST_P(NewSdpTest, CheckMediaSectionGetPortCount) {
 
 TEST_P(NewSdpTest, CheckMediaSectionGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty())
+  ASSERT_EQ(mSdp->GetMediaSection(0).GetBandwidth("CT"), 0U)
     << "Wrong bandwidth in media section";
 }
 
@@ -1021,7 +1021,7 @@ TEST_P(NewSdpTest, CheckMediaSectionGetBandwidth) {
            "m=video 56436 RTP/SAVPF 120\r\n"
            "b=CT:1000\r\n"
            "a=rtpmap:120 VP8/90000\r\n");
-  ASSERT_EQ("1000", mSdp->GetMediaSection(0).GetBandwidth("CT"))
+  ASSERT_EQ(1000U, mSdp->GetMediaSection(0).GetBandwidth("CT"))
     << "Wrong bandwidth in media section";
 }
 

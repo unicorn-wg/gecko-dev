@@ -37,7 +37,7 @@ public:
   virtual unsigned int GetPortCount() const MOZ_OVERRIDE;
   virtual Protocol GetProtocol() const MOZ_OVERRIDE;
   virtual const SdpConnection& GetConnection() const MOZ_OVERRIDE;
-  virtual const std::string& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
+  virtual uint32_t GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
   virtual const std::vector<std::string>& GetFormats() const MOZ_OVERRIDE;
 
   virtual const SdpAttributeList &GetAttributeList() const MOZ_OVERRIDE;
@@ -53,6 +53,10 @@ public:
 
   virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
 
+  static bool LoadBandwidth(std::map<std::string, uint32_t>&,
+                            sdp_t* sdp, uint16_t level,
+                            SdpErrorHolder& errorHolder);
+
 private:
   SipccSdpMediaSection(size_t level,
                        const SipccSdpAttributeList *sessionLevel)
@@ -63,6 +67,7 @@ private:
   bool LoadProtocol(sdp_t* sdp, uint16_t level,
                     SdpErrorHolder& errorHolder);
   void LoadFormats(sdp_t* sdp, uint16_t level);
+  bool LoadBandwidth(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
 
   // the following values are cached on first get
   MediaType mMediaType;
@@ -72,7 +77,7 @@ private:
   std::vector<std::string> mFormats;
 
   UniquePtr<SdpConnection> mConnection;
-  std::map<std::string, std::string> mBandwidths;
+  std::map<std::string, uint32_t> mBandwidths;
 
   SipccSdpAttributeList mAttributeList;
 };

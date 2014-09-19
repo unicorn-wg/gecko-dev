@@ -19,7 +19,6 @@
 namespace mozilla {
 
 class SdpOrigin;
-class SdpBandwidth;
 class SdpEncryptionKey;
 
 class SdpMediaSection;
@@ -31,7 +30,7 @@ public:
 
   virtual const SdpOrigin& GetOrigin() const = 0;
   // Note: connection information is always retrieved from media sections
-  virtual const std::string& GetBandwidth(const std::string& type) const = 0;
+  virtual uint32_t GetBandwidth(const std::string& type) const = 0;
 
   virtual const SdpAttributeList &GetAttributeList() const = 0;
   virtual SdpAttributeList &GetAttributeList() = 0;

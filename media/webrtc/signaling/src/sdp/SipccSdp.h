@@ -35,7 +35,7 @@ public:
   virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE;
 
   // Note: connection information is always retrieved from media sections
-  virtual const std::string& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
+  virtual uint32_t GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
 
   virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
     return static_cast<uint16_t>(mMediaSections.size());
@@ -69,7 +69,7 @@ private:
   bool LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder);
 
   UniquePtr<SdpOrigin> mOrigin;
-  std::map<std::string, std::string> mBandwidths;
+  std::map<std::string, uint32_t> mBandwidths;
   SipccSdpAttributeList mAttributeList;
   std::vector<SipccSdpMediaSection*> mMediaSections;
 };
