@@ -24,7 +24,8 @@ class SdpAttribute
 {
 public:
   enum AttributeType {
-    kBundleOnlyAttribute,
+    kFirstAttribute = 0,
+    kBundleOnlyAttribute = 0,
     kCandidateAttribute,
     kConnectionAttribute,
     kDirectionAttribute,
