@@ -878,6 +878,12 @@ TEST_F(NewSdpTest, ParseMinimal) {
     "Got parse errors: " << GetParseErrors();
 }
 
+TEST_F(NewSdpTest, CheckGetMissingBandwidth) {
+  ParseSdp(kVideoSdp);
+  ASSERT_TRUE((mSdp->GetBandwidth("CT")).empty())
+    << "Wrong bandwidth in conference";
+}
+
 TEST_F(NewSdpTest, CheckGetMediaSectionsCount) {
   ParseSdp(kVideoSdp);
   ASSERT_EQ(1U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
@@ -920,12 +926,18 @@ TEST_F(NewSdpTest, CheckMediaSectionGetPortCount) {
 
 TEST_F(NewSdpTest, CheckMediaSectionGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("foo")).empty()) << "Wrong bandwidth in media section";
+  ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty()) << "Wrong bandwidth in media section";
 }
 
 TEST_F(NewSdpTest, CheckMediaSectionGetBandwidth) {
-  ParseSdp(kVideoSdp + "b=foo:1000");
-  ASSERT_FALSE((mSdp->GetMediaSection(0).GetBandwidth("foo")).empty()) << "Wrong bandwidth in media section";
+  ParseSdp("v=0\r\n"
+           "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
+           "c=IN IP4 198.51.100.7\r\n"
+           "t=0 0\r\n"
+           "m=video 56436 RTP/SAVPF 120\r\n"
+           "b=CT:1000\r\n"
+           "a=rtpmap:120 VP8/90000\r\n");
+  ASSERT_FALSE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty()) << "Wrong bandwidth in media section";
 }
 
 
