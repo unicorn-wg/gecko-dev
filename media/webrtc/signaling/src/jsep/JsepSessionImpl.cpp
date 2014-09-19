@@ -124,6 +124,63 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
+                                       std::string* answer) {
+  // This is the heart of the negotiation code. Depressing that it's
+  // so bad.
+  //
+  // Here's the current algorithm:
+  // 1. Walk through all the m-lines on the other side.
+  // 2. For each m-line, walk through all of our local tracks
+  //    in sequence and see if any are unassigned. If so, assign
+  //    them and mark it sendrecv, otherwise it's recvonly.
+  // 3. Just replicate their media attributes.
+  // 4. Profit.
+  UniquePtr<Sdp> sdp;
+
+  // Make the basic SDP that is common to offer/answer.
+  nsresult rv = CreateGenericSDP(&sdp);
+  if (NS_FAILED(rv))
+    return rv;
+
+  const Sdp& offer = *mPendingRemoteDescription;
+
+  size_t num_m_lines = offer.GetMediaSectionCount();
+
+  for (size_t i = 0; i < num_m_lines; ++i) {
+    const SdpMediaSection& remote_msection = offer.GetMediaSection(i);
+    SdpMediaSection& msection =
+      sdp->AddMediaSection(remote_msection.GetMediaType());
+
+    bool matched = false;
+
+    for (auto track = mLocalTracks.begin();
+       track != mLocalTracks.end(); ++track) {
+      if (track->mAssignedMLine.isSome())
+        continue;
+      if (track->mTrack->media_type() != remote_msection.GetMediaType())
+        continue;
+
+      matched = true;
+      track->mAssignedMLine = Some(i);
+      break;
+    }
+
+    // If we matched, then it's sendrecv, else recvonly. No way to
+    // do sendonly here. inactive would be used if we had a codec
+    // mismatch, but we don't have that worked out yet.
+    msection.GetAttributeList().SetAttribute(
+      new SdpDirectionAttribute(matched ?
+                                SdpDirectionAttribute::kSendrecv :
+                                SdpDirectionAttribute::kRecvonly));
+  }
+
+  *answer = sdp->toString();
+  mGeneratedLocalDescription = Move(sdp);
+
+  return NS_OK;
+}
+
 nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
                                               const std::string& sdp) {
   // TODO(ekr@rtfm.com): Check state.
@@ -132,10 +189,45 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
   if (NS_FAILED(rv))
     return rv;
 
+  rv = NS_ERROR_FAILURE;
+
   // TODO(ekr@rtfm.com): Compare the generated offer to the passed
   // in argument.
 
+  switch (type ) {
+    case kJsepSdpOffer:
+      rv = SetLocalDescriptionOffer(Move(parsed));
+      break;
+    case kJsepSdpAnswer:
+    case kJsepSdpPranswer:
+      rv = SetLocalDescriptionAnswer(type, Move(parsed));
+      break;
+  }
+
+  return rv;
+}
+
+
+nsresult JsepSessionImpl::SetLocalDescriptionOffer(UniquePtr<Sdp> offer) {
+  mPendingLocalDescription = Move(offer);
   SetState(kJsepStateHaveLocalOffer);
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
+                                                    UniquePtr<Sdp> answer) {
+  mPendingLocalDescription = Move(answer);
+
+  nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
+                                        mPendingRemoteDescription,
+                                        false);
+  if(NS_FAILED(rv))
+    return rv;
+
+  mCurrentRemoteDescription = Move(mPendingRemoteDescription);
+  mCurrentLocalDescription = Move(mPendingLocalDescription);
+
+  SetState(kJsepStateStable);
   return NS_OK;
 }
 
@@ -160,6 +252,103 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
   }
 
   return rv;
+}
+
+nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
+                                                  const UniquePtr<Sdp>& remote,
+                                                  bool is_offerer) {
+  if (local->GetMediaSectionCount() != remote->GetMediaSectionCount()) {
+    MOZ_MTLOG(ML_ERROR, "Answer and offer have different number of m-lines");
+    return NS_ERROR_FAILURE;
+  }
+
+  std::vector<JsepTrackPair> track_pairs;
+
+  // Now walk through the m-sections, make sure they match, and create
+  // track pairs that describe the media to be set up.
+  for (size_t i = 0; i < local->GetMediaSectionCount(); ++i) {
+    const SdpMediaSection& lm = local->GetMediaSection(i);
+    const SdpMediaSection& rm = remote->GetMediaSection(i);
+    const SdpMediaSection& offer = is_offerer ? lm : rm;
+    const SdpMediaSection& answer = is_offerer ? rm : lm;
+
+    if (lm.GetMediaType() != rm.GetMediaType()) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer and offer have different number of types at m-line "
+                << i);
+      return NS_ERROR_FAILURE;
+    }
+
+    // If the answer says it's inactive we're not doing anything with it.
+    // TODO(ekr@rtfm.com): Need to handle renegotiation somehow.
+    if (answer.GetDirectionAttribute().mValue ==
+        SdpDirectionAttribute::kInactive)
+      continue;
+
+    bool sending;
+    bool receiving;
+
+    nsresult rv = DetermineSendingDirection(
+        offer.GetDirectionAttribute().mValue,
+        answer.GetDirectionAttribute().mValue,
+        is_offerer, &sending, &receiving);
+    if (NS_FAILED(rv))
+      return rv;
+
+    MOZ_MTLOG(ML_DEBUG, "Negotiated m= line sending=" << sending
+              << " receiving=" << receiving);
+  }
+
+  return NS_OK;
+}
+
+
+nsresult JsepSessionImpl::DetermineSendingDirection(
+    SdpDirectionAttribute::Direction offer,
+    SdpDirectionAttribute::Direction answer,
+    bool is_offerer,
+    bool* sending, bool* receiving) {
+  if (answer == SdpDirectionAttribute::kSendrecv) {
+    if (offer != SdpDirectionAttribute::kSendrecv) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer tried to change m-line to sendrecv");
+      return NS_ERROR_FAILURE;
+    }
+
+    *sending = true;
+    *receiving = true;
+  } else if (answer ==
+             SdpDirectionAttribute::kRecvonly) {
+    if ((offer != SdpDirectionAttribute::kSendrecv) &&
+        (offer != SdpDirectionAttribute::kSendonly)) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer tried to change m-line to recvonly");
+      return NS_ERROR_FAILURE;
+    }
+    if (is_offerer) {
+      *sending = true; *receiving = false;
+    } else {
+      *sending = false; *receiving = true;
+    }
+  } else if (answer ==
+             SdpDirectionAttribute::kSendonly) {
+    if ((offer != SdpDirectionAttribute::kSendrecv) &&
+        (offer != SdpDirectionAttribute::kRecvonly)) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer tried to change m-line to sendonly");
+      return NS_ERROR_FAILURE;
+    }
+    if (is_offerer) {
+      *sending = false; *receiving = true;
+    } else {
+      *sending = true; *receiving = false;
+    }
+
+  } else {
+    MOZ_CRASH(); // Can't happen.
+  }
+
+  return NS_OK;
 }
 
 nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,

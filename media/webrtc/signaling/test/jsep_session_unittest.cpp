@@ -29,6 +29,7 @@
 
 using mozilla::jsep::JsepSessionImpl;
 using mozilla::jsep::JsepOfferOptions;
+using mozilla::jsep::JsepAnswerOptions;
 using mozilla::jsep::JsepMediaStreamTrackFake;
 using mozilla::jsep::JsepMediaStreamTrack;
 using mozilla::SipccSdpParser;
@@ -87,17 +88,35 @@ protected:
     nsresult rv = mSessionOff.CreateOffer(options, &offer);
     EXPECT_EQ(NS_OK, rv);
 
-    std::cerr << offer << std::endl;
+    std::cerr << "OFFER: " << offer << std::endl;
 
     return offer;
   }
 
-  void SetLocal(const std::string& offer) {
+  std::string CreateAnswer() {
+    for (auto track = types.begin(); track != types.end(); ++track) {
+      RefPtr<JsepMediaStreamTrack> mst(new JsepMediaStreamTrackFake(
+          *track));
+      mSessionAns.AddTrack(mst);
+    }
+
+    JsepAnswerOptions options;
+    std::string answer;
+    nsresult rv = mSessionAns.CreateAnswer(options, &answer);
+    EXPECT_EQ(NS_OK, rv);
+
+    std::cerr << "ANSWER: " << answer << std::endl;
+
+    return answer;
+  }
+
+
+  void SetLocalOffer(const std::string& offer) {
     nsresult rv = mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
     ASSERT_EQ(NS_OK, rv);
   }
 
-  void SetRemote(const std::string& offer) {
+  void SetRemoteOffer(const std::string& offer) {
     nsresult rv = mSessionAns.SetRemoteDescription(jsep::kJsepSdpOffer, offer);
     ASSERT_EQ(NS_OK, rv);
 
@@ -110,6 +129,11 @@ protected:
     }
   }
 
+  void SetLocalAnswer(const std::string& answer) {
+    nsresult rv = mSessionAns.SetLocalDescription(jsep::kJsepSdpAnswer,
+                                                  answer);
+    ASSERT_EQ(NS_OK, rv);
+  }
 
   JsepSessionImpl mSessionOff;
   JsepSessionImpl mSessionAns;
@@ -125,13 +149,28 @@ TEST_P(JsepSessionTest, CreateOffer) {
 
 TEST_P(JsepSessionTest, CreateOfferSetLocal) {
   std::string offer = CreateOffer();
-  SetLocal(offer);
+  SetLocalOffer(offer);
 }
 
 TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemote) {
   std::string offer = CreateOffer();
-  SetLocal(offer);
-  SetRemote(offer);
+  SetLocalOffer(offer);
+  SetRemoteOffer(offer);
+}
+
+TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemoteCreateAnswer) {
+  std::string offer = CreateOffer();
+  SetLocalOffer(offer);
+  SetRemoteOffer(offer);
+  std::string answer = CreateAnswer();
+}
+
+TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemoteCreateAnswerSetLocal) {
+  std::string offer = CreateOffer();
+  SetLocalOffer(offer);
+  SetRemoteOffer(offer);
+  std::string answer = CreateAnswer();
+  SetLocalAnswer(answer);
 }
 
 INSTANTIATE_TEST_CASE_P(Variants, JsepSessionTest,
