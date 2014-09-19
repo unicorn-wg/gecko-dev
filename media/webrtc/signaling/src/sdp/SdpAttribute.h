@@ -42,7 +42,6 @@ public:
     kImageattrAttribute,
     kInactiveAttribute,
     kLabelAttribute,
-    kMaxprateAttribute,
     kMaxptimeAttribute,
     kMidAttribute,
     kMsidAttribute,
@@ -95,8 +94,7 @@ public:
       case kImageattrAttribute: return "imageattr";
       case kInactiveAttribute: return "inactive";
       case kLabelAttribute: return "label";
-      case kMaxprateAttribute: return "max-prate";
-      case kMaxptimeAttribute: return "max-ptime";
+      case kMaxptimeAttribute: return "maxptime";
       case kMidAttribute: return "mid";
       case kMsidAttribute: return "msid";
       case kPtimeAttribute: return "ptime";
@@ -1186,10 +1184,10 @@ public:
 
 
 // Used for any other kind of attribute not otherwise specialized
-class SdpEmptyAttribute : public SdpAttribute
+class SdpFlagAttribute : public SdpAttribute
 {
 public:
-  explicit SdpEmptyAttribute(AttributeType type) :
+  explicit SdpFlagAttribute(AttributeType type) :
     SdpAttribute(type) {}
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
