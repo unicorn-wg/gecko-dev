@@ -200,7 +200,7 @@ void
 SipccSdpAttributeList::LoadCandidate(sdp_t* sdp, uint16_t level) {
   char *value;
   auto candidates = new SdpMultiStringAttribute(
-      SdpAttribute::kCandidateAttribute, "candidate");
+      SdpAttribute::kCandidateAttribute);
   for (uint16_t i = 1; ; ++i) {
     sdp_result_e result = sdp_attr_get_ice_attribute(
           sdp,
@@ -246,6 +246,28 @@ SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
   return true;
 }
 
+void
+SipccSdpAttributeList::LoadSetup(sdp_t* sdp, uint16_t level) {
+  sdp_setup_type_e setup_type;
+  auto sdpres = sdp_attr_get_setup_attribute(sdp, level, 0, 1, &setup_type);
+
+  if (sdpres != SDP_SUCCESS) {
+    return;
+  }
+
+  SdpSetupAttribute::Role role;
+  switch (setup_type) {
+    case SDP_SETUP_ACTIVE: role = SdpSetupAttribute::kActive; break; 
+    case SDP_SETUP_PASSIVE: role = SdpSetupAttribute::kPassive; break;
+    case SDP_SETUP_ACTPASS: role = SdpSetupAttribute::kActpass; break;
+    case SDP_SETUP_HOLDCONN: role = SdpSetupAttribute::kHoldconn; break;
+    default:
+      return;
+  }
+
+  SetAttribute(new SdpSetupAttribute(role));
+}
+
 bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
@@ -279,6 +301,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
   LoadIceAttributes(sdp, level);
   LoadCandidate(sdp, level);
   LoadFingerprint(sdp, level);
+  LoadSetup(sdp, level);
 
   return true;
 }
