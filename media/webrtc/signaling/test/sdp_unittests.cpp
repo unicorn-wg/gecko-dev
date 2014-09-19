@@ -892,15 +892,58 @@ TEST_F(NewSdpTest, ParseMinimal) {
     "Got parse errors: " << GetParseErrors();
 }
 
+TEST_F(NewSdpTest, CheckOriginGetUsername) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ("-", mSdp->GetOrigin().GetUsername())
+    << "Wrong username in origin";
+}
+
+TEST_F(NewSdpTest, CheckOriginGetSessionId) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(137331303 , mSdp->GetOrigin().GetSessionId())
+    << "Wrong session id in origin";
+}
+
+TEST_F(NewSdpTest, CheckOriginGetSessionVersion) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(2 , mSdp->GetOrigin().GetSessionVersion())
+    << "Wrong version in origin";
+}
+
+TEST_F(NewSdpTest, CheckOriginGetAddrType) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ(sdp::kIPv4, mSdp->GetOrigin().GetAddrType())
+    << "Wrong address type in origin";
+}
+
+TEST_F(NewSdpTest, CheckOriginGetAddress) {
+  ParseSdp(kVideoSdp);
+  ASSERT_EQ("127.0.0.1" , mSdp->GetOrigin().GetAddress())
+    << "Wrong address in origin";
+}
+
 TEST_F(NewSdpTest, CheckGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
   ASSERT_TRUE((mSdp->GetBandwidth("CT")).empty())
-    << "Wrong bandwidth in conference";
+    << "Wrong bandwidth in session";
+}
+
+TEST_F(NewSdpTest, CheckGetBandwidth) {
+  ParseSdp("v=0\r\n"
+           "o=- 137331303 2 IN IP4 127.0.0.1\r\n"
+           "b=CT:5000\r\n"
+           "s=SIP Call\r\n"
+           "c=IN IP4 198.51.100.7\r\n"
+           "t=0 0\r\n"
+           "m=video 56436 RTP/SAVPF 120\r\n");
+  ASSERT_EQ("5000", mSdp->GetBandwidth("CT"))
+    << "Wrong bandwidth in session";
 }
 
 TEST_F(NewSdpTest, CheckGetMediaSectionsCount) {
   ParseSdp(kVideoSdp);
-  ASSERT_EQ(1U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+  ASSERT_EQ(1U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
 }
 
 TEST_F(NewSdpTest, CheckMediaSectionGetMediaType) {
@@ -924,23 +967,28 @@ TEST_F(NewSdpTest, CheckMediaSectionGetFormats) {
 
 TEST_F(NewSdpTest, CheckMediaSectionGetPort) {
   ParseSdp(kVideoSdp);
-  ASSERT_EQ(56436U, mSdp->GetMediaSection(0).GetPort()) << "Wrong port number in media section";
+  ASSERT_EQ(56436U, mSdp->GetMediaSection(0).GetPort())
+    << "Wrong port number in media section";
 }
 
 TEST_F(NewSdpTest, CheckMediaSectionGetMissingPortCount) {
   ParseSdp(kVideoSdp);
-  ASSERT_EQ(0U, mSdp->GetMediaSection(0).GetPortCount()) << "Wrong port count in media section";
+  ASSERT_EQ(0U, mSdp->GetMediaSection(0).GetPortCount())
+    << "Wrong port count in media section";
 }
 
 TEST_F(NewSdpTest, CheckMediaSectionGetPortCount) {
   ParseSdp(kVideoSdp + "m=audio 12345/2 RTP/SAVPF 0\r\n");
-  ASSERT_EQ(2U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
-  ASSERT_EQ(2U, mSdp->GetMediaSection(1).GetPortCount()) << "Wrong port count in media section";
+  ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
+  ASSERT_EQ(2U, mSdp->GetMediaSection(1).GetPortCount())
+    << "Wrong port count in media section";
 }
 
 TEST_F(NewSdpTest, CheckMediaSectionGetMissingBandwidth) {
   ParseSdp(kVideoSdp);
-  ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty()) << "Wrong bandwidth in media section";
+  ASSERT_TRUE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty())
+    << "Wrong bandwidth in media section";
 }
 
 TEST_F(NewSdpTest, CheckMediaSectionGetBandwidth) {
@@ -951,7 +999,8 @@ TEST_F(NewSdpTest, CheckMediaSectionGetBandwidth) {
            "m=video 56436 RTP/SAVPF 120\r\n"
            "b=CT:1000\r\n"
            "a=rtpmap:120 VP8/90000\r\n");
-  ASSERT_FALSE((mSdp->GetMediaSection(0).GetBandwidth("CT")).empty()) << "Wrong bandwidth in media section";
+  ASSERT_EQ("1000", mSdp->GetMediaSection(0).GetBandwidth("CT"))
+    << "Wrong bandwidth in media section";
 }
 
 
