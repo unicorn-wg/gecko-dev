@@ -422,7 +422,19 @@ nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
 
 nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
     JsepSdpType type, UniquePtr<Sdp> answer) {
-  MOZ_CRASH();
+  mPendingRemoteDescription = Move(answer);
+
+  nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
+                                        mPendingRemoteDescription,
+                                        true);
+  if(NS_FAILED(rv))
+    return rv;
+
+  mCurrentRemoteDescription = Move(mPendingRemoteDescription);
+  mCurrentLocalDescription = Move(mPendingLocalDescription);
+
+  SetState(kJsepStateStable);
+  return NS_OK;
 }
 
 

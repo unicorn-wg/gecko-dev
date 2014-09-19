@@ -145,6 +145,21 @@ protected:
     }
   }
 
+  void SetRemoteAnswer(const std::string& answer) {
+    nsresult rv = mSessionOff.SetRemoteDescription(jsep::kJsepSdpAnswer,
+                                                   answer);
+    ASSERT_EQ(NS_OK, rv);
+
+    // Verify that the right stuff is in the tracks.
+    ASSERT_EQ(types.size(), mSessionAns.num_negotiated_track_pairs());
+    for (size_t i = 0; i < types.size(); ++i) {
+      const JsepTrackPair* pair;
+      ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
+      ASSERT_EQ(types[i], pair->mSending->media_type());
+      ASSERT_EQ(types[i], pair->mReceiving->media_type());
+    }
+  }
+
   JsepSessionImpl mSessionOff;
   JsepSessionImpl mSessionAns;
   std::vector<SdpMediaSection::MediaType> types;
@@ -181,6 +196,15 @@ TEST_P(JsepSessionTest, CreateOfferSetLocalSetRemoteCreateAnswerSetLocal) {
   SetRemoteOffer(offer);
   std::string answer = CreateAnswer();
   SetLocalAnswer(answer);
+}
+
+TEST_P(JsepSessionTest, FullCall) {
+  std::string offer = CreateOffer();
+  SetLocalOffer(offer);
+  SetRemoteOffer(offer);
+  std::string answer = CreateAnswer();
+  SetLocalAnswer(answer);
+  SetRemoteAnswer(answer);
 }
 
 INSTANTIATE_TEST_CASE_P(Variants, JsepSessionTest,
