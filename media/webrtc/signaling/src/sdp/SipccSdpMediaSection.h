@@ -44,8 +44,8 @@ public:
   virtual SdpAttributeList &GetAttributeList() MOZ_OVERRIDE;
 
 private:
-  SipccSdpMediaSection(SipccSdpAttributeList *sessionLevel)
-      : mAttributes(sessionLevel) {}
+  SipccSdpMediaSection(const SipccSdpAttributeList *sessionLevel)
+      : mAttributeList(sessionLevel) {}
 
   bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadConnection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
@@ -56,7 +56,6 @@ private:
   uint16_t mPortCount;
   Protocol mProtocol;
   std::vector<std::string> mFormats;
-  SipccSdpAttributeList mAttributes;
 
   UniquePtr<SdpConnection> mConnection;
   std::map<std::string, std::string> mBandwidths;

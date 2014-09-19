@@ -15,7 +15,7 @@ namespace mozilla {
 SipccSdpAttributeList::sEmptyString = "";
 
 SipccSdpAttributeList::SipccSdpAttributeList(
-    SipccSdpAttributeList* sessionLevel /* = nullptr */)
+    const SipccSdpAttributeList* sessionLevel)
     : mSessionLevel(sessionLevel)
 {
   memset(&mAttributes, 0, sizeof(mAttributes));
@@ -73,11 +73,11 @@ SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
   SdpDirectionAttribute::Direction dir;
   switch(sdp_get_media_direction(sdp, level, 0)) {
     case SDP_DIRECTION_SENDRECV:
-      dir = SdpDirectionAttribute::kSendRecv; break;
+      dir = SdpDirectionAttribute::kSendrecv; break;
     case SDP_DIRECTION_SENDONLY:
-      dir = SdpDirectionAttribute::kSendOnly; break;
+      dir = SdpDirectionAttribute::kSendonly; break;
     case SDP_DIRECTION_RECVONLY:
-      dir = SdpDirectionAttribute::kRecvOnly; break;
+      dir = SdpDirectionAttribute::kRecvonly; break;
     case SDP_DIRECTION_INACTIVE:
       dir = SdpDirectionAttribute::kInactive; break;
     default:

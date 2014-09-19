@@ -1042,12 +1042,12 @@ TEST_F(NewSdpTest, CheckConnectionLines) {
 TEST_F(NewSdpTest, CheckDirections) {
   ParseSdp(kBasicAudioVideoOffer);
 
-  ASSERT_EQ(SdpDirectionAttribute::kSendOnly,
-            mSdp->GetMediaSection(0).GetDirection());
-  ASSERT_EQ(SdpDirectionAttribute::kRecvOnly,
-            mSdp->GetMediaSection(1).GetDirection());
-  ASSERT_EQ(SdpDirectionAttribute::kSendRecv,
-            mSdp->GetMediaSection(2).GetDirection());
+  ASSERT_EQ(SdpDirectionAttribute::kSendonly,
+            mSdp->GetMediaSection(0).GetAttributeList().GetDirection());
+  ASSERT_EQ(SdpDirectionAttribute::kRecvonly,
+            mSdp->GetMediaSection(1).GetAttributeList().GetDirection());
+  ASSERT_EQ(SdpDirectionAttribute::kSendrecv,
+            mSdp->GetMediaSection(2).GetAttributeList().GetDirection());
 }
 
 // TODO: Tests that parse above SDP, and check various things

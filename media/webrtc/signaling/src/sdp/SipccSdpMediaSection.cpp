@@ -47,12 +47,12 @@ SipccSdpMediaSection::GetFormats() const {
 
 const SdpAttributeList&
 SipccSdpMediaSection::GetAttributeList() const {
-  return mAttributes;
+  return mAttributeList;
 }
 
 SdpAttributeList&
 SipccSdpMediaSection::GetAttributeList() {
-  return mAttributes;
+  return mAttributeList;
 }
 
 bool
