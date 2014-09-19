@@ -112,13 +112,13 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
     return false;
   }
 
-  SdpConnection::AddrType addrType;
+  sdp::AddrType addrType;
   switch (sdp_get_conn_addrtype(sdp, level)) {
     case SDP_AT_IP4:
-      addrType = SdpConnection::kIPv4;
+      addrType = sdp::kIPv4;
       break;
     case SDP_AT_IP6:
-      addrType = SdpConnection::kIPv6;
+      addrType = sdp::kIPv6;
       break;
     default:
       errorHolder.AddParseError(0, "Unsupported address type");
@@ -130,6 +130,35 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
   uint32_t numAddr = static_cast<uint32_t>(sdp_get_mcast_num_of_addresses(sdp, level));
   mConnection = MakeUnique<SdpConnection>(addrType, address, ttl, numAddr);
   return true;
+}
+
+void
+SipccSdpMediaSection::Serialize(std::ostream& os) const {
+  os << "m="
+     << mMediaType << " "
+     << mPort;
+  if (mPortCount) {
+    os << "/" << mPortCount;
+  }
+  os << " " << mProtocol;
+  for (auto i = mFormats.begin(); i != mFormats.end(); ++i) {
+    os << " " << (*i);
+  }
+  os << CRLF;
+
+  // We dont do i=
+
+  if (mConnection) {
+    os << *mConnection;
+  }
+
+  for (auto i = mBandwidths.begin(); i != mBandwidths.end(); ++i) {
+    os << "b=" << i->first << ":" << i->second << CRLF;
+  }
+
+  // We dont do k= because they're evil
+
+  os << mAttributeList;
 }
 
 }

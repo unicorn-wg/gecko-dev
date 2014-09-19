@@ -62,6 +62,8 @@ public:
 
   virtual SdpDirectionAttribute::Direction GetDirection() const MOZ_OVERRIDE;
 
+  virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
+
   virtual ~SipccSdpAttributeList();
 
 private:
