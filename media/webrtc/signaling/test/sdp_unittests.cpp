@@ -1003,11 +1003,13 @@ TEST_F(NewSdpTest, CheckSetup) {
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
 
   ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
-        SdpAttribute::kSetupAttribute));
-//  ASSERT_EQ(SdpSetupAttribute::kActPass, mSdp->GetMediaSection(0).GetAttributeList().GetSetup());
+      SdpAttribute::kSetupAttribute));
+  ASSERT_EQ(SdpSetupAttribute::kActpass,
+      mSdp->GetMediaSection(0).GetAttributeList().GetSetup().mRole);
   ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
-        SdpAttribute::kSetupAttribute));
-//  ASSERT_EQ(SdpSetupAttribute::kActive, mSdp->GetMediaSection(1).GetAttributeList().GetSetup());
+      SdpAttribute::kSetupAttribute));
+  ASSERT_EQ(SdpSetupAttribute::kActive,
+      mSdp->GetMediaSection(1).GetAttributeList().GetSetup().mRole);
   ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
         SdpAttribute::kSetupAttribute));
 }
