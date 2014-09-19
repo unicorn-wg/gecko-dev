@@ -19,8 +19,8 @@ class SdpAttributeList
 public:
   typedef SdpAttribute::AttributeType AttributeType;
 
-  virtual bool HasAttribute(AttributeType type) const = 0;
-  virtual const SdpAttribute* GetAttribute(AttributeType type) const = 0;
+  virtual bool HasAttribute(AttributeType type, bool sessionFallback = true) const = 0;
+  virtual const SdpAttribute* GetAttribute(AttributeType type, bool sessionFallback = true) const = 0;
   // The setter takes an attribute of any type, and takes ownership
   virtual void SetAttribute(SdpAttribute* attr) = 0;
   virtual void RemoveAttribute(AttributeType type) = 0;
@@ -52,7 +52,6 @@ public:
   virtual const std::string& GetIceUfrag() const = 0;
   virtual const std::string& GetIdentity() const = 0;
   virtual const std::string& GetLabel() const = 0;
-  virtual unsigned int GetMaxprate() const = 0;
   virtual unsigned int GetMaxptime() const = 0;
   virtual const std::string& GetMid() const = 0;
   virtual unsigned int GetPtime() const = 0;
