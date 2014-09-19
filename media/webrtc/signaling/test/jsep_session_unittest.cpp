@@ -4,6 +4,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <iostream>
+
+#include "nspr.h"
+#include "nss.h"
+#include "ssl.h"
+
 #define GTEST_HAS_RTTI 0
 #include "gtest/gtest.h"
 #include "gtest_utils.h"
@@ -14,9 +20,11 @@
 #include "signaling/src/sdp/SipccSdpParser.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepSessionImpl.h"
 #include "signaling/src/jsep/JsepTrack.h"
 
-//using mozilla::sdp::JsepSession;
+using mozilla::jsep::JsepSessionImpl;
+using mozilla::jsep::JsepOfferOptions;
 using mozilla::SipccSdpParser;
 
 namespace test {
@@ -24,16 +32,29 @@ class JsepSessionTest : public ::testing::Test {
   public:
     JsepSessionTest() {}
 
-//    JsepSession mSession;
+    JsepSessionImpl mSession;
     SipccSdpParser mParser;
 };
 
 TEST_F(JsepSessionTest, CreateDestroy) {
 }
 
+TEST_F(JsepSessionTest, CreateOfferAudio1) {
+  JsepOfferOptions options;
+  std::string offer;
+
+  nsresult rv = mSession.CreateOffer(options, &offer);
+  ASSERT_EQ(NS_OK, rv);
+
+  std::cerr << offer << std::endl;
+}
+
 } // namespace test
 
 int main(int argc, char **argv) {
+  NSS_NoDB_Init(nullptr);
+  NSS_SetDomesticPolicy();
+
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
