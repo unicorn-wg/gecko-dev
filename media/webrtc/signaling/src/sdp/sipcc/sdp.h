@@ -1910,7 +1910,7 @@ extern sdp_result_e sdp_set_group_num_id(void *sdp_ptr, u16 level,
                                          u8 cap_num, u16 inst_num,
                                          u16 group_num_id);
 
-extern char* sdp_get_group_id(void *sdp_ptr, u16 level,
+extern const char* sdp_get_group_id(void *sdp_ptr, u16 level,
                               u8 cap_num, u16 inst_num, u16 id_num);
 extern sdp_result_e sdp_set_group_id (void *sdp_ptr, u16 level,
                                       u8 cap_num, u16 inst_num, char* group_id);
