@@ -44,23 +44,31 @@ class JsepSessionImpl : public JsepSession {
     MOZ_CRASH(); // Stub
   }
 
-  virtual size_t num_tracks() const MOZ_OVERRIDE {
-    return mSendingTracks.size();
+  virtual size_t num_local_tracks() const MOZ_OVERRIDE {
+    return mLocalTracks.size();
   }
-  virtual nsresult track(size_t index, RefPtr<JsepMediaStreamTrack>* track)
+  virtual nsresult local_track(size_t index,
+                               RefPtr<JsepMediaStreamTrack>* track)
+    const MOZ_OVERRIDE;
+
+  virtual size_t num_remote_tracks() const MOZ_OVERRIDE {
+    return mRemoteTracks.size();
+  }
+  virtual nsresult remote_track(size_t index,
+                                RefPtr<JsepMediaStreamTrack>* track)
       const MOZ_OVERRIDE;
+
   virtual nsresult CreateOffer(const JsepOfferOptions& options,
                                std::string* offer) MOZ_OVERRIDE;
   virtual nsresult SetLocalDescription(JsepSdpType type,
                                        const std::string& sdp) MOZ_OVERRIDE;
 
+  virtual nsresult SetRemoteDescription(JsepSdpType type,
+                                        const std::string& sdp) MOZ_OVERRIDE;
 
 // STUBS BELOW THIS POINT
   virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
                                 std::string* answer) MOZ_OVERRIDE {
-    MOZ_CRASH(); }
-  virtual nsresult SetRemoteDescription(JsepSdpType type,
-                                        const std::string& sdp) MOZ_OVERRIDE {
     MOZ_CRASH(); }
 
   // Access the negotiated track pairs.
@@ -75,12 +83,22 @@ class JsepSessionImpl : public JsepSession {
     Maybe<size_t> mAssignedMLine;
   };
 
+  struct JsepReceivingTrack {
+    RefPtr<JsepMediaStreamTrack> mTrack;
+    Maybe<size_t> mAssignedMLine;
+  };
+
   void Init();
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
   void SetupDefaultCodecs();
   void SetState(JsepSignalingState state);
+  nsresult ParseSdp(const std::string& sdp, UniquePtr<Sdp>* parsedp);
+  nsresult SetRemoteDescriptionOffer(UniquePtr<Sdp> offer);
+  nsresult SetRemoteDescriptionAnswer(JsepSdpType type,
+                                      UniquePtr<Sdp> answer);
 
-  std::vector<JsepSendingTrack> mSendingTracks;
+  std::vector<JsepSendingTrack> mLocalTracks;
+  std::vector<JsepSendingTrack> mRemoteTracks;
 
   uint64_t mSessionId;
   uint64_t mSessionVersion;

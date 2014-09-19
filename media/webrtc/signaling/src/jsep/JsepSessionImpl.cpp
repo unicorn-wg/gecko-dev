@@ -23,11 +23,30 @@ namespace jsep {
 
 MOZ_MTLOG_MODULE("jsep")
 
+
+// Represents a remote track. Only exposed via the abstract interface.
+class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
+ public:
+  JsepMediaStreamTrackRemote(mozilla::SdpMediaSection::MediaType type) :
+      mType(type) {}
+
+  virtual mozilla::SdpMediaSection::MediaType media_type() const MOZ_OVERRIDE {
+    return mType;
+  }
+
+ private:
+  virtual ~JsepMediaStreamTrackRemote() {}
+
+  mozilla::SdpMediaSection::MediaType mType;
+};
+
+
 // TODO(ekr@rtfm.com): Add state checks.
 
 void JsepSessionImpl::Init() {
   SECStatus rv = PK11_GenerateRandom(
       reinterpret_cast<unsigned char *>(&mSessionId), sizeof(mSessionId));
+  mSessionId >>= 2; // Discard high order bits.
   if (rv != SECSuccess) {
     MOZ_CRASH();
   }
@@ -39,18 +58,31 @@ nsresult JsepSessionImpl::AddTrack(const RefPtr<JsepMediaStreamTrack>& track) {
   JsepSendingTrack strack;
   strack.mTrack = track;
 
-  mSendingTracks.push_back(strack);
+  mLocalTracks.push_back(strack);
 
   return NS_OK;
 }
 
-nsresult JsepSessionImpl::track(size_t index,
-                                RefPtr<JsepMediaStreamTrack>* track) const {
-  if (index >= mSendingTracks.size()) {
+nsresult JsepSessionImpl::local_track(
+    size_t index,
+    RefPtr<JsepMediaStreamTrack>* track) const {
+  if (index >= mLocalTracks.size()) {
     return NS_ERROR_INVALID_ARG;
   }
 
-  *track = mSendingTracks[index].mTrack;
+  *track = mLocalTracks[index].mTrack;
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::remote_track(
+    size_t index,
+    RefPtr<JsepMediaStreamTrack>* track) const {
+  if (index >= mRemoteTracks.size()) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  *track = mRemoteTracks[index].mTrack;
 
   return NS_OK;
 }
@@ -67,8 +99,8 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   // Now add all the m-lines that we are attempting to negotiate.
   size_t mline_index = 0;
 
-  for (auto track = mSendingTracks.begin();
-       track != mSendingTracks.end(); ++track) {
+  for (auto track = mLocalTracks.begin();
+       track != mLocalTracks.end(); ++track) {
     // TODO(ekr@rtfm.com): process options for sendrecv versus sendonly.
     SdpMediaSection& msection =
       sdp->AddMediaSection(track->mTrack->media_type());
@@ -94,8 +126,11 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
 nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
                                               const std::string& sdp) {
-  // Parse.
-  UniquePtr<Sdp> parsed = mParser.Parse(sdp);
+  // TODO(ekr@rtfm.com): Check state.
+  UniquePtr<Sdp> parsed;
+  nsresult rv = ParseSdp(sdp, &parsed);
+  if (NS_FAILED(rv))
+    return rv;
 
   // TODO(ekr@rtfm.com): Compare the generated offer to the passed
   // in argument.
@@ -103,6 +138,70 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
   SetState(kJsepStateHaveLocalOffer);
   return NS_OK;
 }
+
+nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
+                                               const std::string& sdp) {
+  // Parse.
+  UniquePtr<Sdp> parsed;
+  nsresult rv = ParseSdp(sdp, &parsed);
+  if (NS_FAILED(rv))
+    return rv;
+
+  rv = NS_ERROR_FAILURE;
+
+  switch (type ) {
+    case kJsepSdpOffer:
+      rv = SetRemoteDescriptionOffer(Move(parsed));
+      break;
+    case kJsepSdpAnswer:
+    case kJsepSdpPranswer:
+      rv = SetRemoteDescriptionAnswer(type, Move(parsed));
+      break;
+  }
+
+  return rv;
+}
+
+nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
+                                   UniquePtr<Sdp>* parsedp) {
+  UniquePtr<Sdp> parsed = mParser.Parse(sdp);
+  if (!parsed) {
+    MOZ_MTLOG(ML_ERROR, "Bogus SDP = " + sdp);
+    const std::vector<std::pair<size_t, std::string>>& errors =
+        mParser.GetParseErrors();
+    for (auto err = errors.begin(); err != errors.end(); ++err) {
+      MOZ_MTLOG(ML_ERROR, " Error at "
+                << err->first
+                << ": "
+                << err->second);
+    }
+    return NS_ERROR_FAILURE;
+  }
+
+  *parsedp = Move(parsed);
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
+  // TODO(ekr@rtfm.com): Check state.
+  size_t num_m_lines = offer->GetMediaSectionCount();
+
+  for (size_t i = 0; i < num_m_lines; ++i) {
+    const SdpMediaSection& msection = offer->GetMediaSection(i);
+    JsepMediaStreamTrackRemote* remote = new JsepMediaStreamTrackRemote(
+        msection.GetMediaType());
+  }
+
+  mPendingRemoteDescription = Move(offer);
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
+    JsepSdpType type, UniquePtr<Sdp> answer) {
+  MOZ_CRASH();
+}
+
 
 nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
   // draft-ietf-rtcweb-jsep-08 Section 5.2.1:
@@ -178,7 +277,7 @@ void JsepSessionImpl::SetState(JsepSignalingState state) {
   if (state == mState)
     return;
 
-  MOZ_MTLOG(ML_NOTICE, "[" << mName << "]: State change " <<
+  MOZ_MTLOG(ML_NOTICE, "[" << mName << "]: " <<
             state_str(mState) << " -> " << state_str(state));
   mState = state;
 }
