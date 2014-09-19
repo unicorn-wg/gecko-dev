@@ -100,23 +100,45 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
   // Now add all the m-lines that we are attempting to negotiate.
   size_t mline_index = 0;
+  size_t nAudio = 0;
+  size_t nVideo = 0;
 
   for (auto track = mLocalTracks.begin();
        track != mLocalTracks.end(); ++track) {
-    // TODO(ekr@rtfm.com): process options for sendrecv versus sendonly.
-    SdpMediaSection& msection =
-      sdp->AddMediaSection(track->mTrack->media_type());
-
-    for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
-      if (codec->mEnabled && (codec->mType == track->mTrack->media_type())) {
-        msection.AddCodec(codec->mDefaultPt,
-                          codec->mName,
-                          codec->mClock,
-                          codec->mChannels);
+    SdpMediaSection::MediaType mediatype = track->mTrack->media_type();
+    SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
+    if (mediatype == SdpMediaSection::kAudio) {
+      ++nAudio;
+      if (options.mOfferToReceiveAudio &&
+          nAudio > *options.mOfferToReceiveAudio) {
+        dir = SdpDirectionAttribute::kSendonly;
+      }
+    } else if (mediatype == SdpMediaSection::kVideo) {
+      ++nVideo;
+      if (options.mOfferToReceiveVideo &&
+          nVideo > *options.mOfferToReceiveVideo) {
+        dir = SdpDirectionAttribute::kSendonly;
       }
     }
+
+    SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
+    AddCodec(msection, mediatype);
+
     track->mAssignedMLine = Some(mline_index);
     ++mline_index;
+  }
+
+  while (options.mOfferToReceiveAudio && nAudio < *options.mOfferToReceiveAudio) {
+    SdpMediaSection& msection = sdp->AddMediaSection(
+        SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
+    AddCodec(msection, SdpMediaSection::kAudio);
+    ++nAudio;
+  }
+  while (options.mOfferToReceiveVideo && nVideo < *options.mOfferToReceiveVideo) {
+    SdpMediaSection& msection = sdp->AddMediaSection(
+        SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
+    AddCodec(msection, SdpMediaSection::kVideo);
+    ++nVideo;
   }
 
   // TODO(ekr@rtfm.com): Do renegotiation.
@@ -125,6 +147,19 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
   return NS_OK;
 }
+
+void
+JsepSessionImpl::AddCodec(SdpMediaSection& msection, SdpMediaSection::MediaType mediatype) {
+  for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
+    if (codec->mEnabled && (codec->mType == mediatype)) {
+      msection.AddCodec(codec->mDefaultPt,
+                        codec->mName,
+                        codec->mClock,
+                        codec->mChannels);
+    }
+  }
+}
+
 
 nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
                                        std::string* answer) {
