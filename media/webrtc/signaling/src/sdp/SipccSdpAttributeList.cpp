@@ -67,13 +67,71 @@ SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e a
   return value != nullptr;
 }
 
-bool SipccSdpAttributeList::LoadSimpleNumber(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+bool SipccSdpAttributeList::LoadSimpleStrings(sdp_t* sdp, uint16_t level,
+                                              SdpErrorHolder& errorHolder) {
+  bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
+                                 SdpAttribute::kMidAttribute);
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "mid attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
+                            SdpAttribute::kLabelAttribute);
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "label attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
+                            SdpAttribute::kIdentityAttribute);
+  if (result && !AtSessionLevel()) {
+    errorHolder.AddParseError(0, "identity attribute at the media level");
+    return false;
+  }
+  return true;
+}
+
+bool
+SipccSdpAttributeList::LoadSimpleNumber(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                                              AttributeType targetType) {
   bool exists = sdp_attr_valid(sdp, attr, level, 0, 1);
-  //  uint32_t
-
+  if (exists) {
+    uint32_t value = sdp_attr_get_simple_u32(sdp, attr, level, 0, 1);
+    SetAttribute(new SdpNumberAttribute(targetType, value));
+  }
   return exists;
 }
+
+bool SipccSdpAttributeList::LoadSimpleNumbers(sdp_t* sdp, uint16_t level,
+                                              SdpErrorHolder& errorHolder) {
+  bool result = LoadSimpleNumber(sdp, level, SDP_ATTR_PTIME,
+                            SdpAttribute::kPtimeAttribute);
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "ptime attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleNumber(sdp, level, SDP_ATTR_MAXPRATE,
+                            SdpAttribute::kMaxprateAttribute);
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "maxprates attribute at the session level");
+    return false;
+  }
+  result = LoadSimpleNumber(sdp, level, SDP_ATTR_MAXPTIME,
+                            SdpAttribute::kMaxptimeAttribute);
+  if (result && AtSessionLevel()) {
+    errorHolder.AddParseError(0, "maxptime attribute at the session level");
+    return false;
+  }
+  return true;
+}
+
+void
+SipccSdpAttributeList::LoadEmpties(sdp_t* sdp, uint16_t level) {
+  bool exists = sdp_attr_valid(sdp, SDP_ATTR_RTCP_MUX, level, 0, 1);
+  if (exists) {
+    SetAttribute(new SdpEmptyAttribute(SdpAttribute::kRtcpMuxAttribute));
+  }
+}
+
 
 bool
 SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
@@ -271,24 +329,12 @@ SipccSdpAttributeList::LoadSetup(sdp_t* sdp, uint16_t level) {
 bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
-  bool result = LoadSimpleString(sdp, level, SDP_ATTR_MID,
-                                 SdpAttribute::kMidAttribute);
-  if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "mid attribute at the session level");
+
+  if (!LoadSimpleStrings(sdp, level, errorHolder) ||
+      !LoadSimpleNumbers(sdp, level, errorHolder)) {
     return false;
   }
-  result = LoadSimpleString(sdp, level, SDP_ATTR_LABEL,
-                            SdpAttribute::kLabelAttribute);
-  if (result && AtSessionLevel()) {
-    errorHolder.AddParseError(0, "label attribute at the session level");
-    return false;
-  }
-  result = LoadSimpleString(sdp, level, SDP_ATTR_IDENTITY,
-                            SdpAttribute::kIdentityAttribute);
-  if (result && !AtSessionLevel()) {
-    errorHolder.AddParseError(0, "identity attribute at the media level");
-    return false;
-  }
+  LoadEmpties(sdp, level);
 
   if (!AtSessionLevel()) {
     if (!LoadDirection(sdp, level, errorHolder)) {
