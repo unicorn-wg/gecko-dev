@@ -56,6 +56,11 @@ SipccSdpMediaSection::GetAttributeList() {
   return mAttributeList;
 }
 
+SdpDirectionAttribute
+SipccSdpMediaSection::GetDirectionAttribute() const {
+  return mAttributeList.GetDirection();
+}
+
 bool
 SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
                            SdpErrorHolder& errorHolder)

@@ -11,6 +11,7 @@
 #include "signaling/src/jsep/JsepCodecDescription.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepTrack.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
 
 namespace mozilla {
@@ -99,6 +100,13 @@ class JsepSessionImpl : public JsepSession {
   nsresult SetRemoteDescriptionOffer(UniquePtr<Sdp> offer);
   nsresult SetRemoteDescriptionAnswer(JsepSdpType type,
                                       UniquePtr<Sdp> answer);
+  nsresult HandleNegotiatedSession(const UniquePtr<Sdp>& local,
+                                   const UniquePtr<Sdp>& remote,
+                                   bool is_offerer);
+  nsresult DetermineSendingDirection(SdpDirectionAttribute::Direction offer,
+                                    SdpDirectionAttribute::Direction answer,
+                                    bool is_offerer,
+                                    bool* sending, bool* receiving);
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
