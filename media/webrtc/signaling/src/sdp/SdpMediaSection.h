@@ -9,6 +9,7 @@
 
 
 #include "mozilla/Maybe.h"
+#include "signaling/src/sdp/SdpEnum.h"
 
 #include <string>
 #include <vector>
