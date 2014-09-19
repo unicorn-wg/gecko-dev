@@ -109,6 +109,7 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
 }
 
 void JsepSessionImpl::SetupDefaultCodecs() {
+  // Supported audio codecs.
   mCodecs.push_back(JsepCodecDescription(
       SdpMediaSection::kAudio,
       109,
@@ -116,11 +117,37 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       48000,
       2
                       ));
+
+  mCodecs.push_back(JsepCodecDescription(
+      SdpMediaSection::kAudio,
+      9,
+      "G722",
+      8000,
+      0  // This means default 1
+                      ));
+
   mCodecs.push_back(JsepCodecDescription(
       SdpMediaSection::kAudio,
       0,
       "PCMU",
       8000,
+      0  // This means default 1
+                      ));
+
+  mCodecs.push_back(JsepCodecDescription(
+      SdpMediaSection::kAudio,
+      8,
+      "PCMA",
+      8000,
+      0  // This means default 1
+                      ));
+
+  // Supported video codecs.
+  mCodecs.push_back(JsepCodecDescription(
+      SdpMediaSection::kVideo,
+      120,
+      "VP8",
+      9000,
       0  // This means default 1
                       ));
 }
