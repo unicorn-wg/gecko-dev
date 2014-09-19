@@ -10,7 +10,7 @@
 
 #include "mozilla/Maybe.h"
 #include "signaling/src/sdp/SdpEnum.h"
-
+#include "signaling/src/sdp/SdpAttributeList.h"
 #include <string>
 #include <vector>
 
@@ -86,6 +86,8 @@ public:
 
   virtual const SdpAttributeList &GetAttributeList() const = 0;
   virtual SdpAttributeList &GetAttributeList() = 0;
+
+  virtual SdpDirectionAttribute GetDirectionAttribute() const = 0;
 
   virtual void Serialize(std::ostream&) const = 0;
 

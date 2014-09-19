@@ -216,9 +216,14 @@ nsresult JsepSessionImpl::SetLocalDescriptionOffer(UniquePtr<Sdp> offer) {
 
 nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
                                                     UniquePtr<Sdp> answer) {
-  // TODO(ekr@rtfm.com): Need to check that the offer and answer are
-  // consistent.
-  
+  mPendingLocalDescription = Move(answer);
+
+  nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
+                                        mPendingRemoteDescription,
+                                        false);
+  if(NS_FAILED(rv))
+    return rv;
+
   mCurrentRemoteDescription = Move(mPendingRemoteDescription);
   mCurrentLocalDescription = Move(mPendingLocalDescription);
 
@@ -247,6 +252,103 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
   }
 
   return rv;
+}
+
+nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
+                                                  const UniquePtr<Sdp>& remote,
+                                                  bool is_offerer) {
+  if (local->GetMediaSectionCount() != remote->GetMediaSectionCount()) {
+    MOZ_MTLOG(ML_ERROR, "Answer and offer have different number of m-lines");
+    return NS_ERROR_FAILURE;
+  }
+
+  std::vector<JsepTrackPair> track_pairs;
+
+  // Now walk through the m-sections, make sure they match, and create
+  // track pairs that describe the media to be set up.
+  for (size_t i = 0; i < local->GetMediaSectionCount(); ++i) {
+    const SdpMediaSection& lm = local->GetMediaSection(i);
+    const SdpMediaSection& rm = remote->GetMediaSection(i);
+    const SdpMediaSection& offer = is_offerer ? lm : rm;
+    const SdpMediaSection& answer = is_offerer ? rm : lm;
+
+    if (lm.GetMediaType() != rm.GetMediaType()) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer and offer have different number of types at m-line "
+                << i);
+      return NS_ERROR_FAILURE;
+    }
+
+    // If the answer says it's inactive we're not doing anything with it.
+    // TODO(ekr@rtfm.com): Need to handle renegotiation somehow.
+    if (answer.GetDirectionAttribute().mValue ==
+        SdpDirectionAttribute::kInactive)
+      continue;
+
+    bool sending;
+    bool receiving;
+
+    nsresult rv = DetermineSendingDirection(
+        offer.GetDirectionAttribute().mValue,
+        answer.GetDirectionAttribute().mValue,
+        is_offerer, &sending, &receiving);
+    if (NS_FAILED(rv))
+      return rv;
+
+    MOZ_MTLOG(ML_DEBUG, "Negotiated m= line sending=" << sending
+              << " receiving=" << receiving);
+  }
+
+  return NS_OK;
+}
+
+
+nsresult JsepSessionImpl::DetermineSendingDirection(
+    SdpDirectionAttribute::Direction offer,
+    SdpDirectionAttribute::Direction answer,
+    bool is_offerer,
+    bool* sending, bool* receiving) {
+  if (answer == SdpDirectionAttribute::kSendrecv) {
+    if (offer != SdpDirectionAttribute::kSendrecv) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer tried to change m-line to sendrecv");
+      return NS_ERROR_FAILURE;
+    }
+
+    *sending = true;
+    *receiving = true;
+  } else if (answer ==
+             SdpDirectionAttribute::kRecvonly) {
+    if ((offer != SdpDirectionAttribute::kSendrecv) &&
+        (offer != SdpDirectionAttribute::kSendonly)) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer tried to change m-line to recvonly");
+      return NS_ERROR_FAILURE;
+    }
+    if (is_offerer) {
+      *sending = true; *receiving = false;
+    } else {
+      *sending = false; *receiving = true;
+    }
+  } else if (answer ==
+             SdpDirectionAttribute::kSendonly) {
+    if ((offer != SdpDirectionAttribute::kSendrecv) &&
+        (offer != SdpDirectionAttribute::kRecvonly)) {
+      MOZ_MTLOG(ML_ERROR,
+                "Answer tried to change m-line to sendonly");
+      return NS_ERROR_FAILURE;
+    }
+    if (is_offerer) {
+      *sending = false; *receiving = true;
+    } else {
+      *sending = true; *receiving = false;
+    }
+
+  } else {
+    MOZ_CRASH(); // Can't happen.
+  }
+
+  return NS_OK;
 }
 
 nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
