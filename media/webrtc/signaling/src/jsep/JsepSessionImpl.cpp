@@ -47,6 +47,11 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     return rv;
 
   // Now add all the m-lines that we are attempting to negotiate.
+  for (auto track = mSendingTracks.begin();
+       track != mSendingTracks.end(); ++track) {
+    // TODO(ekr@rtfm.com): process options for sendrecv versus sendonly.
+    sdp->AddMediaSection(track->mTrack->media_type());
+  }
 
   // TODO(ekr@rtfm.com): Do renegotiation.
 

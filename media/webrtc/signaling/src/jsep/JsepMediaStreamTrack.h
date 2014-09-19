@@ -22,7 +22,7 @@ class JsepMediaStreamTrack {
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(JsepMediaStreamTrack);
 
- private:
+ protected:
   virtual ~JsepMediaStreamTrack() {}
 };
 
