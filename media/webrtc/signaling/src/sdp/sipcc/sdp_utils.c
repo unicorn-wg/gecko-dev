@@ -14,7 +14,7 @@
 
 static const char* logTag = "sdp_utils";
 
-sdp_mca_t *sdp_alloc_mca () {
+sdp_mca_t *sdp_alloc_mca (u32 line) {
     sdp_mca_t           *mca_p;
 
     /* Allocate resource for new media stream. */
@@ -45,6 +45,7 @@ sdp_mca_t *sdp_alloc_mca () {
     mca_p->mid                = 0;
     mca_p->bw.bw_data_count   = 0;
     mca_p->bw.bw_data_list    = NULL;
+    mca_p->line_number        = line;
 
     return (mca_p);
 }

@@ -1936,6 +1936,36 @@ tinybool sdp_attr_valid (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
     }
 }
 
+/* Function:    sdp_attr_line_number(void *sdp_ptr)
+ * Description: Returns the line number this attribute appears on.
+ *              Only works if the SDP was parsed rather than created
+ *              locally.
+ * Parameters:  sdp_ptr     The SDP handle returned by sdp_init_description.
+ *              attr_type   The attribute type to validate.
+ *              level       The level to check for the attribute.
+ *              cap_num     The capability number associated with the
+ *                          attribute if any.  If none, should be zero.
+ *              inst_num    The attribute instance number to check.
+ * Returns:     line number, or 0 if an error
+ */
+u32 sdp_attr_line_number (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
+                          u8 cap_num, u16 inst_num)
+{
+    sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
+    sdp_attr_t  *attr_p;
+
+    if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
+        return 0;
+    }
+
+    attr_p = sdp_find_attr(sdp_p, level, cap_num, attr_type, inst_num);
+    if (attr_p == NULL) {
+        return 0;
+    } else {
+        return attr_p->line_number;
+    }
+}
+
 /* Function:    sdp_attr_get_simple_string
  * Description: Returns a pointer to a string attribute parameter.  This
  *              routine can only be called for attributes that have just
