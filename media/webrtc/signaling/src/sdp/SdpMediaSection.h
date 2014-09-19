@@ -96,7 +96,7 @@ public:
   virtual void AddDataChannel(uint16_t pt = 5000U,
                               const std::string& sctpmap = "webrtc-datachannel") = 0;
 
-  size_t getLevel() const { return mLevel; }
+  size_t GetLevel() const { return mLevel; }
 
 private:
   size_t mLevel;
