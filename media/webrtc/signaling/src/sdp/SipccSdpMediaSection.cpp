@@ -155,7 +155,13 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
 
   std::string address = sdp_get_conn_address(sdp, level);
   int16_t ttl = static_cast<uint16_t>(sdp_get_mcast_ttl(sdp, level));
-  uint32_t numAddr = static_cast<uint32_t>(sdp_get_mcast_num_of_addresses(sdp, level));
+  if (ttl < 0) {
+    ttl = 0;
+  }
+  int32_t numAddr = static_cast<uint32_t>(sdp_get_mcast_num_of_addresses(sdp, level));
+  if (numAddr < 0) {
+    numAddr = 0;
+  }
   mConnection = MakeUnique<SdpConnection>(addrType, address, ttl, numAddr);
   return true;
 }
