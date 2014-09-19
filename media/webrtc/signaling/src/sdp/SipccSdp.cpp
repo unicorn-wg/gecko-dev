@@ -49,10 +49,10 @@ SipccSdp::GetMediaSection(uint16_t level)
 }
 
 SdpMediaSection &
-SipccSdp::AddMediaSection(SdpMediaSection::MediaType mediaType, uint16_t port,
+SipccSdp::AddMediaSection(SdpMediaSection::MediaType mediaType,
+                          SdpDirectionAttribute::Direction dir, uint16_t port,
                           SdpMediaSection::Protocol protocol,
-                          sdp::AddrType addrType, const std::string &addr,
-                          SdpDirectionAttribute::Direction dir) {
+                          sdp::AddrType addrType, const std::string &addr) {
   size_t level = mMediaSections.size();
   SipccSdpMediaSection *media = new SipccSdpMediaSection(level,&mAttributeList);
   media->mMediaType = mediaType;
