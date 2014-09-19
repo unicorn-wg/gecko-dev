@@ -98,7 +98,7 @@ class JsepSessionImpl : public JsepSession {
                                       UniquePtr<Sdp> answer);
 
   std::vector<JsepSendingTrack> mLocalTracks;
-  std::vector<JsepSendingTrack> mRemoteTracks;
+  std::vector<JsepReceivingTrack> mRemoteTracks;
 
   uint64_t mSessionId;
   uint64_t mSessionVersion;
