@@ -80,7 +80,6 @@ public:
   virtual void Serialize(std::ostream&) const = 0;
 
 protected:
-  const char* crlf = "\r\n";
   AttributeType mType;
   std::string mTypeName;
 };
@@ -187,7 +186,7 @@ public:
       if (i->rport) {
         os << " " << i->rport;
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -239,7 +238,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << ":" << mValue << crlf;
+    os << "a=" << mTypeName << ":" << mValue << CRLF;
   }
 
   ConnValue mValue;
@@ -263,9 +262,9 @@ class SdpDirectionAttribute : public SdpAttribute
 {
  public:
   enum Direction {
-    kSendRecv,
-    kSendOnly,
-    kRecvOnly,
+    kSendrecv,
+    kSendonly,
+    kRecvonly,
     kInactive
   };
 
@@ -275,8 +274,12 @@ class SdpDirectionAttribute : public SdpAttribute
 
   Direction mValue;
 
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
+    os << "a=" << GetTypeName() << ":" << mValue << CRLF;
+  }
+
   static std::string GetString(Direction v) {
-    strstream ss;
+    std::ostringstream ss;
     ss << v;
     return ss.str();
   }
@@ -361,7 +364,7 @@ public:
       if (i->extensionattributes.length()) {
         os << " " << i->extensionattributes;
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -427,7 +430,7 @@ public:
   {
     for (auto i = mFingerprints.begin(); i != mFingerprints.end(); ++i) {
       os << "a=" << mTypeName << ":" << i->hashFunc
-         << " " << i->fingerprint << crlf;
+         << " " << i->fingerprint << CRLF;
     }
   }
 
@@ -519,7 +522,7 @@ public:
       for (auto j = i->tags.begin(); j != i->tags.end(); ++j) {
         os << " " << (*j);
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -563,7 +566,7 @@ public:
     for (auto i = mOptions.begin(); i != mOptions.end(); i++) {
       os << (i == mOptions.begin() ? ":" : " ") << (*i);
     }
-    os << crlf;
+    os << CRLF;
   }
 
   std::vector<std::string> mOptions;
@@ -597,7 +600,7 @@ public:
     for (auto i = mExtensions.begin(); i != mExtensions.end(); i++) {
       os << (i == mExtensions.begin() ? " " : ";") << (*i);
     }
-    os << crlf;
+    os << CRLF;
   }
 
   std::string mAssertion;
@@ -709,7 +712,7 @@ public:
     if (mAppdata.length()) {
       os << " " << mAppdata;
     }
-    os << crlf;
+    os << CRLF;
   }
 
   std::string mIdentifier;
@@ -743,7 +746,7 @@ public:
          << " " << i->address
          << " " << i->port;
     }
-    os << crlf;
+    os << CRLF;
   }
 
   std::vector<Candidate> mCandidates;
@@ -773,7 +776,7 @@ public:
     if (mNetType != sdp::kNetTypeNone && mAddrType != sdp::kAddrTypeNone) {
       os << " " << mNetType << " " << mAddrType << " " << mAddress;
     }
-    os << crlf;
+    os << CRLF;
   }
 
   uint16_t mPort;
@@ -847,7 +850,7 @@ public:
       if (i->parameters.length()) {
         os << " " << i->parameters;
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -888,7 +891,7 @@ public:
       if (i->channels) {
         os << "/" << i->channels;
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -939,7 +942,7 @@ public:
       if (i->streams) {
         os << " streams=" << i->streams;
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -967,7 +970,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << mTypeName << ":" << mRole << crlf;
+    os << "a=" << mTypeName << ":" << mRole << CRLF;
   }
 
   Role mRole;
@@ -1017,7 +1020,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSsrcs.begin(); i != mSsrcs.end(); ++i) {
-      os << "a=" << mTypeName << ":" << i->ssrc << " " << i->attribute << crlf;
+      os << "a=" << mTypeName << ":" << i->ssrc << " " << i->attribute << CRLF;
     }
   }
 
@@ -1061,7 +1064,7 @@ public:
       for (auto j = i->ssrcs.begin(); j != i->ssrcs.end(); ++j) {
         os << " " << (*j);
       }
-      os << crlf;
+      os << CRLF;
     }
   }
 
@@ -1101,7 +1104,7 @@ public:
     if (mValue.length()) {
       os << ":" << mValue;
     }
-    os << crlf;
+    os << CRLF;
   }
 
 private:

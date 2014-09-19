@@ -12,6 +12,10 @@
 namespace mozilla {
 namespace sdp {
 
+#ifdef CRLF
+#undef CRLF
+#endif
+#define CRLF "\r\n"
 
 enum NetType {
   kNetTypeNone,

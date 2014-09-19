@@ -68,7 +68,7 @@ private:
   static std::string sEmptyString;
   static const size_t kMaxAttributeIndex = SdpAttribute::kOtherAttribute;
 
-  SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr);
+  explicit SipccSdpAttributeList(const SipccSdpAttributeList* sessionLevel);
 
   bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
@@ -77,7 +77,7 @@ private:
   void LoadIceAttributes(sdp_t* sdp, uint16_t level);
 
   bool AtSessionLevel() const { return !mSessionLevel; }
-  SipccSdpAttributeList* mSessionLevel;
+  const SipccSdpAttributeList* mSessionLevel;
 
   SdpAttribute* mAttributes[kMaxAttributeIndex];
   std::vector<SdpAttribute*> mOtherAttributes;
