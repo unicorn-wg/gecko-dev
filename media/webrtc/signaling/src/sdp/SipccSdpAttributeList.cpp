@@ -305,7 +305,7 @@ SipccSdpAttributeList::GetFingerprint() const {
 
 const SdpFmtpAttributeList&
 SipccSdpAttributeList::GetFmtp() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
 
