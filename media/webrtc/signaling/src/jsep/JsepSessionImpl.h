@@ -93,6 +93,9 @@ class JsepSessionImpl : public JsepSession {
   void SetupDefaultCodecs();
   void SetState(JsepSignalingState state);
   nsresult ParseSdp(const std::string& sdp, UniquePtr<Sdp>* parsedp);
+  nsresult SetLocalDescriptionOffer(UniquePtr<Sdp> offer);
+  nsresult SetLocalDescriptionAnswer(JsepSdpType type,
+                                      UniquePtr<Sdp> answer);
   nsresult SetRemoteDescriptionOffer(UniquePtr<Sdp> offer);
   nsresult SetRemoteDescriptionAnswer(JsepSdpType type,
                                       UniquePtr<Sdp> answer);

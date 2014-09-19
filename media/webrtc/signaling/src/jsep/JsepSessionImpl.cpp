@@ -189,10 +189,40 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
   if (NS_FAILED(rv))
     return rv;
 
+  rv = NS_ERROR_FAILURE;
+
   // TODO(ekr@rtfm.com): Compare the generated offer to the passed
   // in argument.
 
+  switch (type ) {
+    case kJsepSdpOffer:
+      rv = SetLocalDescriptionOffer(Move(parsed));
+      break;
+    case kJsepSdpAnswer:
+    case kJsepSdpPranswer:
+      rv = SetLocalDescriptionAnswer(type, Move(parsed));
+      break;
+  }
+
+  return rv;
+}
+
+
+nsresult JsepSessionImpl::SetLocalDescriptionOffer(UniquePtr<Sdp> offer) {
+  mPendingLocalDescription = Move(offer);
   SetState(kJsepStateHaveLocalOffer);
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
+                                                    UniquePtr<Sdp> answer) {
+  // TODO(ekr@rtfm.com): Need to check that the offer and answer are
+  // consistent.
+  
+  mCurrentRemoteDescription = Move(mPendingRemoteDescription);
+  mCurrentLocalDescription = Move(mPendingLocalDescription);
+
+  SetState(kJsepStateStable);
   return NS_OK;
 }
 
