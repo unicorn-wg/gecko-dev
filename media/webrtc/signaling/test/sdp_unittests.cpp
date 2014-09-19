@@ -881,7 +881,7 @@ TEST_P(NewSdpTest, ParseGarbage) {
     << "Expected at least one parse error.";
 }
 
-TEST_F(NewSdpTest, ParseGarbageTwice) {
+TEST_P(NewSdpTest, ParseGarbageTwice) {
   ParseSdp(kBadSdp, false);
   ASSERT_FALSE(mSdp);
   size_t errorCount = mParser.GetParseErrors().size();
@@ -916,7 +916,7 @@ TEST_P(NewSdpTest, CheckOriginGetUsername) {
 
 TEST_P(NewSdpTest, CheckOriginGetSessionId) {
   ParseSdp(kVideoSdp);
-  ASSERT_EQ(137331303 , mSdp->GetOrigin().GetSessionId())
+  ASSERT_EQ(137331303U, mSdp->GetOrigin().GetSessionId())
     << "Wrong session id in origin";
 }
 
@@ -1031,8 +1031,12 @@ const std::string kBasicAudioVideoOffer =
 "a=ice-pwd:e4cc12a910f106a0a744719425510e17" CRLF
 "a=ice-lite" CRLF
 "a=fingerprint:sha-256 DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C" CRLF
+"a=group:BUNDLE first second" CRLF
+"a=group:BUNDLE third" CRLF
+"a=group:LS first third" CRLF
 "m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
 "c=IN IP4 0.0.0.0" CRLF
+"a=mid:first" CRLF
 "a=rtpmap:109 opus/48000/2" CRLF
 "a=ptime:20" CRLF
 "a=maxptime:20" CRLF
@@ -1055,6 +1059,7 @@ const std::string kBasicAudioVideoOffer =
 "a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host" CRLF
 "m=video 9 RTP/SAVPF 120" CRLF
 "c=IN IP6 ::1" CRLF
+"a=mid:second" CRLF
 "a=rtpmap:120 VP8/90000" CRLF
 "a=recvonly" CRLF
 "a=rtcp-fb:120 nack" CRLF
@@ -1071,6 +1076,7 @@ const std::string kBasicAudioVideoOffer =
 "a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935" CRLF
 "a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026" CRLF
 "m=audio 9 RTP/SAVPF 0" CRLF
+"a=mid:third" CRLF
 "a=rtpmap:0 PCMU/8000" CRLF
 "a=ice-lite" CRLF;
 
@@ -1293,12 +1299,40 @@ TEST_P(NewSdpTest, CheckCandidates) {
       SdpAttribute::kCandidateAttribute));
 }
 
+TEST_P(NewSdpTest, CheckMid) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_EQ("first", mSdp->GetMediaSection(0).GetAttributeList().GetMid());
+  ASSERT_EQ("second", mSdp->GetMediaSection(1).GetAttributeList().GetMid());
+  ASSERT_EQ("third", mSdp->GetMediaSection(2).GetAttributeList().GetMid());
+}
+
+
+TEST_P(NewSdpTest, CheckGroups) {
+  ParseSdp(kBasicAudioVideoOffer);
+  const SdpGroupAttributeList& group = mSdp->GetAttributeList().GetGroup();
+  const SdpGroupAttributeList::Group& group1 = group.mGroups[0];
+  ASSERT_EQ(SdpGroupAttributeList::kBundle, group1.semantics);
+  ASSERT_EQ(2U, group1.tags.size());
+  ASSERT_EQ("first", group1.tags[0]);
+  ASSERT_EQ("second", group1.tags[1]);
+
+  const SdpGroupAttributeList::Group& group2 = group.mGroups[1];
+  ASSERT_EQ(SdpGroupAttributeList::kBundle, group2.semantics);
+  ASSERT_EQ(1U, group2.tags.size());
+  ASSERT_EQ("third", group2.tags[0]);
+
+  const SdpGroupAttributeList::Group& group3 = group.mGroups[2];
+  ASSERT_EQ(SdpGroupAttributeList::kLs, group3.semantics);
+  ASSERT_EQ(2U, group3.tags.size());
+  ASSERT_EQ("first", group3.tags[0]);
+  ASSERT_EQ("third", group3.tags[1]);
+}
+
+
 // TODO: Tests that parse above SDP, and check various things
 // For media sections 1 and 2:
 //  Check fmtp
 //  Check extmap
-//  Check setup
-//  Check rtcp-mux
 //  Check candidates
 
 INSTANTIATE_TEST_CASE_P(Variants, NewSdpTest, ::testing::Values(false, true));

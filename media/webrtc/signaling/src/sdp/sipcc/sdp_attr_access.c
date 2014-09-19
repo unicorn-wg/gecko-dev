@@ -10620,7 +10620,7 @@ sdp_result_e sdp_set_group_num_id (void *sdp_ptr, u16 level,
  * Returns:    Value of the group id at the index specified or
  *             NULL if an error
  */
-char* sdp_get_group_id (void *sdp_ptr, u16 level,
+const char* sdp_get_group_id (void *sdp_ptr, u16 level,
                         u8 cap_num, u16 inst_num, u16 id_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
