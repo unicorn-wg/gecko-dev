@@ -1072,6 +1072,9 @@ typedef struct {
     /* Info to help building X-cpar/cpar attrs. */
     sdp_attr_e            last_cap_type;
 
+    /* Faciliates reporting line number for SDP errors */
+    u32                       parse_line;
+
     /* MCA - Media, connection, and attributes */
     sdp_mca_t                *mca_p;
     ushort                    mca_count;
