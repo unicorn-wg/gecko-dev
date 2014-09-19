@@ -825,8 +825,13 @@ class NewSdpTest : public ::testing::Test,
         mSdp->Serialize(str);
         mSdp = mozilla::Move(mParser.Parse(str.str()));
         ASSERT_TRUE(mSdp) << "Parse failed on second pass, SDP was: "
-                          << str.str() <<  std::endl
+                          << std::endl << str.str() <<  std::endl
                           << "Errors were: " << GetParseErrors();
+        ASSERT_EQ(0U, mParser.GetParseErrors().size())
+                  << "Got unexpected parse errors/warnings on second pass,"
+                      " SDP was: "
+                  << std::endl << str.str() <<  std::endl
+                  << "Errors were: " << GetParseErrors();
       }
 
       if (expectSuccess) {
@@ -1000,7 +1005,10 @@ TEST_P(NewSdpTest, CheckMediaSectionGetMissingPortCount) {
 }
 
 TEST_P(NewSdpTest, CheckMediaSectionGetPortCount) {
-  ParseSdp(kVideoSdp + "m=audio 12345/2 RTP/SAVPF 0\r\n");
+  ParseSdp(kVideoSdp +
+      "m=audio 12345/2 RTP/SAVPF 0" CRLF
+      "a=rtpmap:0 PCMU/8000" CRLF
+      );
   ASSERT_EQ(2U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
   ASSERT_EQ(2U, mSdp->GetMediaSection(1).GetPortCount())
