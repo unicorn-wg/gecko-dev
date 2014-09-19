@@ -50,7 +50,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
   // TODO(ekr@rtfm.com): Do renegotiation.
 
-  *offer = sdp.toString();
+  *offer = sdp->toString();
 
   return NS_OK;
 }
