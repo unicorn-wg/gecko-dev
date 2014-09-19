@@ -72,7 +72,13 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
   }
 
   mPort = sdp_get_media_portnum(sdp, level);
-  mPortCount = sdp_get_media_portcount(sdp, level);
+  int32 pc =  sdp_get_media_portcount(sdp, level);
+  if (pc == SDP_INVALID_VALUE) {
+    mPortCount = 0;
+  } else {
+    // >16bit port numbers will cause...
+    mPortCount = pc;
+  }
   if (!LoadProtocol(sdp, level, errorHolder)) {
     return false;
   }
