@@ -445,16 +445,19 @@ public:
 
   struct Fingerprint {
     HashAlgorithm hashFunc;
-    std::string fingerprint;
+    std::vector<uint8_t> fingerprint;
   };
 
-  void PushEntry(HashAlgorithm hashFunc, const std::string& fingerprint) {
+  void PushEntry(HashAlgorithm hashFunc, const std::vector<uint8_t>& fingerprint) {
     mFingerprints.push_back({hashFunc, fingerprint});
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
   std::vector<Fingerprint> mFingerprints;
+
+  static std::string FormatFingerprint(const std::vector<uint8_t>& fp);
+  static std::vector<uint8_t> ParseFingerprint(const std::string str);
 };
 
 inline std::ostream& operator <<(std::ostream& os,

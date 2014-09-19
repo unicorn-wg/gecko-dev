@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <deque>
 #include <sstream>
+#include <vector>
 
 #include "base/histogram.h"
 #include "CSFLog.h"
@@ -37,6 +38,7 @@
 #include "PeerConnectionMedia.h"
 #include "nsDOMDataChannelDeclarations.h"
 #include "dtlsidentity.h"
+#include "signaling/src/sdp/SdpAttribute.h"
 
 #ifdef MOZILLA_INTERNAL_API
 #ifdef XP_WIN
@@ -637,12 +639,6 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return NS_ERROR_FAILURE;
   }
 
-  mFingerprint = mIdentity->GetFormattedFingerprint();
-  if (mFingerprint.empty()) {
-    CSFLogError(logTag, "%s: unable to get fingerprint", __FUNCTION__);
-    return res;
-  }
-
   return NS_OK;
 }
 
@@ -652,50 +648,6 @@ PeerConnectionImpl::GetIdentity() const
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
   return mIdentity;
 }
-
-std::string
-PeerConnectionImpl::GetFingerprint() const
-{
-  PC_AUTO_ENTER_API_CALL_NO_CHECK();
-  return mFingerprint;
-}
-
-NS_IMETHODIMP
-PeerConnectionImpl::FingerprintSplitHelper(std::string& fingerprint,
-    size_t& spaceIdx) const
-{
-  fingerprint = GetFingerprint();
-  spaceIdx = fingerprint.find_first_of(' ');
-  if (spaceIdx == std::string::npos) {
-    CSFLogError(logTag, "%s: fingerprint is messed up: %s",
-        __FUNCTION__, fingerprint.c_str());
-    return NS_ERROR_FAILURE;
-  }
-  return NS_OK;
-}
-
-std::string
-PeerConnectionImpl::GetFingerprintAlgorithm() const
-{
-  std::string fp;
-  size_t spc;
-  if (NS_SUCCEEDED(FingerprintSplitHelper(fp, spc))) {
-    return fp.substr(0, spc);
-  }
-  return "";
-}
-
-std::string
-PeerConnectionImpl::GetFingerprintHexValue() const
-{
-  std::string fp;
-  size_t spc;
-  if (NS_SUCCEEDED(FingerprintSplitHelper(fp, spc))) {
-    return fp.substr(spc + 1);
-  }
-  return "";
-}
-
 
 nsresult
 PeerConnectionImpl::CreateFakeMediaStream(uint32_t aHint, nsIDOMMediaStream** aRetval)
@@ -1327,7 +1279,7 @@ void PeerConnectionImpl::OnRemoteStreamAdded(const MediaStreamTable& aStream) {
   DOMMediaStream* stream = nullptr;
 
 #ifdef KEEP_SIPCC
-  // TODO(ekr@rtfm.com): No idea what to do here. 
+  // TODO(ekr@rtfm.com): No idea what to do here.
   nsRefPtr<RemoteSourceStreamInfo> mRemoteStreamInfo =
     media()->GetRemoteStream(aStream.media_stream_id);
   MOZ_ASSERT(mRemoteStreamInfo);
@@ -1670,10 +1622,21 @@ PeerConnectionImpl::GetFingerprint(char** fingerprint)
   if (!mIdentity) {
     return NS_ERROR_FAILURE;
   }
+  std::vector<uint8_t> fp(DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH, 0U);
+  size_t fpLength = 0;
 
-  char* tmp = new char[mFingerprint.size() + 1];
-  std::copy(mFingerprint.begin(), mFingerprint.end(), tmp);
-  tmp[mFingerprint.size()] = '\0';
+  nsresult rv = mIdentity->ComputeFingerprint(DtlsIdentity::DEFAULT_HASH_ALGORITHM,
+                                              &fp[0], fp.size(), &fpLength);
+  NS_ENSURE_SUCCESS(rv, rv);
+  if (fpLength == 0 || fpLength > DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH) {
+    return NS_ERROR_FAILURE;
+  }
+  fp.resize(fpLength);
+  std::string fpStr = SdpFingerprintAttributeList::FormatFingerprint(fp);
+
+  char* tmp = new char[fpStr.size() + 1];
+  std::copy(fpStr.begin(), fpStr.end(), tmp);
+  tmp[fpStr.size()] = '\0';
 
   *fingerprint = tmp;
   return NS_OK;
