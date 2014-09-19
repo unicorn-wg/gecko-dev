@@ -818,7 +818,7 @@ class NewSdpTest : public ::testing::Test,
     void ParseSdp(const std::string &sdp, bool expectSuccess = true) {
       mSdp = mozilla::Move(mParser.Parse(sdp));
 
-      if (GetParam() && expectSuccess) {
+      if (expectSuccess && GetParam()) {
         std::stringstream str;
         EXPECT_TRUE(mSdp) << "Parse failed on first pass: "
                           << GetParseErrors();
@@ -1179,7 +1179,6 @@ TEST_P(NewSdpTest, CheckRtpmap) {
   ASSERT_EQ(5U, rtpmap.mRtpmaps.size())
     << "Wrong number of rtpmap attributes for audio";
 
-  // TODO: Write a CheckRtpmap(rtpmap, payloadType, encodingName, rate)
   // Need to know name of type
   CheckRtpmap("109", "opus",           48000, 2, rtpmap.GetEntry(audiosec.GetFormats()[0]));
   CheckRtpmap("9",   "G722",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[1]));
@@ -1333,9 +1332,10 @@ TEST_P(NewSdpTest, CheckGroups) {
 // For media sections 1 and 2:
 //  Check fmtp
 //  Check extmap
-//  Check candidates
 
-INSTANTIATE_TEST_CASE_P(Variants, NewSdpTest, ::testing::Values(false, true));
+INSTANTIATE_TEST_CASE_P(RoundTripSerialize,
+                        NewSdpTest,
+                        ::testing::Values(false, true));
 
 } // End namespace test.
 
