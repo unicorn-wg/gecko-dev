@@ -56,6 +56,9 @@ public:
   virtual unsigned int GetMaxptime() const = 0;
   virtual const std::string& GetMid() const = 0;
   virtual unsigned int GetPtime() const = 0;
+
+  // This is "special", because it's multiple things
+  virtual SdpDirectionAttribute::Direction GetDirection() const = 0;
 };
 
 }

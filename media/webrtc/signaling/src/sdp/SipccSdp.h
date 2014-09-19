@@ -22,18 +22,18 @@ extern "C" {
 namespace mozilla {
 
 class SipccSdpParser;
+class SdpErrorHolder;
 
 class SipccSdp MOZ_FINAL : public Sdp
 {
   friend class SipccSdpParser;
 public:
+  explicit SipccSdp(SdpOrigin* origin) :
+      mOrigin(origin), mAttributeList(nullptr) {}
   ~SipccSdp();
 
   virtual const SdpOrigin& GetOrigin() const MOZ_OVERRIDE;
 
-  virtual const std::string& GetSessionName() const MOZ_OVERRIDE {
-    return mSessionName;
-  }
   // Note: connection information is always retrieved from media sections
   virtual const std::string& GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
 
@@ -57,15 +57,15 @@ public:
   virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
 
 private:
-  explicit SipccSdp() {}
+  SipccSdp() : mAttributeList(nullptr) {}
 
-  void Load(sdp_t* sdp);
+  bool Load(sdp_t* sdp, SdpErrorHolder& errorHolder);
+  bool LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder);
 
-  std::vector<SipccSdpMediaSection*> mMediaSections;
-  SipccSdpAttributeList mAttributeList;
-  std::map<std::string, std::string> mBandwidths;
-  std::string mSessionName;
   UniquePtr<SdpOrigin> mOrigin;
+  std::map<std::string, std::string> mBandwidths;
+  SipccSdpAttributeList mAttributeList;
+  std::vector<SipccSdpMediaSection*> mMediaSections;
 };
 
 } // namespace mozilla

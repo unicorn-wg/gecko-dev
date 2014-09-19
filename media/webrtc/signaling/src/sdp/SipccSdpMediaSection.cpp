@@ -6,6 +6,8 @@
 
 #include "signaling/src/sdp/SipccSdpMediaSection.h"
 
+#include "signaling/src/sdp/SdpErrorHolder.h"
+
 namespace mozilla {
 
 unsigned int
@@ -45,60 +47,69 @@ SipccSdpMediaSection::GetFormats() const {
 
 const SdpAttributeList&
 SipccSdpMediaSection::GetAttributeList() const {
-  return mAttributes;
+  return mAttributeList;
 }
 
 SdpAttributeList&
 SipccSdpMediaSection::GetAttributeList() {
-  return mAttributes;
+  return mAttributeList;
 }
 
-void
-SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level)
+bool
+SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
+                           SdpErrorHolder& errorHolder)
 {
   switch (sdp_get_media_type(sdp, level)) {
-  case SDP_MEDIA_AUDIO:
-    mMediaType = kAudio;
-    break;
-  case SDP_MEDIA_VIDEO:
-    mMediaType = kVideo;
-    break;
-  case SDP_MEDIA_APPLICATION:
-    mMediaType = kApplication;
-    break;
-  case SDP_MEDIA_TEXT:
-    mMediaType = kText;
-    break;
-  case SDP_MEDIA_DATA:
-    mMediaType = kMessage;
-    break;
+  case SDP_MEDIA_AUDIO: mMediaType = kAudio; break;
+  case SDP_MEDIA_VIDEO: mMediaType = kVideo; break;
+  case SDP_MEDIA_APPLICATION: mMediaType = kApplication; break;
+  case SDP_MEDIA_TEXT: mMediaType = kText; break;
+
   default:
-    // TODO: log this
-    mMediaType = kUnknownMediaType;
-    break;
+    errorHolder.AddParseError(0, "Unsupported media section type");
+    return false;
   }
 
   mPort = sdp_get_media_portnum(sdp, level);
   mPortCount = sdp_get_media_portcount(sdp, level);
 
   switch (sdp_get_media_transport(sdp, level)) {
-    // TODO add right protocols to sipcc
+  case SDP_TRANSPORT_RTPAVP: mProtocol = kRtpAvp; break;
+  case SDP_TRANSPORT_RTPSAVP: mProtocol = kRtpSavp; break;
+  case SDP_TRANSPORT_RTPAVPF: mProtocol = kRtpAvpf; break;
+  case SDP_TRANSPORT_RTPSAVPF: mProtocol = kRtpSavpf; break;
+  case SDP_TRANSPORT_UDPTLSRTPSAVP: mProtocol = kUdpTlsRtpSavp; break;
+  case SDP_TRANSPORT_UDPTLSRTPSAVPF: mProtocol = kUdpTlsRtpSavpf; break;
+  case SDP_TRANSPORT_TCPTLSRTPSAVP: mProtocol = kTcpTlsRtpSavp; break;
+  case SDP_TRANSPORT_TCPTLSRTPSAVPF: mProtocol = kTcpTlsRtpSavpf; break;
+
   default:
-    mProtocol = kUnknownProtocol;
+    errorHolder.AddParseError(0, "Unsupported media transport type");
+    return false;
   }
 
-  mAttributeList.Load(sdp, level);
+  if (!mAttributeList.Load(sdp, level, errorHolder)) {
+    return false;
+  }
 
-  LoadConnection(sdp, level);
+  return LoadConnection(sdp, level, errorHolder);
 }
 
-void
-SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
+bool
+SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level,
+                                     SdpErrorHolder& errorHolder) {
+  if (!sdp_connection_valid(sdp, level)) {
+    level = SDP_SESSION_LEVEL;
+    if (!sdp_connection_valid(sdp, level)) {
+      errorHolder.AddParseError(0, "Missing c= line");
+      return false;
+    }
+  }
+
   sdp_nettype_e type = sdp_get_conn_nettype(sdp, level);
   if (type != SDP_NT_INTERNET) {
-    // hop up to the session level and see if that works out better
-    level = SDP_SESSION_LEVEL;
-    type = sdp_get_conn_nettype(sdp, level);
+    errorHolder.AddParseError(0, "Unsupported network type");
+    return false;
   }
 
   SdpConnection::AddrType addrType;
@@ -110,21 +121,15 @@ SipccSdpMediaSection::LoadConnection(sdp_t* sdp, uint16_t level) {
       addrType = SdpConnection::kIPv6;
       break;
     default:
-      // TODO: log this
-      addrType = SdpConnection::kAddrTypeUnknown;
-      break;
+      errorHolder.AddParseError(0, "Unsupported address type");
+      return false;
   }
 
   std::string address = sdp_get_conn_address(sdp, level);
-  int16_t ttl = -1;
-  uint32_t numAddr = 1;
-  if (sdp_is_mcast_addr(sdp, level)) {
-    // TODO: log a warning about this
-    ttl = static_cast<uint16_t>(sdp_get_mcast_ttl(sdp, level));
-    numAddr = static_cast<uint32_t>(sdp_get_mcast_num_of_addresses(sdp, level));
-  }
-
+  int16_t ttl = static_cast<uint16_t>(sdp_get_mcast_ttl(sdp, level));
+  uint32_t numAddr = static_cast<uint32_t>(sdp_get_mcast_num_of_addresses(sdp, level));
   mConnection = MakeUnique<SdpConnection>(addrType, address, ttl, numAddr);
+  return true;
 }
 
 }

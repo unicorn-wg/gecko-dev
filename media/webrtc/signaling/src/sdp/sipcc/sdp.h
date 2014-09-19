@@ -179,6 +179,11 @@ typedef enum {
     SDP_TRANSPORT_TCP,
     SDP_TRANSPORT_RTPSAVPF,
     SDP_TRANSPORT_DTLSSCTP,
+    SDP_TRANSPORT_RTPAVPF,
+    SDP_TRANSPORT_UDPTLSRTPSAVP,
+    SDP_TRANSPORT_UDPTLSRTPSAVPF,
+    SDP_TRANSPORT_TCPTLSRTPSAVP,
+    SDP_TRANSPORT_TCPTLSRTPSAVPF,
     SDP_MAX_TRANSPORT_TYPES,
     SDP_TRANSPORT_UNSUPPORTED,
     SDP_TRANSPORT_INVALID
@@ -1095,6 +1100,7 @@ typedef struct {
 
 /* sdp_config.c */
 extern sdp_conf_options_t *sdp_init_config(void);
+extern void sdp_free_config(sdp_conf_options_t *config_p);
 extern void sdp_appl_debug(void *config_p, sdp_debug_e debug_type,
                            tinybool debug_flag);
 extern void sdp_require_version(void *config_p, tinybool version_required);

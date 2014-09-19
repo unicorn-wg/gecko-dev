@@ -16,6 +16,7 @@ namespace mozilla {
 
 class SipccSdp;
 class SipccSdpMediaSection;
+class SdpErrorHolder;
 
 class SipccSdpAttributeList : public SdpAttributeList
 {
@@ -59,19 +60,24 @@ public:
   virtual const std::string& GetMid() const MOZ_OVERRIDE;
   virtual unsigned int GetPtime() const MOZ_OVERRIDE;
 
+  virtual SdpDirectionAttribute::Direction GetDirection() const MOZ_OVERRIDE;
+
   virtual ~SipccSdpAttributeList();
 
 private:
   static std::string sEmptyString;
   static const size_t kMaxAttributeIndex = SdpAttribute::kOtherAttribute;
 
-  SipccSdpAttributeList(SipccSdpAttributeList* sessionLevel = nullptr);
+  explicit SipccSdpAttributeList(const SipccSdpAttributeList* sessionLevel);
 
-  void Load(sdp_t* sdp, uint16_t level);
-  void LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
+  bool Load(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
+  bool LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                         AttributeType targetType, const std::string& name);
+  bool LoadDirection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
+  void LoadIceAttributes(sdp_t* sdp, uint16_t level);
 
-  SipccSdpAttributeList* mSessionLevel;
+  bool AtSessionLevel() const { return !mSessionLevel; }
+  const SipccSdpAttributeList* mSessionLevel;
 
   SdpAttribute* mAttributes[kMaxAttributeIndex];
   std::vector<SdpAttribute*> mOtherAttributes;
