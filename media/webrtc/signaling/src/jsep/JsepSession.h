@@ -21,7 +21,7 @@ namespace jsep {
 
 // Forward declarations tracks and track pairs
 class JsepMediaStreamTrack;
-class JsepTrackPair;
+struct JsepTrackPair;
 
 enum JsepSignalingState {
   kJsepStateStable,
@@ -77,8 +77,9 @@ class JsepSession {
                                         const std::string& sdp) = 0;
 
   // Access the negotiated track pairs.
-  virtual nsresult num_negotiated_track_pairs(size_t* pairs) const = 0;
-  virtual nsresult track_pair(size_t index, const JsepTrackPair** pair)
+  virtual size_t num_negotiated_track_pairs() const = 0;
+  virtual nsresult negotiated_track_pair(size_t index,
+                                         const JsepTrackPair** pair)
       const = 0;
 
   static const char* state_str(JsepSignalingState state) {

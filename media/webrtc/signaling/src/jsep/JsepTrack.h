@@ -16,25 +16,24 @@ namespace mozilla {
 namespace jsep {
 
 // Forward reference.
-class JsepCodecDescription;  // Is this a VideoCodecConfig
+struct JsepCodecDescription;  // Is this a VideoCodecConfig
 class JsepTransport;
 
 class JsepTrack {
  public:
-virtual ~JsepTrack();
+  virtual ~JsepTrack() {}
 
-  virtual mozilla::SdpMediaSection::MediaType media_type();
-  virtual mozilla::SdpMediaSection::Protocol protocol();
-  virtual Maybe<std::string> bandwidth(const std::string& type) const;
-
-  virtual size_t num_codecs() const;
-  virtual nsresult get_codec(size_t index, JsepCodecDescription* config);
-
+  virtual mozilla::SdpMediaSection::MediaType media_type() const = 0;
+  virtual mozilla::SdpMediaSection::Protocol protocol() const = 0;
+  virtual Maybe<std::string> bandwidth(const std::string& type) const = 0;
+  virtual size_t num_codecs() const = 0;
+  virtual nsresult get_codec(size_t index, JsepCodecDescription* config)
+      const = 0;
   virtual bool rtcp_mux() const = 0;
 };
 
 
-class JsepTrackPair {
+struct JsepTrackPair {
   UniquePtr<JsepTrack> mSending;
   UniquePtr<JsepTrack> mReceiving;
 //  RefPtr<JsepTransport> mTransport;
