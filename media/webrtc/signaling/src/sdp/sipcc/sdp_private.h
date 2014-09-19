@@ -259,7 +259,6 @@ extern const char *sdp_get_silencesupp_pref_name(sdp_silencesupp_pref_e pref);
 extern const char *sdp_get_silencesupp_siduse_name(sdp_silencesupp_siduse_e
                                                    siduse);
 
-extern const char *sdp_get_bw_modifier_name(sdp_bw_modifier_e bw_modifier);
 extern const char *sdp_get_group_attr_name(sdp_group_attr_e group_attr);
 extern const char *sdp_get_src_filter_mode_name(sdp_src_filter_mode_e type);
 extern const char *sdp_get_rtcp_unicast_mode_name(sdp_rtcp_unicast_mode_e type);
