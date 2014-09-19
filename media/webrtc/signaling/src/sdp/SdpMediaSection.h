@@ -94,6 +94,19 @@ inline std::ostream& operator <<(std::ostream& os, const SdpMediaSection &ms)
   return os;
 }
 
+inline std::ostream& operator <<(std::ostream& os, SdpMediaSection::MediaType t)
+{
+  switch (t) {
+    case SdpMediaSection::kAudio: os << "audio"; break;
+    case SdpMediaSection::kVideo: os << "video"; break;
+    case SdpMediaSection::kText: os << "text"; break;
+    case SdpMediaSection::kApplication: os << "application"; break;
+    case SdpMediaSection::kMessage: os << "message"; break;
+    default: MOZ_ASSERT(false); os << "?";
+  }
+  return os;
+}
+
 inline std::ostream& operator <<(std::ostream& os, SdpMediaSection::Protocol p)
 {
   switch (p) {
