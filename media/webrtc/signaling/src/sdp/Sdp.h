@@ -14,6 +14,7 @@
 #include "mozilla/Maybe.h"
 #include "signaling/src/sdp/SdpMediaSection.h"
 #include "signaling/src/sdp/SdpAttributeList.h"
+#include "signaling/src/sdp/SdpEnum.h"
 
 namespace mozilla {
 
@@ -38,6 +39,14 @@ public:
   virtual uint16_t GetMediaSectionCount() const = 0;
   virtual const SdpMediaSection &GetMediaSection(uint16_t level) const = 0;
   virtual SdpMediaSection &GetMediaSection(uint16_t level) = 0;
+
+  virtual SdpMediaSection &AddMediaSection(
+      SdpMediaSection::MediaType media = SdpMediaSection::kAudio,
+      uint16_t port = 9,
+      SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf,
+      sdp::AddrType addrType = sdp::kIPv4,
+      const std::string &addr = "0.0.0.0",
+      SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv) = 0;
 
   virtual void Serialize(std::ostream&) const = 0;
 
