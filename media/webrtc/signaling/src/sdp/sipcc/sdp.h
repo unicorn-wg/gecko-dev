@@ -961,6 +961,7 @@ typedef struct sdp_mca {
     sdp_attr_e                media_direction; /* Either INACTIVE, SENDONLY,
                                                   RECVONLY, or SENDRECV */
     u32                       mid;
+    u32                       line_number;
     struct sdp_attr          *media_attrs_p;
     struct sdp_mca           *next_p;
 } sdp_mca_t;
@@ -969,6 +970,7 @@ typedef struct sdp_mca {
 /* generic a= line info */
 typedef struct sdp_attr {
     sdp_attr_e                type;
+    u32                       line_number;
     union {
         tinybool              boolean_val;
         u32                   u32_val;
@@ -1199,6 +1201,7 @@ extern sdp_result_e sdp_set_mcast_addr_fields(void *sdp_ptr, u16 level,
 extern tinybool sdp_media_line_valid(void *sdp_ptr, u16 level);
 extern u16 sdp_get_num_media_lines(void *sdp_ptr);
 extern sdp_media_e sdp_get_media_type(void *sdp_ptr, u16 level);
+extern u32 sdp_get_media_line_number(void *sdp_ptr, u16 level);
 extern sdp_port_format_e sdp_get_media_port_format(void *sdp_ptr, u16 level);
 extern int32 sdp_get_media_portnum(void *sdp_ptr, u16 level);
 extern int32 sdp_get_media_portcount(void *sdp_ptr, u16 level);
@@ -1262,6 +1265,8 @@ extern sdp_result_e sdp_delete_attr(void *sdp_ptr, u16 level, u8 cap_num,
                              sdp_attr_e attr_type, u16 inst_num);
 extern sdp_result_e sdp_delete_all_attrs(void *sdp_ptr, u16 level, u8 cap_num);
 extern tinybool sdp_attr_valid(void *sdp_ptr, sdp_attr_e attr_type,
+                                u16 level, u8 cap_num, u16 inst_num);
+extern u32 sdp_attr_line_number(void *sdp_ptr, sdp_attr_e attr_type,
                                 u16 level, u8 cap_num, u16 inst_num);
 extern const char *sdp_attr_get_simple_string(void *sdp_ptr,
                    sdp_attr_e attr_type, u16 level, u8 cap_num, u16 inst_num);

@@ -323,7 +323,7 @@ sdp_build_attr_sdescriptions(sdp_t *sdp_p, sdp_attr_t *attr_p,
 
 
 /* sdp_utils.c */
-extern sdp_mca_t *sdp_alloc_mca(void);
+extern sdp_mca_t *sdp_alloc_mca(u32 line);
 extern tinybool sdp_validate_maxprate(const char *string_parm);
 extern char *sdp_findchar(const char *ptr, char *char_list);
 extern const char *sdp_getnextstrtok(const char *str, char *tokenstr, unsigned tokenstr_len,

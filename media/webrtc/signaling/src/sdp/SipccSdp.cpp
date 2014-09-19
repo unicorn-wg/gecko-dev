@@ -73,7 +73,7 @@ SipccSdp::LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder) {
 
   sdp_nettype_e type = sdp_get_owner_network_type(sdp);
   if (type != SDP_NT_INTERNET) {
-    errorHolder.AddParseError(0, "Unsupported network type");
+    errorHolder.AddParseError(2, "Unsupported network type");
     return false;
   }
 
@@ -86,7 +86,7 @@ SipccSdp::LoadOrigin(sdp_t* sdp, SdpErrorHolder& errorHolder) {
       addrType = sdp::kIPv6;
       break;
     default:
-      errorHolder.AddParseError(0, "Unsupported address type");
+      errorHolder.AddParseError(2, "Unsupported address type");
       return false;
   }
 
