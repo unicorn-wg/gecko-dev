@@ -15,7 +15,6 @@
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/Assertions.h"
-#include "mozilla/TypeTraits.h"
 
 #include "signaling/src/sdp/SdpEnum.h"
 
@@ -216,7 +215,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mCandidates.begin(); i != mCandidates.end(); ++i) {
-      os << "a=" << GetTypeName() << ":"
+      os << "a=" << mType << ":"
          << i->foundation << " "
          << i->componentId << " "
          << i->transport << " "
@@ -282,7 +281,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName() << ":" << mValue << CRLF;
+    os << "a=" << mType << ":" << mValue << CRLF;
   }
 
   ConnValue mValue;
@@ -402,7 +401,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mExtmaps.begin(); i != mExtmaps.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->entry;
+      os << "a=" << mType << ":" << i->entry;
       if (i->direction != kNotSpecified) {
         os << "/" << i->direction;
       }
@@ -475,7 +474,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mFingerprints.begin(); i != mFingerprints.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->hashFunc
+      os << "a=" << mType << ":" << i->hashFunc
          << " " << i->fingerprint << CRLF;
     }
   }
@@ -520,7 +519,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mFmtps.begin(); i != mFmtps.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->format
+      os << "a=" << mType << ":" << i->format
          << " " << i->parameters << CRLF;
     }
   }
@@ -577,7 +576,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mGroups.begin(); i != mGroups.end(); ++i) {
-      os << "a=" << GetTypeName() << ":"
+      os << "a=" << mType << ":"
          << i->semantics << " "
          << i->identifier;
       for (auto j = i->tags.begin(); j != i->tags.end(); ++j) {
@@ -623,7 +622,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName();
+    os << "a=" << mType;
     for (auto i = mOptions.begin(); i != mOptions.end(); i++) {
       os << (i == mOptions.begin() ? ":" : " ") << (*i);
     }
@@ -657,7 +656,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName() << mAssertion;
+    os << "a=" << mType << mAssertion;
     for (auto i = mExtensions.begin(); i != mExtensions.end(); i++) {
       os << (i == mExtensions.begin() ? " " : ";") << (*i);
     }
@@ -769,7 +768,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName() << ":" << mIdentifier;
+    os << "a=" << mType << ":" << mIdentifier;
     if (mAppdata.length()) {
       os << " " << mAppdata;
     }
@@ -801,7 +800,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName();
+    os << "a=" << mType;
     for (auto i = mCandidates.begin(); i != mCandidates.end(); i++) {
       os << (i == mCandidates.begin() ? ":" : " ") << i->id
          << " " << i->address
@@ -833,7 +832,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName() << ":" << mPort;
+    os << "a=" << mType << ":" << mPort;
     if (mNetType != sdp::kNetTypeNone && mAddrType != sdp::kAddrTypeNone) {
       os << " " << mNetType << " " << mAddrType << " " << mAddress;
     }
@@ -907,7 +906,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mFeedback.begin(); i != mFeedback.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->pt << " " << i->type;
+      os << "a=" << mType << ":" << i->pt << " " << i->type;
       if (i->parameters.length()) {
         os << " " << i->parameters;
       }
@@ -947,7 +946,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mRtpmaps.begin(); i != mRtpmaps.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->pt << " " << i->name
+      os << "a=" << mType << ":" << i->pt << " " << i->name
          << "/" << i->clock;
       if (i->channels) {
         os << "/" << i->channels;
@@ -1014,7 +1013,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSctpmaps.begin(); i != mSctpmaps.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->number << " " << i->app;
+      os << "a=" << mType << ":" << i->number << " " << i->app;
       if (i->maxMessageSize) {
         os << " max-message-size=" << i->maxMessageSize;
       }
@@ -1049,7 +1048,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName() << ":" << mRole << CRLF;
+    os << "a=" << mType << ":" << mRole << CRLF;
   }
 
   Role mRole;
@@ -1099,7 +1098,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSsrcs.begin(); i != mSsrcs.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->ssrc << " " << i->attribute << CRLF;
+      os << "a=" << mType << ":" << i->ssrc << " " << i->attribute << CRLF;
     }
   }
 
@@ -1139,7 +1138,7 @@ public:
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
     for (auto i = mSsrcGroups.begin(); i != mSsrcGroups.end(); ++i) {
-      os << "a=" << GetTypeName() << ":" << i->semantics;
+      os << "a=" << mType << ":" << i->semantics;
       for (auto j = i->ssrcs.begin(); j != i->ssrcs.end(); ++j) {
         os << " " << (*j);
       }
@@ -1190,7 +1189,7 @@ public:
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << GetTypeName();
+    os << "a=" << mType;
     if (mValue.length()) {
       os << ":" << mValue;
     }
@@ -1217,7 +1216,7 @@ public:
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    os << "a=" << GetTypeName() << ":" << mValue << CRLF;
+    os << "a=" << mType << ":" << mValue << CRLF;
   }
 
 private:
