@@ -907,7 +907,7 @@ const std::string kBasicAudioVideoOffer =
 "a=rtcp-fb:120 nack\r\n"
 "a=rtcp-fb:120 nack pli\r\n"
 "a=rtcp-fb:120 ccm fir\r\n"
-"a=setup:actpass\r\n"
+"a=setup:active\r\n"
 "a=rtcp-mux\r\n"
 "a=candidate:0 1 UDP 2130379007 10.0.0.36 59530 typ host\r\n"
 "a=candidate:0 2 UDP 2130379006 10.0.0.36 64378 typ host\r\n"
@@ -942,19 +942,29 @@ TEST_F(NewSdpTest, CheckIcePwd) {
   ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
 }
 
-/*
+//TEST_F(NewSdpTest, CheckIceLite) {
+//  ParseSdp(kBasicAudioVideoOffer);
+//  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+//  ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
+//        SdpAttribute::kIceLiteAttribute));
+//  auto ice_pwd = mSdp->GetAttributeList().GetIceLite();
+//  ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
+//}
+
 TEST_F(NewSdpTest, CheckFingerprint) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
         SdpAttribute::kFingerprintAttribute));
-  auto fingerprint = mSdp->GetAttributeList().GetFingerprint();
-  ASSERT_EQ(SdpFingerprintAttributeList::kSha256, fingerprint.mHashFunc)
+  auto fingerprints = mSdp->GetAttributeList().GetFingerprint();
+  ASSERT_EQ(1, fingerprints.mFingerprints.size());
+  ASSERT_EQ(SdpFingerprintAttributeList::kSha256,
+      fingerprints.mFingerprints.front().hashFunc)
     << "Wrong hash function";
   ASSERT_EQ("DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:"
             "3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C",
-            fingerprint.mFingerprint) << "Wrong fingerprint";
+            fingerprints.mFingerprints.front().fingerprint)
+    << "Wrong fingerprint";
 }
-*/
 
 TEST_F(NewSdpTest, CheckNumberOfMediaSections) {
   ParseSdp(kBasicAudioVideoOffer);
@@ -985,6 +995,23 @@ TEST_F(NewSdpTest, CheckMlines) {
   auto video_formats = mSdp->GetMediaSection(1).GetFormats();
   ASSERT_EQ(1U, video_formats.size()) << "Wrong number of formats for video";
   ASSERT_EQ("120", video_formats[0]);
+}
+
+TEST_F(NewSdpTest, CheckSetup) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kSetupAttribute));
+  ASSERT_EQ(SdpSetupAttribute::kActpass,
+      mSdp->GetMediaSection(0).GetAttributeList().GetSetup().mRole);
+  ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+      SdpAttribute::kSetupAttribute));
+  ASSERT_EQ(SdpSetupAttribute::kActive,
+      mSdp->GetMediaSection(1).GetAttributeList().GetSetup().mRole);
+  ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+        SdpAttribute::kSetupAttribute));
 }
 
 TEST_F(NewSdpTest, CheckRtpmap) {

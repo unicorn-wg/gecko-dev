@@ -60,7 +60,7 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
 bool
 SipccSdpAttributeList::LoadSimpleString(sdp_t* sdp, uint16_t level, sdp_attr_e attr,
                                         AttributeType targetType, const std::string& name) {
-  const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 0);
+  const char* value = sdp_attr_get_simple_string(sdp, attr, level, 0, 1);
   if (value) {
     SetAttribute(new SdpOtherAttribute(targetType, name, std::string(value)));
   }
@@ -103,6 +103,89 @@ SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
     SetAttribute(new SdpOtherAttribute(SdpAttribute::kIcePwdAttribute,
                                        "ice-pwd", std::string(value)));
   }
+
+}
+
+void
+SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
+  char *value;
+  std::vector<std::string> fingerprints;
+  for (uint16_t i = 1; ; ++i) {
+    sdp_result_e result = sdp_attr_get_dtls_fingerprint_attribute(
+          sdp,
+          level,
+          0,
+          SDP_ATTR_DTLS_FINGERPRINT,
+          i,
+          &value);
+
+    if (result == SDP_SUCCESS) {
+      fingerprints.push_back(value);
+    } else {
+      break;
+    }
+  }
+
+  if (!fingerprints.empty()) {
+    SdpFingerprintAttributeList *fingerprint_attrs =
+      new SdpFingerprintAttributeList();
+
+    for (auto i = fingerprints.begin(); i != fingerprints.end(); ++i) {
+      // sipcc does not expose parse code for this
+      const char * const start = fingerprints[0].c_str();
+      const char *c = start;
+      const size_t size = fingerprints[0].size();
+
+      while (*c != '\0') {
+        if (*c == ' ' || *c == '\t') {
+          break;
+        }
+        ++c;
+      }
+
+      std::string algorithm_str(fingerprints[0].substr(0, c - start));
+
+      while (*c != '\0') {
+        if (*c != ' ' && *c != '\t') {
+          break;
+        }
+        ++c;
+      }
+
+      std::string fingerprint(fingerprints[0].substr(c - start, size));
+
+      SdpFingerprintAttributeList::HashAlgorithm algorithm =
+        SdpFingerprintAttributeList::kUnknownAlgorithm;
+
+      if (algorithm_str == "sha-1") {
+        algorithm = SdpFingerprintAttributeList::kSha1;
+      } else if (algorithm_str == "sha-224") {
+        algorithm = SdpFingerprintAttributeList::kSha224;
+      } else if (algorithm_str == "sha-256") {
+        algorithm = SdpFingerprintAttributeList::kSha256;
+      } else if (algorithm_str == "sha-384") {
+        algorithm = SdpFingerprintAttributeList::kSha384;
+      } else if (algorithm_str == "sha-512") {
+        algorithm = SdpFingerprintAttributeList::kSha512;
+      } else if (algorithm_str == "md5") {
+        algorithm = SdpFingerprintAttributeList::kMd5;
+      } else if (algorithm_str == "md2") {
+        algorithm = SdpFingerprintAttributeList::kMd2;
+      }
+
+      if (algorithm != SdpFingerprintAttributeList::kUnknownAlgorithm &&
+          !fingerprint.empty()) {
+        fingerprint_attrs->PushEntry(algorithm, fingerprint);
+      }
+    }
+
+    if (!fingerprint_attrs->mFingerprints.empty()) {
+      SetAttribute(fingerprint_attrs);
+    } else {
+      // Can happen if we only find unknown algorithms
+      delete fingerprint_attrs;
+    }
+  }
 }
 
 bool
@@ -133,18 +216,36 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
     }
   }
   LoadIceAttributes(sdp, level);
+  LoadFingerprint(sdp, level);
 
   return true;
 }
 
 const SdpCandidateAttributeList&
 SipccSdpAttributeList::GetCandidate() const {
-  MOZ_CRASH();
+  if (!mSessionLevel) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+
+  if (!HasAttribute(SdpAttribute::kCandidateAttribute)) {
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpCandidateAttributeList*>(GetAttribute(
+        SdpAttribute::kCandidateAttribute));
 }
 
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kConnectionAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetConnection();
+    }
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpConnectionAttribute*>(GetAttribute(
+        SdpAttribute::kConnectionAttribute));
 }
 
 SdpDirectionAttribute::Direction
@@ -155,7 +256,15 @@ SipccSdpAttributeList::GetDirection() const {
 
 const SdpExtmapAttributeList&
 SipccSdpAttributeList::GetExtmap() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kExtmapAttribute)) {
+    if (mSessionLevel) {
+      mSessionLevel->GetExtmap();
+    }
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpExtmapAttributeList*>(GetAttribute(
+        SdpAttribute::kExtmapAttribute));
 }
 
 const SdpFingerprintAttributeList&
@@ -171,12 +280,30 @@ SipccSdpAttributeList::GetFingerprint() const {
 
 const SdpFmtpAttributeList&
 SipccSdpAttributeList::GetFmtp() const {
-  MOZ_CRASH();
+  if (!mSessionLevel) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+
+  if (!HasAttribute(SdpAttribute::kFmtpAttribute)) {
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpFmtpAttributeList*>(GetAttribute(
+        SdpAttribute::kFmtpAttribute));
 }
 
 const SdpGroupAttributeList&
 SipccSdpAttributeList::GetGroup() const {
-  MOZ_CRASH();
+  if (mSessionLevel) {
+    MOZ_CRASH("This is session-level only foo!");
+  }
+
+  if (!HasAttribute(SdpAttribute::kGroupAttribute)) {
+    MOZ_CRASH();
+  }
+
+  return *static_cast<const SdpGroupAttributeList*>(GetAttribute(
+        SdpAttribute::kGroupAttribute));
 }
 
 const SdpIceOptionsAttribute&
@@ -296,7 +423,14 @@ SipccSdpAttributeList::GetSctpmap() const {
 
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
-  MOZ_CRASH();
+  if (!HasAttribute(SdpAttribute::kSetupAttribute)) {
+    if (mSessionLevel) {
+      return mSessionLevel->GetSetup();
+    }
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kSetupAttribute);
+  return *static_cast<const SdpSetupAttribute*>(attr);
 }
 
 const SdpSsrcAttributeList&
