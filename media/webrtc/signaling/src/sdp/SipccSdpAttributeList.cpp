@@ -248,7 +248,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
 
 const SdpCandidateAttributeList&
 SipccSdpAttributeList::GetCandidate() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
 
@@ -263,7 +263,7 @@ SipccSdpAttributeList::GetCandidate() const {
 const SdpConnectionAttribute&
 SipccSdpAttributeList::GetConnection() const {
   if (!HasAttribute(SdpAttribute::kConnectionAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetConnection();
     }
     MOZ_CRASH();
@@ -282,7 +282,7 @@ SipccSdpAttributeList::GetDirection() const {
 const SdpExtmapAttributeList&
 SipccSdpAttributeList::GetExtmap() const {
   if (!HasAttribute(SdpAttribute::kExtmapAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       mSessionLevel->GetExtmap();
     }
     MOZ_CRASH();
@@ -295,7 +295,7 @@ SipccSdpAttributeList::GetExtmap() const {
 const SdpFingerprintAttributeList&
 SipccSdpAttributeList::GetFingerprint() const {
   if (!HasAttribute(SdpAttribute::kFingerprintAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetFingerprint();
     }
   }
@@ -319,7 +319,7 @@ SipccSdpAttributeList::GetFmtp() const {
 
 const SdpGroupAttributeList&
 SipccSdpAttributeList::GetGroup() const {
-  if (mSessionLevel) {
+  if (!AtSessionLevel()) {
     MOZ_CRASH("This is session-level only foo!");
   }
 
@@ -339,7 +339,7 @@ SipccSdpAttributeList::GetIceOptions() const {
 const std::string&
 SipccSdpAttributeList::GetIcePwd() const {
   if (!HasAttribute(SdpAttribute::kIcePwdAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetIcePwd();
     }
     return sEmptyString;
@@ -351,7 +351,7 @@ SipccSdpAttributeList::GetIcePwd() const {
 const std::string&
 SipccSdpAttributeList::GetIceUfrag() const {
   if (!HasAttribute(SdpAttribute::kIceUfragAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetIceUfrag();
     }
     return sEmptyString;
@@ -362,7 +362,7 @@ SipccSdpAttributeList::GetIceUfrag() const {
 
 const std::string&
 SipccSdpAttributeList::GetIdentity() const {
-  if (mSessionLevel) {
+  if (!AtSessionLevel()) {
     MOZ_CRASH("This is session-level only foo!");
   }
   if (!HasAttribute(SdpAttribute::kIdentityAttribute)) {
@@ -379,7 +379,7 @@ SipccSdpAttributeList::GetImageattr() const {
 
 const std::string&
 SipccSdpAttributeList::GetLabel() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
   if (!HasAttribute(SdpAttribute::kLabelAttribute)) {
@@ -401,7 +401,7 @@ SipccSdpAttributeList::GetMaxptime() const {
 
 const std::string&
 SipccSdpAttributeList::GetMid() const {
-  if (!mSessionLevel) {
+  if (AtSessionLevel()) {
     MOZ_CRASH("This is media-level only foo!");
   }
   if (!HasAttribute(SdpAttribute::kMidAttribute)) {
@@ -450,7 +450,7 @@ SipccSdpAttributeList::GetSctpmap() const {
 const SdpSetupAttribute&
 SipccSdpAttributeList::GetSetup() const {
   if (!HasAttribute(SdpAttribute::kSetupAttribute)) {
-    if (mSessionLevel) {
+    if (!AtSessionLevel()) {
       return mSessionLevel->GetSetup();
     }
     MOZ_CRASH();
