@@ -17,6 +17,10 @@
 namespace mozilla {
 namespace jsep {
 
+void JsepSessionImpl::Init() {
+  SetupDefaultCodecs();
+}
+
 nsresult JsepSessionImpl::AddTrack(const RefPtr<JsepMediaStreamTrack>& track) {
   JsepSendingTrack strack;
   strack.mTrack = track;
@@ -54,7 +58,17 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
       sdp->AddMediaSection(track->mTrack->media_type());
 
     SdpRtpmapAttributeList* rtpmap = new SdpRtpmapAttributeList();
-    rtpmap->PushEntry("109", "opus", 48000, 2);
+    for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
+      if (codec->mEnabled && (codec->mType == track->mTrack->media_type())) {
+        char buf[10];
+        snprintf(buf, sizeof(buf), "%d", codec->mDefaultPt);
+
+        rtpmap->PushEntry(buf,
+                          codec->mName,
+                          codec->mClock,
+                          codec->mChannels);
+      }
+    }
     msection.GetAttributeList().SetAttribute(rtpmap);
   }
 
@@ -99,6 +113,12 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
   return NS_OK;
 }
 
+void JsepSessionImpl::SetupDefaultCodecs() {
+  mCodecs.push_back(JsepCodecDescription(
+      SdpMediaSection::kAudio, 109, "opus", 48000, 2));
+  mCodecs.push_back(JsepCodecDescription(
+      SdpMediaSection::kAudio, 0, "PCMU", 8000, 1));
+}
 
 }  // namespace jsep
 }  // namespace mozilla
