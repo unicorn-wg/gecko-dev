@@ -55,10 +55,10 @@ public:
   virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
 
   virtual SdpMediaSection &AddMediaSection(
-      SdpMediaSection::MediaType media, uint16_t port,
+      SdpMediaSection::MediaType media,
+      SdpDirectionAttribute::Direction dir, uint16_t port,
       SdpMediaSection::Protocol proto,
-      sdp::AddrType addrType, const std::string &addr,
-      SdpDirectionAttribute::Direction dir) MOZ_OVERRIDE;
+      sdp::AddrType addrType, const std::string &addr) MOZ_OVERRIDE;
 
   virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
 

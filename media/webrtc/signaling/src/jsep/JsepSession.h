@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include "mozilla/Maybe.h"
 #include "mozilla/UniquePtr.h"
 
 #include "signaling/src/sdp/Sdp.h"
@@ -38,9 +39,12 @@ enum JsepSdpType {
   kJsepSdpPranswer,
 };
 
-class JsepOAOptions {};
-class JsepOfferOptions : public JsepOAOptions {};
-class JsepAnswerOptions : public JsepOAOptions {};
+struct JsepOAOptions {};
+struct JsepOfferOptions : public JsepOAOptions {
+  Maybe<size_t> mOfferToReceiveAudio;
+  Maybe<size_t> mOfferToReceiveVideo;
+};
+struct JsepAnswerOptions : public JsepOAOptions {};
 
 class JsepSession {
  public:

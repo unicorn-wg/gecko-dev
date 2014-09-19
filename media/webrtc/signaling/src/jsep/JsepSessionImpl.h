@@ -100,6 +100,7 @@ class JsepSessionImpl : public JsepSession {
 
   void Init();
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
+  void AddCodec(SdpMediaSection& msection, SdpMediaSection::MediaType mediatype);
   void SetupDefaultCodecs();
   void SetState(JsepSignalingState state);
   nsresult ParseSdp(const std::string& sdp, UniquePtr<Sdp>* parsedp);
