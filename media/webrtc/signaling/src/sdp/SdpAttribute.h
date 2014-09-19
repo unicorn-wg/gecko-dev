@@ -113,8 +113,10 @@ public:
       case kSetupAttribute: return "setup";
       case kSsrcAttribute: return "ssrc";
       case kSsrcGroupAttribute: return "ssrc-group";
-        // crash for kDirectionAttribute, kOtherAttribute and others
-      default: MOZ_CRASH();
+        // Error if kDirectionAttribute, kOtherAttribute and others
+      default:
+        MOZ_ASSERT(false, "Unexpected attribute type");
+        return "";
     }
   }
 
@@ -299,8 +301,9 @@ inline std::ostream& operator <<(std::ostream& os,
 }
 
 
-// RFC 4566
-//      a=sendrecv / a=sendonly / a=recvonly / a=inactive
+///////////////////////////////////////////////////////////////////////////
+// a=sendrecv / a=sendonly / a=recvonly / a=inactive, RFC 4566
+//-------------------------------------------------------------------------
 class SdpDirectionAttribute : public SdpAttribute
 {
  public:
