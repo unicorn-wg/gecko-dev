@@ -459,17 +459,28 @@ inline std::ostream& operator <<(std::ostream& os,
 //-------------------------------------------------------------------------
 //       a=fmtp:<format> <format specific parameters>
 //
-// XXX This wants to be really fancy. TBD.
+// TODO - Specialize according to codec type, to aid in parsing
+// format-specific parameters
 class SdpFmtpAttributeList : public SdpAttribute
 {
 public:
   SdpFmtpAttributeList() :
     SdpAttribute(kFmtpAttribute, "fmtp") {}
 
+  struct Fmtp {
+    std::string format;
+    std::string parameters;
+  };
+
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE
   {
-    MOZ_ASSERT(false, "Serializer not yet implemented");
+    for (auto i = mFmtps.begin(); i != mFmtps.end(); ++i) {
+      os << "a=" << mTypeName << ":" << i->format
+         << " " << i->parameters << CRLF;
+    }
   }
+
+  std::list<Fmtp> mFmtps;
 };
 
 ///////////////////////////////////////////////////////////////////////////
