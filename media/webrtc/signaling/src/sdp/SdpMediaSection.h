@@ -81,7 +81,7 @@ public:
   virtual unsigned int GetPortCount() const = 0;
   virtual Protocol GetProtocol() const = 0;
   virtual const SdpConnection& GetConnection() const = 0;
-  virtual const std::string& GetBandwidth(const std::string& type) const = 0;
+  virtual uint32_t GetBandwidth(const std::string& type) const = 0;
   virtual const std::vector<std::string>& GetFormats() const = 0;
 
   virtual const SdpAttributeList &GetAttributeList() const = 0;
