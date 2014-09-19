@@ -1433,6 +1433,21 @@ TEST_P(NewSdpTest, CheckApplicationParameters) {
     << "Wrong type for second media section";
   ASSERT_EQ(SdpMediaSection::kApplication, mSdp->GetMediaSection(2).GetMediaType())
     << "Wrong type for third media section";
+
+  ASSERT_EQ(SdpMediaSection::kDtlsSctp,
+            mSdp->GetMediaSection(2).GetProtocol())
+    << "Wrong protocol for application";
+  auto app_formats = mSdp->GetMediaSection(2).GetFormats();
+  ASSERT_EQ(1U, app_formats.size()) << "Wrong number of formats for audio";
+  ASSERT_EQ("5000", app_formats[0]);
+  /*
+  */
+
+  const SdpConnection& conn3 = mSdp->GetMediaSection(2).GetConnection();
+  ASSERT_EQ(sdp::kIPv4, conn3.GetAddrType());
+  ASSERT_EQ("0.0.0.0", conn3.GetAddress());
+  ASSERT_EQ(0U, conn3.GetTtl());
+  ASSERT_EQ(0U, conn3.GetCount());
 }
 
 // TODO: Tests that parse above SDP, and check various things
