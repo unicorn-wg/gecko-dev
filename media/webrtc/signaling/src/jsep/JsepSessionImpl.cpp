@@ -46,6 +46,7 @@ class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
 void JsepSessionImpl::Init() {
   SECStatus rv = PK11_GenerateRandom(
       reinterpret_cast<unsigned char *>(&mSessionId), sizeof(mSessionId));
+  mSessionId >>= 2; // Discard high order bits.
   if (rv != SECSuccess) {
     MOZ_CRASH();
   }
