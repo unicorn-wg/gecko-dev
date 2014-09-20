@@ -321,6 +321,8 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
+  // TODO(ekr@rtfm.com): Validate that this is a plausible SDP
+  // with ICE, DTLS, etc.
   switch (type ) {
     case kJsepSdpOffer:
       rv = SetRemoteDescriptionOffer(Move(parsed));
@@ -390,6 +392,17 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
       if (NS_FAILED(rv))
         return rv;
     }
+
+    rv = CreateTransport(offer.GetAttributeList(),
+                         answer.GetAttributeList(),
+                         rm.GetAttributeList(),
+                         &jpair->mRtpTransport
+                         );
+    if (NS_FAILED(rv))
+      return rv;
+
+    // TODO(ekr@rtfm.com): Check for RTCP mux, don't just assume it.
+    jpair->mRtcpTransport = jpair->mRtpTransport;
 
     track_pairs.push_back(jpair.release());
   }

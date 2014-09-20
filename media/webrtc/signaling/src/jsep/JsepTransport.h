@@ -33,12 +33,10 @@ class JsepIceTransport {
   public:
    JsepTransport(const std::string& id,
                  UniquePtr<JsepIceTransport> ice,
-                 UniquePtr<JsepDtlsTransport> dtls) {}
-#if 0
+                 UniquePtr<JsepDtlsTransport> dtls) :
        mTransportId(id),
        mIce(Move(ice)),
        mDtls(Move(dtls)) {}
-#endif
 
  // Unique identifier for this transport within this call. Group?
   std::string mTransportId;

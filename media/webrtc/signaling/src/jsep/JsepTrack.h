@@ -30,7 +30,6 @@ class JsepTrack {
   virtual nsresult get_codec(size_t index,
                              const JsepCodecDescription** config)
       const = 0;
-  virtual bool rtcp_mux() const = 0;
 };
 
 
