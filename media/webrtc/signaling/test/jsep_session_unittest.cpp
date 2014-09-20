@@ -21,6 +21,7 @@
 
 #include "signaling/src/sdp/SdpMediaSection.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
+#include "signaling/src/jsep/JsepCodecDescription.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
 #include "signaling/src/jsep/JsepMediaStreamTrackFake.h"
 #include "signaling/src/jsep/JsepSession.h"
@@ -33,6 +34,7 @@ using mozilla::jsep::JsepAnswerOptions;
 using mozilla::jsep::JsepMediaStreamTrackFake;
 using mozilla::jsep::JsepMediaStreamTrack;
 using mozilla::jsep::JsepTrackPair;
+using mozilla::jsep::JsepCodecDescription;
 using mozilla::SipccSdpParser;
 
 namespace mozilla {
@@ -143,6 +145,7 @@ protected:
       ASSERT_EQ(types[i], pair->mSending->media_type());
       ASSERT_EQ(types[i], pair->mReceiving->media_type());
     }
+    DumpTrackPairs(mSessionOff);
   }
 
   void SetRemoteAnswer(const std::string& answer) {
@@ -157,6 +160,35 @@ protected:
       ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
       ASSERT_EQ(types[i], pair->mSending->media_type());
       ASSERT_EQ(types[i], pair->mReceiving->media_type());
+    }
+    DumpTrackPairs(mSessionAns);
+  }
+
+  void DumpTrack(const jsep::JsepTrack& track) {
+    std::cerr << "  type=" << track.media_type() << std::endl;
+    std::cerr << "  protocol=" << track.protocol() << std::endl;
+    std::cerr << "  codecs=" << std::endl;
+    size_t num_codecs = track.num_codecs();
+    for (size_t i = 0; i < num_codecs; ++i) {
+      const JsepCodecDescription *codec;
+      ASSERT_EQ(NS_OK, track.get_codec(i, &codec));
+      std::cerr << "    " << codec->mName << std::endl;
+    }
+  }
+
+  void DumpTrackPairs(const JsepSessionImpl& session) {
+    for (size_t i = 0; i < types.size(); ++i) {
+      std::cerr << "Track pair " << i << std::endl;
+      const JsepTrackPair* pair;
+       ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
+       if (pair->mSending) {
+         std::cerr << "Sending-->" << std::endl;
+         DumpTrack(*pair->mSending);
+       }
+       if (pair->mReceiving) {
+         std::cerr << "Receiving-->" << std::endl;
+         DumpTrack(*pair->mReceiving);
+       }
     }
   }
 
