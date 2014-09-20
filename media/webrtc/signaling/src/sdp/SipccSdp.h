@@ -37,8 +37,8 @@ public:
   // Note: connection information is always retrieved from media sections
   virtual uint32_t GetBandwidth(const std::string& type) const MOZ_OVERRIDE;
 
-  virtual uint16_t GetMediaSectionCount() const MOZ_OVERRIDE {
-    return static_cast<uint16_t>(mMediaSections.size());
+  virtual size_t GetMediaSectionCount() const MOZ_OVERRIDE {
+    return mMediaSections.size();
   }
 
   virtual const SdpAttributeList& GetAttributeList() const MOZ_OVERRIDE {
@@ -50,9 +50,9 @@ public:
   }
 
   virtual const SdpMediaSection& GetMediaSection(
-      uint16_t level) const MOZ_OVERRIDE;
+      size_t level) const MOZ_OVERRIDE;
 
-  virtual SdpMediaSection &GetMediaSection(uint16_t level) MOZ_OVERRIDE;
+  virtual SdpMediaSection &GetMediaSection(size_t level) MOZ_OVERRIDE;
 
   virtual SdpMediaSection &AddMediaSection(
       SdpMediaSection::MediaType media,
