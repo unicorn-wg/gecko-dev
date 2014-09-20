@@ -7,7 +7,7 @@
 
 #include <mozilla/RefPtr.h>
 
-#include "signaling/src/media/sdp/SdpAttribute.h"
+#include "signaling/src/sdp/SdpAttribute.h"
 
 namespace mozilla {
 namespace jsep {
@@ -19,7 +19,6 @@ class JsepDtlsTransport {
 
 class JsepIceTransport {
  public:
-  virtual 
 };
 
 class JsepTransport {
@@ -27,8 +26,10 @@ class JsepTransport {
   // ICE stuff.
 
   // DTLS stuff.
- private:
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(JsepTransport);
 
+ protected:
+  ~JsepTransport() {}
 };
 
 }  // namespace jsep
