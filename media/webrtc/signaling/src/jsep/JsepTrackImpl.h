@@ -40,7 +40,6 @@ class JsepTrackImpl : public JsepTrack {
     *config = &mCodecs[index];
     return NS_OK;
   }
-  virtual bool rtcp_mux() const { MOZ_CRASH(); }
 
  private:
   // Make these friends to JsepSessionImpl to avoid having to
@@ -57,7 +56,6 @@ class JsepTrackImpl : public JsepTrack {
 class JsepTrackImplPair {
   UniquePtr<JsepTrackImpl> mSending;
   UniquePtr<JsepTrackImpl> mReceiving;
-//  RefPtr<JsepTransport> mTransport;
 };
 
 }  // namespace jsep
