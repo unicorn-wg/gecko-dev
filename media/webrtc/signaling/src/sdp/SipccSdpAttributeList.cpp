@@ -305,27 +305,16 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
   SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
   uint16_t count = sdp_get_media_num_payload_types(sdp, level);
   for (uint16_t i = 0; i < count; ++i) {
-    uint16_t num = sdp_attr_get_sctpmap_port(sdp, level, 0, i + 1);
-    std::string app;
-    std::vector<char> writable(app.begin(), app.end());
-    writable.push_back('\0');
-    sdp_result_e sdpres = sdp_attr_get_sctpmap_protocol(sdp, level, 0, i + 1,
-      &*writable.begin());
-    if (sdpres != SDP_SUCCESS) {
-      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
-                                "Failed to parse sctpmap app name");
-      continue;
-    }
     uint32_t stream = 0;
-    sdpres = sdp_attr_get_sctpmap_streams(sdp, level, 0, i + 1,
-      &stream);
-    if (sdpres != SDP_SUCCESS) {
-      errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
-                                "Failed to parse sctpmap stream");
-      continue;
-    }
+    sdp_attr_get_sctpmap_streams(sdp, level, 0, 1, &stream);
 
-    // TODO looks like sipcc does not support max-message-size
+    char * writable = new char[SDP_MAX_STRING_LEN + 1];
+    sdp_attr_get_sctpmap_protocol(sdp, level, 0, 1, writable);
+    std::string app(writable);
+
+    uint16_t num = sdp_get_media_sctp_port(sdp, level);
+
+    // TODO our parser does not support max-message-size
     sctpmap->PushEntry(num, app, 0, stream);
   }
 
