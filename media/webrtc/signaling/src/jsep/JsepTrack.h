@@ -37,7 +37,8 @@ class JsepTrack {
 struct JsepTrackPair {
   UniquePtr<JsepTrack> mSending;
   UniquePtr<JsepTrack> mReceiving;
-//  RefPtr<JsepTransport> mTransport;
+  RefPtr<JsepTransport> mRtpTransport;
+  RefPtr<JsepTransport> mRtcpTransport;
 };
 
 }  // namespace jsep
