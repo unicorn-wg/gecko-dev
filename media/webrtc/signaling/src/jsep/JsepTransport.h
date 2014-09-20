@@ -14,19 +14,35 @@ namespace jsep {
 
 class JsepDtlsTransport {
  public:
-  virtual SdpFingerprintAttributeList& fingerprints() const = 0;
+  virtual ~JsepDtlsTransport() {}
+
+  virtual const SdpFingerprintAttributeList& fingerprints() const = 0;
 };
 
 class JsepIceTransport {
  public:
-  const std::string& ufrag() const = 0;
-  const std::string& password() const = 0;
-  const std::vector<const std::string>& candidates() = 0;
-  const SdpIceOptionsAttribute& options() = 0;
-};
+  virtual ~JsepIceTransport() {}
 
-class JsepTransport {
- public:
+  virtual const std::string& ufrag() const = 0;
+  virtual const std::string& password() const = 0;
+  virtual const std::vector<std::string>& candidates() const = 0;
+   //  virtual const SdpIceOptionsAttribute& options() const = 0;
+ };
+
+ class JsepTransport {
+  public:
+   JsepTransport(const std::string& id,
+                 UniquePtr<JsepIceTransport> ice,
+                 UniquePtr<JsepDtlsTransport> dtls) {}
+#if 0
+       mTransportId(id),
+       mIce(Move(ice)),
+       mDtls(Move(dtls)) {}
+#endif
+
+ // Unique identifier for this transport within this call. Group?
+  std::string mTransportId;
+
   // ICE stuff.
   UniquePtr<JsepIceTransport> mIce;
   UniquePtr<JsepDtlsTransport> mDtls;
