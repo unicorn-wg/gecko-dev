@@ -44,6 +44,7 @@ public:
     kMaxptimeAttribute,
     kMidAttribute,
     kMsidAttribute,
+    kMsidSemanticAttribute,
     kPtimeAttribute,
     kRecvonlyAttribute,
     kRemoteCandidatesAttribute,
@@ -96,6 +97,7 @@ public:
       case kMaxptimeAttribute: return "maxptime";
       case kMidAttribute: return "mid";
       case kMsidAttribute: return "msid";
+      case kMsidSemanticAttribute: return "msid-semantic";
       case kPtimeAttribute: return "ptime";
       case kRecvonlyAttribute: return "recvonly";
       case kRemoteCandidatesAttribute: return "remote-candidates";
@@ -700,16 +702,22 @@ public:
 class SdpMsidAttributeList : public SdpAttribute
 {
 public:
-  SdpMsidAttributeList(const std::string &identifier,
-                       const std::string &appdata = "") :
-    SdpAttribute(kMsidAttribute),
-    mIdentifier(identifier),
-    mAppdata(appdata) {}
+  SdpMsidAttributeList() :
+      SdpAttribute(kMsidAttribute) {}
+
+  struct Msid {
+    std::string identifier;
+    std::string appdata;
+  };
+
+  void PushEntry(const std::string& identifier,
+                 const std::string& appdata = "") {
+    mMsids.push_back({ identifier, appdata });
+  }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::string mIdentifier;
-  std::string mAppdata;
+  std::vector<Msid> mMsids;
 };
 
 ///////////////////////////////////////////////////////////////////////////

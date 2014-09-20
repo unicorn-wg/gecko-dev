@@ -58,6 +58,7 @@ public:
   virtual const std::string& GetLabel() const MOZ_OVERRIDE;
   virtual unsigned int GetMaxptime() const MOZ_OVERRIDE;
   virtual const std::string& GetMid() const MOZ_OVERRIDE;
+  virtual const std::string& GetMsidSemantic() const MOZ_OVERRIDE;
   virtual unsigned int GetPtime() const MOZ_OVERRIDE;
 
   virtual SdpDirectionAttribute::Direction GetDirection() const MOZ_OVERRIDE;
@@ -91,6 +92,8 @@ private:
   bool LoadGroups(sdp_t* sdp, uint16_t level,
                   SdpErrorHolder& errorHolder);
   void LoadFmtp(sdp_t* sdp, uint16_t level);
+  void LoadMsids(sdp_t* sdp, uint16_t level,
+                 SdpErrorHolder& errorHolder);
 
   bool AtSessionLevel() const { return !mSessionLevel; }
   const SipccSdpAttributeList* mSessionLevel;

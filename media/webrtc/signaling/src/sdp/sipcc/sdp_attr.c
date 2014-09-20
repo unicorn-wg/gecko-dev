@@ -5279,3 +5279,50 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
 
     return (SDP_SUCCESS);
 }
+
+sdp_result_e sdp_parse_attr_msid(sdp_t *sdp_p,
+                                 sdp_attr_t *attr_p,
+                                 const char *ptr)
+{
+    sdp_result_e result;
+
+    ptr = sdp_getnextstrtok(ptr, attr_p->attr.msid.identifier,
+                            sizeof(attr_p->attr.msid.identifier), " \t", &result);
+    if (result != SDP_SUCCESS) {
+        sdp_parse_error(sdp_p, "%s Warning: Bad msid identity value",
+                        sdp_p->debug_str);
+        sdp_p->conf_p->num_invalid_param++;
+        return SDP_INVALID_PARAMETER;
+    }
+
+    ptr = sdp_getnextstrtok(ptr, attr_p->attr.msid.appdata,
+                            sizeof(attr_p->attr.msid.appdata), " \t", &result);
+    if ((result != SDP_SUCCESS) && (result != SDP_EMPTY_TOKEN)) {
+        sdp_parse_error(sdp_p, "%s Warning: Bad msid appdata value",
+                        sdp_p->debug_str);
+        sdp_p->conf_p->num_invalid_param++;
+        return SDP_INVALID_PARAMETER;
+    }
+    if (result == SDP_EMPTY_TOKEN) {
+        attr_p->attr.msid.appdata[0] = '\0';
+    }
+
+    if (sdp_p->debug_flag[SDP_DEBUG_TRACE]) {
+        SDP_PRINT("%s Parsed a=msid, %s %s", sdp_p->debug_str,
+                  attr_p->attr.msid.identifier, attr_p->attr.msid.appdata);
+    }
+
+    return SDP_SUCCESS;
+}
+
+
+sdp_result_e sdp_build_attr_msid(sdp_t *sdp_p,
+                                 sdp_attr_t *attr_p,
+                                 flex_string *fs)
+{
+    flex_string_sprintf(fs, "a=msid:%s%s%s\r\n",
+                        attr_p->attr.msid.identifier,
+                        attr_p->attr.msid.appdata[0] ? " " : "",
+                        attr_p->attr.msid.appdata);
+    return SDP_SUCCESS;
+}

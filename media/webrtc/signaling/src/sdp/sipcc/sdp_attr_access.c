@@ -2004,7 +2004,8 @@ const char *sdp_attr_get_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_X_SIDOUT)&&
         (attr_type != SDP_ATTR_X_CONFID) &&
         (attr_type != SDP_ATTR_LABEL) &&
-        (attr_type != SDP_ATTR_IDENTITY)) {
+        (attr_type != SDP_ATTR_IDENTITY) &&
+        (attr_type != SDP_ATTR_MSID_SEMANTIC)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
             CSFLogError(logTag, "%s Attribute type is not a simple string (%s)",
                       sdp_p->debug_str, sdp_get_attr_name(attr_type));
@@ -2068,7 +2069,8 @@ sdp_result_e sdp_attr_set_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_X_SIDOUT) &&
         (attr_type != SDP_ATTR_X_CONFID) &&
         (attr_type != SDP_ATTR_LABEL) &&
-        (attr_type != SDP_ATTR_IDENTITY)) {
+        (attr_type != SDP_ATTR_IDENTITY) &&
+        (attr_type != SDP_ATTR_MSID_SEMANTIC)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
             CSFLogError(logTag, "%s Attribute type is not a simple string (%s)",
                       sdp_p->debug_str, sdp_get_attr_name(attr_type));
@@ -12700,4 +12702,26 @@ sdp_attr_set_extmap(void *sdp_ptr, u16 level, u16 id, const char* uri, u16 inst)
     attr_p->attr.extmap.id = id;
     sstrncpy(attr_p->attr.extmap.uri, uri, SDP_MAX_STRING_LEN+1);
     return (SDP_SUCCESS);
+}
+
+const char *sdp_attr_get_msid_identifier(sdp_t *sdp_p, u16 level,
+                                       u8 cap_num, u16 inst)
+{
+    sdp_attr_t  *attr_p = sdp_find_attr(sdp_p, level, cap_num,
+                                        SDP_ATTR_MSID, inst);
+    if (!attr_p) {
+      return NULL;
+    }
+    return attr_p->attr.msid.identifier;
+}
+
+const char *sdp_attr_get_msid_appdata(sdp_t *sdp_p, u16 level,
+                                      u8 cap_num, u16 inst)
+{
+    sdp_attr_t  *attr_p = sdp_find_attr(sdp_p, level, cap_num,
+                                        SDP_ATTR_MSID, inst);
+    if (!attr_p) {
+      return NULL;
+    }
+    return attr_p->attr.msid.appdata;
 }
