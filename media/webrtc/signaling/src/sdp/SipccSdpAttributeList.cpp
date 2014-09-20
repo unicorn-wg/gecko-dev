@@ -103,6 +103,13 @@ bool SipccSdpAttributeList::LoadSimpleStrings(sdp_t* sdp, uint16_t level,
     errorHolder.AddParseError(lineNumber, "identity attribute at the media level");
     return false;
   }
+  result = LoadSimpleString(sdp, level, SDP_ATTR_MSID_SEMANTIC,
+                            SdpAttribute::kMsidSemanticAttribute);
+  if (result && AtSessionLevel()) {
+    uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_MSID_SEMANTIC, level, 0, 1);
+    errorHolder.AddParseError(lineNumber, "msid-semantic attribute at the media level");
+    return false;
+  }
   return true;
 }
 
@@ -439,6 +446,35 @@ SipccSdpAttributeList::LoadFmtp(sdp_t* sdp, uint16_t level) {
   }
 }
 
+void
+SipccSdpAttributeList::LoadMsids(sdp_t* sdp, uint16_t level,
+                                 SdpErrorHolder& errorHolder) {
+  uint16_t attrCount = 0;
+  if(sdp_attr_num_instances(sdp, level, 0, SDP_ATTR_MSID, &attrCount)
+     != SDP_SUCCESS) {
+    errorHolder.AddParseError(0, "a=msid instances aren't correct");
+    return;
+  }
+  auto* msids = new SdpMsidAttributeList;
+  for (uint16_t i = 1; i <= attrCount; ++i) {
+    const char* identifier = sdp_attr_get_msid_identifier(sdp, level, 0, i);
+    if (!identifier) {
+      uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_MSID, level, 0, i);
+      errorHolder.AddParseError(lineNumber, "msid attribute with bad identity");
+      continue;
+    }
+    const char* appdata = sdp_attr_get_msid_appdata(sdp, level, 0, i);
+    if (!appdata) {
+      uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_MSID, level, 0, i);
+      errorHolder.AddParseError(lineNumber, "msid attribute with bad appdata");
+      continue;
+    }
+    msids->PushEntry(identifier, appdata);
+  }
+  SetAttribute(msids);
+}
+
+
 bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
@@ -462,6 +498,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
     }
     LoadCandidate(sdp, level);
     LoadFmtp(sdp, level);
+    LoadMsids(sdp, level, errorHolder);
   }
 
   LoadIceAttributes(sdp, level);
@@ -625,7 +662,26 @@ SipccSdpAttributeList::GetMid() const {
 
 const SdpMsidAttributeList&
 SipccSdpAttributeList::GetMsid() const {
-  MOZ_CRASH();
+  if (AtSessionLevel()) {
+    MOZ_CRASH("This is media-level only foo!");
+  }
+  if (!HasAttribute(SdpAttribute::kMsidAttribute)) {
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kMsidAttribute);
+  return *static_cast<const SdpMsidAttributeList*>(attr);
+}
+
+const std::string&
+SipccSdpAttributeList::GetMsidSemantic() const {
+  if (!AtSessionLevel()) {
+    MOZ_CRASH("This is session-level only foo!");
+  }
+  if (!HasAttribute(SdpAttribute::kMsidSemanticAttribute)) {
+    return sEmptyString;
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kMsidSemanticAttribute);
+  return static_cast<const SdpStringAttribute*>(attr)->GetValue();
 }
 
 uint32_t

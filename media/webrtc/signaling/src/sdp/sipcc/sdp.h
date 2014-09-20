@@ -724,6 +724,12 @@ typedef struct sdp_sctpmap {
     char                      protocol[SDP_MAX_STRING_LEN+1];
 } sdp_sctpmap_t;
 
+#define SDP_MAX_MSID_LEN 64
+
+typedef struct sdp_msid {
+  char                      identifier[SDP_MAX_MSID_LEN+1];
+  char                      appdata[SDP_MAX_MSID_LEN+1];
+} sdp_msid_t;
 
 /* a=qos|secure|X-pc-qos|X-qos info */
 typedef struct sdp_qos {
@@ -978,6 +984,7 @@ typedef struct sdp_attr {
         char                  ice_attr[SDP_MAX_STRING_LEN+1];
         sdp_fmtp_t            fmtp;
         sdp_sctpmap_t         sctpmap;
+        sdp_msid_t            msid;
         sdp_qos_t             qos;
         sdp_curr_t            curr;
         sdp_des_t             des;
@@ -1699,6 +1706,11 @@ extern sdp_result_e sdp_attr_set_sctpmap_streams (void *sdp_ptr, u16 level,
                              u8 cap_num, u16 inst_num, u32 streams);
 extern sdp_result_e sdp_attr_get_sctpmap_streams (void *sdp_ptr, u16 level,
                              u8 cap_num, u16 inst_num, u32* val);
+
+extern const char *sdp_attr_get_msid_identifier(sdp_t *sdp_p, u16 level,
+                                                u8 cap_num, u16 inst_num);
+extern const char *sdp_attr_get_msid_appdata(sdp_t *sdp_p, u16 level,
+                                             u8 cap_num, u16 inst_num);
 
 /* H.264 codec specific params */
 

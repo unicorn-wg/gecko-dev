@@ -85,7 +85,7 @@ static sdp_result_e next_token(const char **string_of_tokens, char *token, unsig
 
   /* Make sure there's really a token present. */
   if ((*str == '\0') || (*str == '\n') || (*str == '\r')) {
-    return SDP_FAILURE;
+    return SDP_EMPTY_TOKEN;
   }
 
   /* Now locate end of token */
