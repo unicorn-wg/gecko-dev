@@ -1272,33 +1272,6 @@ TEST_P(NewSdpTest, CheckFlags) {
       SdpAttribute::kRtcpMuxAttribute));
 }
 
-TEST_P(NewSdpTest, CheckMsid) {
-  ParseSdp(kBasicAudioVideoOffer);
-  ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
-      SdpAttribute::kMsidSemanticAttribute));
-  // note that we don't split this one up
-  // it's not worth it until it's properly defined
-  ASSERT_EQ("WMS plus", mSdp->GetAttributeList().GetMsidSemantic());
-
-  const SdpMsidAttributeList& msids1 =
-      mSdp->GetMediaSection(0).GetAttributeList().GetMsid();
-  ASSERT_EQ(1U, msids1.mMsids.size());
-  ASSERT_EQ("track", msids1.mMsids[0].identifier);
-  ASSERT_EQ("stream", msids1.mMsids[0].appdata);
-  const SdpMsidAttributeList& msids2 =
-      mSdp->GetMediaSection(1).GetAttributeList().GetMsid();
-  ASSERT_EQ(2U, msids2.mMsids.size());
-  ASSERT_EQ("tracka", msids2.mMsids[0].identifier);
-  ASSERT_EQ("streama", msids2.mMsids[0].appdata);
-  ASSERT_EQ("trackb", msids2.mMsids[1].identifier);
-  ASSERT_EQ("streamb", msids2.mMsids[1].appdata);
-  const SdpMsidAttributeList& msids3 =
-      mSdp->GetMediaSection(2).GetAttributeList().GetMsid();
-  ASSERT_EQ(1U, msids3.mMsids.size());
-  ASSERT_EQ("track", msids3.mMsids[0].identifier);
-  ASSERT_EQ("", msids3.mMsids[0].appdata);
-}
-
 TEST_P(NewSdpTest, CheckConnectionLines) {
   ParseSdp(kBasicAudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
@@ -1381,6 +1354,32 @@ TEST_P(NewSdpTest, CheckMid) {
   ASSERT_EQ("third", mSdp->GetMediaSection(2).GetAttributeList().GetMid());
 }
 
+TEST_P(NewSdpTest, CheckMsid) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
+      SdpAttribute::kMsidSemanticAttribute));
+  // note that we lose the extra pieces here
+  // it's not worth it to save them until they mean something
+  ASSERT_EQ("WMS", mSdp->GetAttributeList().GetMsidSemantic());
+
+  const SdpMsidAttributeList& msids1 =
+      mSdp->GetMediaSection(0).GetAttributeList().GetMsid();
+  ASSERT_EQ(1U, msids1.mMsids.size());
+  ASSERT_EQ("track", msids1.mMsids[0].identifier);
+  ASSERT_EQ("stream", msids1.mMsids[0].appdata);
+  const SdpMsidAttributeList& msids2 =
+      mSdp->GetMediaSection(1).GetAttributeList().GetMsid();
+  ASSERT_EQ(2U, msids2.mMsids.size());
+  ASSERT_EQ("tracka", msids2.mMsids[0].identifier);
+  ASSERT_EQ("streama", msids2.mMsids[0].appdata);
+  ASSERT_EQ("trackb", msids2.mMsids[1].identifier);
+  ASSERT_EQ("streamb", msids2.mMsids[1].appdata);
+  const SdpMsidAttributeList& msids3 =
+      mSdp->GetMediaSection(2).GetAttributeList().GetMsid();
+  ASSERT_EQ(1U, msids3.mMsids.size());
+  ASSERT_EQ("noappdata", msids3.mMsids[0].identifier);
+  ASSERT_EQ("", msids3.mMsids[0].appdata);
+}
 
 TEST_P(NewSdpTest, CheckGroups) {
   ParseSdp(kBasicAudioVideoOffer);
