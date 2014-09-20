@@ -302,9 +302,10 @@ SipccSdpAttributeList::LoadCandidate(sdp_t* sdp, uint16_t level) {
 bool
 SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
                                    SdpErrorHolder& errorHolder) {
-  SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
   uint16_t count = sdp_get_media_num_payload_types(sdp, level);
-  for (uint16_t i = 0; i < count; ++i) {
+  if (count > 0) {
+    SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
+
     uint32_t stream = 0;
     sdp_attr_get_sctpmap_streams(sdp, level, 0, 1, &stream);
 
@@ -316,11 +317,7 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
 
     // TODO our parser does not support max-message-size
     sctpmap->PushEntry(num, app, 0, stream);
-  }
 
-  if (sctpmap->mSctpmaps.empty()) {
-    delete sctpmap;
-  } else {
     SetAttribute(sctpmap);
   }
   return true;
