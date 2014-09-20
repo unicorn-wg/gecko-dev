@@ -84,6 +84,7 @@ private:
   void LoadFlags(sdp_t* sdp, uint16_t level);
   bool LoadDirection(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   bool LoadRtpmap(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
+  bool LoadSctpmap(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
   void LoadIceAttributes(sdp_t* sdp, uint16_t level);
   void LoadFingerprint(sdp_t* sdp, uint16_t level);
   void LoadCandidate(sdp_t* sdp, uint16_t level);
