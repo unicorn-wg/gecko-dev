@@ -403,6 +403,7 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
                                       UniquePtr<JsepTrack>* trackp) {
   UniquePtr<JsepTrackImpl> track = MakeUnique<JsepTrackImpl>();
   track->mMediaType = receive.GetMediaType();
+  track->mProtocol = receive.GetProtocol();
 
   // Insert all the codecs we support.
   const std::vector<std::string>& formats = receive.GetFormats();
