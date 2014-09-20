@@ -222,6 +222,7 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
   for (size_t i = 0; i < num_m_lines; ++i) {
     const SdpMediaSection& remote_msection = offer.GetMediaSection(i);
+    // TODO(ekr@rtfm.com): Reflect protocol value.
     SdpMediaSection& msection =
       sdp->AddMediaSection(remote_msection.GetMediaType());
 
