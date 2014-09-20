@@ -19,13 +19,18 @@ class JsepDtlsTransport {
 
 class JsepIceTransport {
  public:
+  const std::string& ufrag() const = 0;
+  const std::string& password() const = 0;
+  const std::vector<const std::string>& candidates() = 0;
+  const SdpIceOptionsAttribute& options() = 0;
 };
 
 class JsepTransport {
  public:
   // ICE stuff.
+  UniquePtr<JsepIceTransport> mIce;
+  UniquePtr<JsepDtlsTransport> mDtls;
 
-  // DTLS stuff.
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(JsepTransport);
 
  protected:
