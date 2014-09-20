@@ -105,7 +105,7 @@ bool SipccSdpAttributeList::LoadSimpleStrings(sdp_t* sdp, uint16_t level,
   }
   result = LoadSimpleString(sdp, level, SDP_ATTR_MSID_SEMANTIC,
                             SdpAttribute::kMsidSemanticAttribute);
-  if (result && AtSessionLevel()) {
+  if (result && !AtSessionLevel()) {
     uint32_t lineNumber = sdp_attr_line_number(sdp, SDP_ATTR_MSID_SEMANTIC, level, 0, 1);
     errorHolder.AddParseError(lineNumber, "msid-semantic attribute at the media level");
     return false;
