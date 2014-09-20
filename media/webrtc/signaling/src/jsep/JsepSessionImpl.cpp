@@ -17,6 +17,8 @@
 
 #include "signaling/src/jsep/JsepTrack.h"
 #include "signaling/src/jsep/JsepTrackImpl.h"
+#include "signaling/src/jsep/JsepTransport.h"
+#include "signaling/src/jsep/JsepTransportImpl.h"
 #include "signaling/src/sdp/Sdp.h"
 #include "signaling/src/sdp/SipccSdp.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
@@ -426,6 +428,40 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
   }
 
   *trackp = Move(track);
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::CreateTransport(const SdpAttributeList& remote,
+                                          const SdpAttributeList& offer,
+                                          const SdpAttributeList& answer,
+                                          RefPtr<JsepTransport>* transport) {
+  UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
+  if (!remote.HasAttribute(SdpAttribute::kIceUfragAttribute, true)) {
+    MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE ufrag");
+    return NS_ERROR_FAILURE;
+  }
+  if (!remote.HasAttribute(SdpAttribute::kIcePwdAttribute, true)) {
+    MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE pwd");
+    return NS_ERROR_FAILURE;
+  }
+  // TODO(ekr@rtfm.com): ICE lite, ICE trickle.
+  ice->mUfrag = remote.GetIceUfrag();
+  ice->mPwd = remote.GetIcePwd();
+
+  if (remote.HasAttribute(SdpAttribute::kCandidateAttribute, true)) {
+    ice->mCandidates = remote.GetCandidate();
+  }
+
+  UniquePtr<JsepDtlsTransportImpl> dtls = MakeUnique<JsepDtlsTransportImpl>();
+  if (!remote.HasAttribute(SdpAttribute::kFingerprintAttribute, true)) {
+     MOZ_MTLOG(ML_ERROR, "Peer does not have a fingeprrint");
+    return NS_ERROR_FAILURE;
+  }
+  dtls->mFingerprints = remote.GetFingerprint();
+
+  *transport = new JsepTransport("transport-id",
+                                 Move(ice), Move(dtls));
+
   return NS_OK;
 }
 

@@ -132,6 +132,11 @@ class JsepSessionImpl : public JsepSession {
     }
     mNegotiatedTrackPairs.clear();
   }
+  nsresult CreateTransport(const SdpAttributeList& remote,
+                           const SdpAttributeList& offer,
+                           const SdpAttributeList& answer,
+                           RefPtr<JsepTransport>* transport);
+
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
