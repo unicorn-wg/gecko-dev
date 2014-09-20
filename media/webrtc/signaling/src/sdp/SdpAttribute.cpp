@@ -84,11 +84,13 @@ void SdpImageattrAttributeList::Serialize(std::ostream& os) const
 
 void SdpMsidAttributeList::Serialize(std::ostream& os) const
 {
-  os << "a=" << mType << ":" << mIdentifier;
-  if (mAppdata.length()) {
-    os << " " << mAppdata;
+  for (auto i = mMsids.begin(); i != mMsids.end(); ++i) {
+    os << "a=" << mType << ":" << i->identifier;
+    if (i->appdata.length()) {
+      os << " " << i->appdata;
+    }
+    os << CRLF;
   }
-  os << CRLF;
 }
 
 void SdpRemoteCandidatesAttribute::Serialize(std::ostream& os) const
