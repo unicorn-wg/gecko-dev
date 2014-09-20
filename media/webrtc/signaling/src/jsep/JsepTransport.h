@@ -7,12 +7,27 @@
 
 #include <mozilla/RefPtr.h>
 
+#include "signaling/src/media/sdp/SdpAttribute.h"
+
 namespace mozilla {
 namespace jsep {
 
+class JsepDtlsTransport {
+ public:
+  virtual SdpFingerprintAttributeList& fingerprints() const = 0;
+};
+
+class JsepIceTransport {
+ public:
+  virtual 
+};
+
 class JsepTransport {
  public:
-  
+  // ICE stuff.
+
+  // DTLS stuff.
+ private:
 
 };
 
