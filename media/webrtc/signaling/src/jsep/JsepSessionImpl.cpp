@@ -406,7 +406,7 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
   track->mMediaType = receive.GetMediaType();
   track->mProtocol = receive.GetProtocol();
 
-  // Insert all the codecs we support.
+  // Insert all the codecs we jointly support.
   const std::vector<std::string>& formats = receive.GetFormats();
   const SdpRtpmapAttributeList& rtpmap = receive.
        GetAttributeList().GetRtpmap();
