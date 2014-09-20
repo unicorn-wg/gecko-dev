@@ -150,7 +150,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 }
 
 void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
-                                  SdpMediaSection* msection) {
+                                SdpMediaSection* msection) {
   for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
     if (codec->mEnabled && (codec->mType == mediatype)) {
       msection->AddCodec(codec->mDefaultPt,
@@ -161,6 +161,22 @@ void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
   }
 }
 
+JsepCodecDescription* JsepSessionImpl::FindMatchingCodec(
+    SdpMediaSection::MediaType mediatype,
+    const SdpRtpmapAttributeList::Rtpmap& entry) {
+  for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
+    if (codec->mEnabled
+        && (codec->mType == mediatype)
+        && (codec->mName == entry.name)
+        && (codec->mClock == entry.clock)
+        && (codec->mChannels = entry.channels)) {
+      return &*codec;
+    }
+  }
+
+  return nullptr;
+}
+
 void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
                                       SdpMediaSection* msection) {
   const std::vector<std::string>& formats = remote_section.GetFormats();
@@ -169,17 +185,13 @@ void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
 
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
-    for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
-      if (codec->mEnabled
-          && (codec->mType == remote_section.GetMediaType())
-          && (codec->mName == entry.name)
-          && (codec->mClock == entry.clock)
-          && (codec->mChannels = entry.channels)) {
-        msection->AddCodec(entry.pt,  // Reflect the other side's PT
-                           codec->mName,
-                           codec->mClock,
-                           codec->mChannels);
-      }
+    JsepCodecDescription* codec = FindMatchingCodec(
+        remote_section.GetMediaType(), entry);
+    if (codec) {
+      msection->AddCodec(entry.pt,  // Reflect the other side's PT
+                         codec->mName,
+                         codec->mClock,
+                         codec->mChannels);
     }
   }
 }
@@ -236,6 +248,7 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
                                 SdpDirectionAttribute::kRecvonly));
 
     // Now add the codecs.
+    // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive.
     AddCommonCodecs(remote_msection, &msection);
   }
 
@@ -390,6 +403,25 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
                                       UniquePtr<JsepTrack>* trackp) {
   UniquePtr<JsepTrackImpl> track = MakeUnique<JsepTrackImpl>();
   track->mMediaType = receive.GetMediaType();
+
+  // Insert all the codecs we support.
+  const std::vector<std::string>& formats = receive.GetFormats();
+  const SdpRtpmapAttributeList& rtpmap = receive.
+       GetAttributeList().GetRtpmap();
+
+  for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
+    const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
+     JsepCodecDescription* codec = FindMatchingCodec(
+         receive.GetMediaType(), entry);
+     if (codec) {
+       track->mCodecs.push_back(JsepCodecDescription(
+           track->mMediaType,
+           99,
+           codec->mName,
+           codec->mClock,
+           codec->mChannels));
+     }
+  }
 
   *trackp = Move(track);
   return NS_OK;
