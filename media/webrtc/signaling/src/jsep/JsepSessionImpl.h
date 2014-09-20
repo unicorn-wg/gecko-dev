@@ -102,6 +102,8 @@ class JsepSessionImpl : public JsepSession {
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
   void AddCodecs(SdpMediaSection::MediaType mediatype,
                  SdpMediaSection* msection);
+  JsepCodecDescription* FindMatchingCodec(SdpMediaSection::MediaType mediatype,
+    const SdpRtpmapAttributeList::Rtpmap& entry);
   void AddCommonCodecs(const SdpMediaSection& remote_section,
                        SdpMediaSection* msection);
   void SetupDefaultCodecs();

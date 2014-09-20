@@ -27,7 +27,8 @@ class JsepTrack {
   virtual mozilla::SdpMediaSection::Protocol protocol() const = 0;
   virtual Maybe<std::string> bandwidth(const std::string& type) const = 0;
   virtual size_t num_codecs() const = 0;
-  virtual nsresult get_codec(size_t index, JsepCodecDescription* config)
+  virtual nsresult get_codec(size_t index,
+                             const JsepCodecDescription** config)
       const = 0;
   virtual bool rtcp_mux() const = 0;
 };

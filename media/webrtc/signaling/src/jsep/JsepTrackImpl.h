@@ -32,12 +32,12 @@ class JsepTrackImpl : public JsepTrack {
   virtual Maybe<std::string> bandwidth(const std::string& type) const
       MOZ_OVERRIDE { return mBandwidth; }
   virtual size_t num_codecs() const MOZ_OVERRIDE { return mCodecs.size(); }
-  virtual nsresult get_codec(size_t index, JsepCodecDescription* config)
+  virtual nsresult get_codec(size_t index, const JsepCodecDescription** config)
       const MOZ_OVERRIDE {
     if (index >= mCodecs.size()) {
       return NS_ERROR_INVALID_ARG;
     }
-    *config = mCodecs[index];
+    *config = &mCodecs[index];
     return NS_OK;
   }
   virtual bool rtcp_mux() const { MOZ_CRASH(); }
@@ -65,3 +65,4 @@ class JsepTrackImplPair {
 
 
 #endif
+
