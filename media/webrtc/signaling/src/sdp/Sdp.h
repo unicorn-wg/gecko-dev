@@ -35,9 +35,9 @@ public:
   virtual const SdpAttributeList &GetAttributeList() const = 0;
   virtual SdpAttributeList &GetAttributeList() = 0;
 
-  virtual uint16_t GetMediaSectionCount() const = 0;
-  virtual const SdpMediaSection &GetMediaSection(uint16_t level) const = 0;
-  virtual SdpMediaSection &GetMediaSection(uint16_t level) = 0;
+  virtual size_t GetMediaSectionCount() const = 0;
+  virtual const SdpMediaSection &GetMediaSection(size_t level) const = 0;
+  virtual SdpMediaSection &GetMediaSection(size_t level) = 0;
 
   virtual SdpMediaSection &AddMediaSection(
       SdpMediaSection::MediaType media = SdpMediaSection::kAudio,
