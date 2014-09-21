@@ -143,14 +143,18 @@ class JsepSessionImpl : public JsepSession {
     }
     mNegotiatedTrackPairs.clear();
   }
-  nsresult CreateTransport(const SdpAttributeList& remote,
-                           const SdpAttributeList& offer,
-                           const SdpAttributeList& answer,
+  nsresult CreateTransport(const SdpMediaSection& msection,
                            RefPtr<JsepTransport>* transport);
+
+  nsresult SetupTransport(const SdpAttributeList& remote,
+                          const SdpAttributeList& offer,
+                          const SdpAttributeList& answer,
+                          const RefPtr<JsepTransport>& transport);
 
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
+  std::vector<RefPtr<JsepTransport>> mTransports;
   std::vector<JsepTrackPair*> mNegotiatedTrackPairs;  // TODO(ekr@rtfm.com): Add to dtor
 
   std::string mIceUfrag;

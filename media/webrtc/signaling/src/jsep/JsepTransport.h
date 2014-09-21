@@ -31,23 +31,34 @@ class JsepIceTransport {
 
  class JsepTransport {
   public:
-   JsepTransport(const std::string& id,
-                 UniquePtr<JsepIceTransport> ice,
-                 UniquePtr<JsepDtlsTransport> dtls) :
+   JsepTransport(const std::string& id, size_t components) :
        mTransportId(id),
-       mIce(Move(ice)),
-       mDtls(Move(dtls)) {}
+       mState(kJsepTransportOffered),
+       mComponents(components) {}
 
- // Unique identifier for this transport within this call. Group?
-  std::string mTransportId;
 
-  // ICE stuff.
-  UniquePtr<JsepIceTransport> mIce;
-  UniquePtr<JsepDtlsTransport> mDtls;
+   enum State {
+     kJsepTransportOffered,
+     kJsepTransportAccepted,
+     kJsepTransportClosed
+   };
 
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(JsepTransport);
+   // Unique identifier for this transport within this call. Group?
+   std::string mTransportId;
 
- protected:
+   // State.
+   State mState;
+
+   // ICE stuff.
+   UniquePtr<JsepIceTransport> mIce;
+   UniquePtr<JsepDtlsTransport> mDtls;
+
+   // Number of required components.
+   size_t mComponents;
+
+   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(JsepTransport);
+
+  protected:
   ~JsepTransport() {}
 };
 
