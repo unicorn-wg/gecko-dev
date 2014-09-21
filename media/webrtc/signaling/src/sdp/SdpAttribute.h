@@ -450,6 +450,41 @@ public:
     std::string fingerprint;
   };
 
+  // For use by application programmers. Enforces that it's a known and
+  // non-crazy algorithm.
+  void PushEntry(std::string algorithm_str, const std::string& fingerprint,
+                 bool enforcePlausible = true) {
+    SdpFingerprintAttributeList::HashAlgorithm algorithm =
+      SdpFingerprintAttributeList::kUnknownAlgorithm;
+
+    if (algorithm_str == "sha-1") {
+      algorithm = SdpFingerprintAttributeList::kSha1;
+    } else if (algorithm_str == "sha-224") {
+      algorithm = SdpFingerprintAttributeList::kSha224;
+    } else if (algorithm_str == "sha-256") {
+      algorithm = SdpFingerprintAttributeList::kSha256;
+    } else if (algorithm_str == "sha-384") {
+      algorithm = SdpFingerprintAttributeList::kSha384;
+    } else if (algorithm_str == "sha-512") {
+      algorithm = SdpFingerprintAttributeList::kSha512;
+    } else if (algorithm_str == "md5") {
+      algorithm = SdpFingerprintAttributeList::kMd5;
+    } else if (algorithm_str == "md2") {
+      algorithm = SdpFingerprintAttributeList::kMd2;
+    }
+
+    if ((algorithm == SdpFingerprintAttributeList::kUnknownAlgorithm) ||
+        fingerprint.empty()) {
+      if (enforcePlausible) {
+        MOZ_CRASH();
+      } else {
+        return;
+      }
+    }
+
+    PushEntry(algorithm, fingerprint);
+  }
+
   void PushEntry(HashAlgorithm hashFunc, const std::string& fingerprint) {
     mFingerprints.push_back({hashFunc, fingerprint});
   }
