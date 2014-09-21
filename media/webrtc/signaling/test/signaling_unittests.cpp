@@ -20,7 +20,6 @@
 #include "ssl.h"
 #include "prthread.h"
 
-#include "cpr_stdlib.h"
 #include "FakePCObserver.h"
 #include "FakeMediaStreams.h"
 #include "FakeMediaStreamsImpl.h"
@@ -86,21 +85,8 @@ namespace sipcc {
   class OfferOptions : public mozilla::SipccOfferOptions {
 public:
   void setInt32Option(const char *namePtr, int32_t value) {
-    auto &member = getMember(namePtr);
-    member.was_passed = true;
-    member.value = value;
   }
 private:
-  cc_int32_option_t &getMember(const char *namePtr) {
-    if (strcmp(namePtr, "OfferToReceiveAudio") == 0) {
-        return mOptions.offer_to_receive_audio;
-    }
-    if (strcmp(namePtr, "OfferToReceiveVideo") == 0) {
-        return mOptions.offer_to_receive_video;
-    }
-    MOZ_ASSERT(false);
-    return mOptions.offer_to_receive_video;
-  }
 };
 }
 
