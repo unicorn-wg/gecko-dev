@@ -68,6 +68,25 @@ nsresult JsepSessionImpl::AddTrack(const RefPtr<JsepMediaStreamTrack>& track) {
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::SetIceCredentials(const std::string& ufrag,
+                                            const std::string& pwd) {
+  mIceUfrag = ufrag;
+  mIcePwd = pwd;
+
+  return NS_OK;
+}
+nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
+                                             const std::string& value) {
+  JsepDtlsFingerprint fp;
+
+  fp.mAlgorithm = algorithm;
+  fp.mValue = value;
+
+  mDtlsFingerprints.push_back(fp);
+
+  return NS_OK;
+}
+
 nsresult JsepSessionImpl::local_track(
     size_t index,
     RefPtr<JsepMediaStreamTrack>* track) const {
@@ -125,6 +144,10 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     }
 
     SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
+
     AddCodecs(mediatype, &msection);
 
     track->mAssignedMLine = Some(mline_index);
@@ -135,12 +158,18 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kAudio, &msection);
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
     ++nAudio;
   }
   while (options.mOfferToReceiveVideo && nVideo < *options.mOfferToReceiveVideo) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kVideo, &msection);
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
     ++nVideo;
   }
 
@@ -227,6 +256,9 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
     // TODO(ekr@rtfm.com): Reflect protocol value.
     SdpMediaSection& msection =
       sdp->AddMediaSection(remote_msection.GetMediaType());
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
 
     bool matched = false;
 
@@ -526,6 +558,34 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection) {
+  if (mIceUfrag.empty() || mIcePwd.empty()) {
+    MOZ_MTLOG(ML_ERROR, "Missing ICE ufrag and password");
+    return NS_ERROR_FAILURE;
+  }
+
+  if (mDtlsFingerprints.empty()) {
+    MOZ_MTLOG(ML_ERROR, "Missing DTLS fingerprint");
+    return NS_ERROR_FAILURE;
+  }
+
+  msection->GetAttributeList().SetAttribute(new SdpStringAttribute(
+      SdpAttribute::kIceUfragAttribute, mIceUfrag));
+  msection->GetAttributeList().SetAttribute(new SdpStringAttribute(
+      SdpAttribute::kIcePwdAttribute, mIcePwd));
+
+
+  UniquePtr<SdpFingerprintAttributeList> fpl =
+      MakeUnique<SdpFingerprintAttributeList>();
+  for (auto fp = mDtlsFingerprints.begin();
+       fp != mDtlsFingerprints.end(); ++fp) {
+    fpl->PushEntry(fp->mAlgorithm, fp->mValue);
+  }
+  msection->GetAttributeList().SetAttribute(fpl.release());
+
+  return NS_OK;
+}
+
 nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
                                    UniquePtr<Sdp>* parsedp) {
   UniquePtr<Sdp> parsed = mParser.Parse(sdp);
@@ -604,8 +664,9 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
                                       sdp::kIPv4,
                                       "0.0.0.0");
 
-  *sdpp = MakeUnique<SipccSdp>(origin.release());
+  UniquePtr<Sdp> sdp = MakeUnique<SipccSdp>(origin.release());
 
+  *sdpp = Move(sdp);
   return NS_OK;
 }
 

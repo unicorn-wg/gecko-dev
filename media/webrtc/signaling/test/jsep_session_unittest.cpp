@@ -5,6 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <iostream>
+#include <map>
 
 #include "nspr.h"
 #include "nss.h"
@@ -49,9 +50,43 @@ class JsepSessionTest : public JsepSessionTestBase,
   JsepSessionTest() :
       mSessionOff("Offerer"),
       mSessionAns("Answerer") {
+    AddTransportData(&mSessionOff, &mOffererTransport);
+    AddTransportData(&mSessionAns, &mAnswererTransport);
   }
 
 protected:
+  struct TransportData {
+    std::string mIceUfrag;
+    std::string mIcePwd;
+    std::map<std::string, std::string> mFingerprints;
+  };
+
+  void AddDtlsFingerprint(const std::string& alg, JsepSessionImpl* session,
+                          TransportData* tdata) {
+    std::string c = (session->name() == "Offerer") ? "4F" : "41";
+    size_t len = (alg == "sha-1") ? 20 : 32;
+    std::string fp;
+
+    for (size_t i = 0; i < len; ++i) {
+      if (!fp.empty()) {
+        fp += ":";
+      }
+      fp += c;
+    }
+    session->AddDtlsFingerprint(alg, fp);
+    tdata->mFingerprints[alg] = fp;
+  }
+
+  void AddTransportData(JsepSessionImpl* session, TransportData* tdata) {
+    // Values here semi-borrowed from JSEP draft.
+    tdata->mIceUfrag = session->name() + "-ufrag";
+    tdata->mIcePwd = session->name() + "-1234567890";
+    session->SetIceCredentials(tdata->mIceUfrag,
+                               tdata->mIcePwd);
+    AddDtlsFingerprint("sha-1", session, tdata);
+    AddDtlsFingerprint("sha-256", session, tdata);
+  }
+
   std::string CreateOffer(const Maybe<JsepOfferOptions> options = Nothing()) {
     JsepOfferOptions defaultOptions;
     const JsepOfferOptions& optionsRef = options ? *options : defaultOptions;
@@ -60,6 +95,8 @@ protected:
     EXPECT_EQ(NS_OK, rv);
 
     std::cerr << "OFFER: " << offer << std::endl;
+
+    ValidateTransport(mOffererTransport, offer);
 
     return offer;
   }
@@ -105,6 +142,8 @@ protected:
     EXPECT_EQ(NS_OK, rv);
 
     std::cerr << "ANSWER: " << answer << std::endl;
+
+    ValidateTransport(mAnswererTransport, answer);
 
     return answer;
   }
@@ -194,6 +233,38 @@ protected:
   JsepSessionImpl mSessionOff;
   JsepSessionImpl mSessionAns;
   std::vector<SdpMediaSection::MediaType> types;
+
+private:
+  void ValidateTransport(TransportData& source, const std::string& sdp_str) {
+    SipccSdpParser parser;
+    auto sdp = mozilla::Move(parser.Parse(sdp_str));
+    ASSERT_TRUE(sdp) << "Should have valid SDP";
+    size_t num_m_sections = sdp->GetMediaSectionCount();
+    for (size_t i =0; i < num_m_sections; ++i) {
+      const SdpAttributeList& attrs = sdp->GetMediaSection(i).
+          GetAttributeList();
+      ASSERT_EQ(source.mIceUfrag, attrs.GetIceUfrag());
+      ASSERT_EQ(source.mIcePwd, attrs.GetIcePwd());
+      const SdpFingerprintAttributeList& fps =
+          attrs.GetFingerprint();
+      for (auto fp = fps.mFingerprints.begin();
+           fp != fps.mFingerprints.end(); ++fp) {
+        std::string alg_str = "None";
+
+        if (fp->hashFunc == SdpFingerprintAttributeList::kSha1) {
+          alg_str = "sha-1";
+        } else if (fp->hashFunc == SdpFingerprintAttributeList::kSha256) {
+          alg_str = "sha-256";
+        }
+
+        ASSERT_EQ(source.mFingerprints[alg_str], fp->fingerprint);
+      }
+      ASSERT_EQ(source.mFingerprints.size(), fps.mFingerprints.size());
+    }
+  }
+
+  TransportData mOffererTransport;
+  TransportData mAnswererTransport;
 };
 
 TEST_F(JsepSessionTestBase, CreateDestroy) {
