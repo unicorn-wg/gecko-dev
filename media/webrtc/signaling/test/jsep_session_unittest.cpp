@@ -151,6 +151,8 @@ protected:
 
   void SetLocalOffer(const std::string& offer) {
     nsresult rv = mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
+    // Check that the transports exist.
+    ASSERT_EQ(types.size(), mSessionOff.num_transports());
     ASSERT_EQ(NS_OK, rv);
   }
 
