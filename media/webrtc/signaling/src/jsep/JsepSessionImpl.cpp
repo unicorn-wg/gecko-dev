@@ -303,6 +303,21 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
+  // Create transport objects.
+  size_t  num_msections = parsed->GetMediaSectionCount();
+  for (size_t t = 0; t < num_msections; ++t) {
+    if (t < mTransports.size())
+      continue; // This transport already exists (assume we are renegotiating).
+
+    // TODO(ekr@rtfm.com): Deal with bundle-only and the like.
+    RefPtr<JsepTransport> transport;
+    nsresult rv = CreateTransport(parsed->GetMediaSection(t), &transport);
+    if (NS_FAILED(rv))
+      return rv;
+
+    mTransports.push_back(transport);
+  }
+
   // TODO(ekr@rtfm.com): Compare the generated offer to the passed
   // in argument.
 
@@ -321,21 +336,6 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
 
 
 nsresult JsepSessionImpl::SetLocalDescriptionOffer(UniquePtr<Sdp> offer) {
-  // Create transport objects.
-  size_t  num_msections = offer->GetMediaSectionCount();
-  for (size_t t = 0; t < num_msections; ++t) {
-    if (t < mTransports.size())
-      continue; // This transport already exists (assume we are renegotiating).
-
-    // TODO(ekr@rtfm.com): Deal with bundle-only and the like.
-    RefPtr<JsepTransport> transport;
-    nsresult rv = CreateTransport(offer->GetMediaSection(t), &transport);
-    if (NS_FAILED(rv))
-      return rv;
-
-    mTransports.push_back(transport);
-  }
-
   mPendingLocalDescription = Move(offer);
   SetState(kJsepStateHaveLocalOffer);
   return NS_OK;
@@ -411,19 +411,11 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     RefPtr<JsepTransport> transport;
     nsresult rv;
 
-    if (is_offerer) {
-      // This should already exist.
-      MOZ_ASSERT(mTransports.size() > i);
-      if (mTransports.size() < i)
-        return NS_ERROR_FAILURE;
-      transport = mTransports[i];
-    } else {
-      rv = CreateTransport(answer,
-                           &transport);
-      if (NS_FAILED(rv))
-        return rv;
-      mTransports.push_back(transport);
-    }
+    // Transports are created in SetLocal.
+    MOZ_ASSERT(mTransports.size() > i);
+    if (mTransports.size() < i)
+      return NS_ERROR_FAILURE;
+    transport = mTransports[i];
 
     // If the answer says it's inactive we're not doing anything with it.
     // TODO(ekr@rtfm.com): Need to handle renegotiation somehow.
