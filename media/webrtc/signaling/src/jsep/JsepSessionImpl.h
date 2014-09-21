@@ -76,6 +76,21 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) MOZ_OVERRIDE;
 
+  // Access transports.
+  virtual size_t num_transports() const MOZ_OVERRIDE {
+    return mTransports.size();
+  }
+
+  virtual nsresult transport(size_t index, RefPtr<JsepTransport>* transport)
+    const MOZ_OVERRIDE {
+    if (index >= mTransports.size())
+      return NS_ERROR_INVALID_ARG;
+
+    *transport = mTransports[index];
+
+    return NS_OK;
+  }
+
   // Access the negotiated track pairs.
   virtual size_t num_negotiated_track_pairs()
       const MOZ_OVERRIDE {
