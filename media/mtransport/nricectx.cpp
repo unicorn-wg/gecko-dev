@@ -538,6 +538,14 @@ NrIceCtx::CreateStream(const std::string& name, int components) {
   return stream;
 }
 
+std::string NrIceCtx::ufrag() const {
+  return ctx_->ufrag;
+}
+
+std::string NrIceCtx::pwd() const {
+  return ctx_->pwd;
+}
+
 void NrIceCtx::destroy_peer_ctx() {
   nr_ice_peer_ctx_destroy(&peer_);
 }

@@ -34,6 +34,7 @@ using namespace dom;
 // Convert constraints to C structures
 #ifdef KEEP_SIPCC
 
+// TODO(ekr@rtfm.com): Port all of this.
 #ifdef MOZILLA_INTERNAL_API
 static void
 Apply(const Optional<bool> &aSrc, cc_boolean_option_t *aDst) {

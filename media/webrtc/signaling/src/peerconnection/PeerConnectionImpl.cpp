@@ -38,6 +38,9 @@
 #include "nsDOMDataChannelDeclarations.h"
 #include "dtlsidentity.h"
 
+#include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepSessionImpl.h"
+
 #ifdef MOZILLA_INTERNAL_API
 #ifdef XP_WIN
 // We need to undef the MS macro for nsIDocument::CreateEvent
@@ -107,6 +110,7 @@
 #define ICE_PARSING "In RTCConfiguration passed to RTCPeerConnection constructor"
 
 using namespace mozilla;
+using namespace mozilla::jsep;
 using namespace mozilla::dom;
 
 typedef PCObserverString ObString;
@@ -565,6 +569,7 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return NS_ERROR_UNEXPECTED;
   }
 
+  // TODO(ekr@rtfm.com): Do we still need a handle?
   char hex[17];
   PR_snprintf(hex,sizeof(hex),"%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",
     handle_bin[0],
@@ -586,12 +591,7 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   MOZ_ASSERT(pcctx);
   STAMP_TIMECARD(mTimeCard, "Done Initializing PC Ctx");
 
-  // EKR: REMOVED
-  // mInternal->mCall = pcctx->createCall();
-  //   if (!mInternal->mCall.get()) {
-  //    CSFLogError(logTag, "%s: Couldn't Create Call Object", __FUNCTION__);
-  //     return NS_ERROR_FAILURE;
-  //   }
+  mJsepSession = MakeUnique<JsepSessionImpl>(mName);
 
   IceConfiguration converted;
   if (aRTCConfiguration) {
@@ -624,10 +624,12 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return res;
   }
 
-  // Store under mHandle
-  // TODO: REMOVED
-  // mInternal->mCall->setPeerConnection(mHandle);
-  PeerConnectionCtx::GetInstance()->mPeerConnections[mHandle] = this;
+  res = mJsepSession->SetIceCredentials(mMedia->ice_ctx()->ufrag(),
+                                        mMedia->ice_ctx()->pwd());
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "%s: Couldn't set ICE credentials", __FUNCTION__);
+    return res;
+  }
 
   STAMP_TIMECARD(mTimeCard, "Generating DTLS Identity");
   // Create the DTLS Identity
@@ -642,6 +644,12 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   mFingerprint = mIdentity->GetFormattedFingerprint();
   if (mFingerprint.empty()) {
     CSFLogError(logTag, "%s: unable to get fingerprint", __FUNCTION__);
+    return res;
+  }
+  res = mJsepSession->AddDtlsFingerprint(GetFingerprintAlgorithm(),
+                                         GetFingerprintHexValue());
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "%s: Couldn't set DTLS credentials", __FUNCTION__);
     return res;
   }
 
@@ -975,7 +983,6 @@ PeerConnectionImpl::CreateOffer(const SipccOfferOptions& aOptions)
 {
   PC_AUTO_ENTER_API_CALL(true);
 
-  JSErrorResult rv;
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
   if (!pco) {
     return NS_OK;
@@ -991,27 +998,18 @@ PeerConnectionImpl::CreateOffer(const SipccOfferOptions& aOptions)
 
   STAMP_TIMECARD(mTimeCard, "Create Offer");
 
-  // EKR: REMOVED
-  // cc_media_options_t* cc_options = aOptions.build();
-  // NS_ENSURE_TRUE(cc_options, NS_ERROR_UNEXPECTED);
+  JsepOfferOptions options; // TODO(ekr@rtfm.com): actually set these
+  std::string offer;
 
-  // EKR: REMOVED
-  // cc_int32_t error = mInternal->mCall->createOffer(cc_options, mTimeCard);
-
-#ifdef KEEP_SIPCC
-  if (error) {
-    std::string error_string;
-    // EKR: REMOVED
-    // mInternal->mCall->getErrorString(&error_string);
-    // CSFLogError(logTag, "%s: pc = %s, error = %s",
-    //            __FUNCTION__, mHandle.c_str(), error_string.c_str());
-    // pco->OnCreateOfferError(error, ObString(error_string.c_str()), rv);
+  nsresult nrv = mJsepSession->CreateOffer(options, &offer);
+  JSErrorResult rv;
+  if (NS_FAILED(nrv)) {
+    std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    pco->OnCreateOfferError(error, ObString(error_string.c_str()), rv);
   } else {
-    std::string sdp;
-    mInternal->mCall->getLocalSdp(&sdp);
-    pco->OnCreateOfferSuccess(ObString(sdp.c_str()), rv);
+    pco->OnCreateOfferSuccess(ObString(offer.c_str()), rv);
   }
-#endif
 
   UpdateSignalingState();
   return NS_OK;
@@ -1494,12 +1492,12 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
     aMediaStream.AddPrincipalChangeObserver(this);
   }
 
-#ifdef KEEP_SIPCC
   // TODO(ekr@rtfm.com): these integers should be the track IDs
   if (hints & DOMMediaStream::HINT_CONTENTS_AUDIO) {
-    if (mInternal->mCall->addStream(stream_id, 0, AUDIO)) {
-      std::string error_string;
-      mInternal->mCall->getErrorString(&error_string);
+    res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
+        mozilla::SdpMediaSection::kAudio));
+    if (NS_FAILED(res)) {
+      std::string error_string = "Error"; // TODO(ekr@rtfm.com): Fill in
       CSFLogError(logTag, "%s (audio) : pc = %s, error = %s",
                   __FUNCTION__, mHandle.c_str(), error_string.c_str());
       return NS_ERROR_FAILURE;
@@ -1508,16 +1506,16 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
   }
 
   if (hints & DOMMediaStream::HINT_CONTENTS_VIDEO) {
-    if (mInternal->mCall->addStream(stream_id, 1, VIDEO)) {
-      std::string error_string;
-      mInternal->mCall->getErrorString(&error_string);
-      CSFLogError(logTag, "%s: (video) pc = %s, error = %s",
+    res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
+        mozilla::SdpMediaSection::kVideo));
+    if (NS_FAILED(res)) {
+      std::string error_string = "Error"; // TODO(ekr@rtfm.com): Fill in
+      CSFLogError(logTag, "%s (video) : pc = %s, error = %s",
                   __FUNCTION__, mHandle.c_str(), error_string.c_str());
       return NS_ERROR_FAILURE;
     }
     mNumVideoStreams++;
   }
-#endif
   return NS_OK;
 }
 
