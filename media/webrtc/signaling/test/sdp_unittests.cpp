@@ -1484,6 +1484,24 @@ TEST_P(NewSdpTest, CheckApplicationParameters) {
       mSdp->GetMediaSection(2).GetAttributeList().GetSetup().mRole);
 }
 
+const std::string kNewSctpmapOffer =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 27987 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"t=0 0" CRLF
+"a=ice-ufrag:8a39d2ae" CRLF
+"a=ice-pwd:601d53aba51a318351b3ecf5ee00048f" CRLF
+"a=fingerprint:sha-256 30:FF:8E:2B:AC:9D:ED:70:18:10:67:C8:AE:9E:68:F3:86:53:51:B0:AC:31:B7:BE:6D:CF:A4:2E:D3:6E:B4:28" CRLF
+"m=application 9 DTLS/SCTP 7000" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=sctpmap:7000 webrtc-datachannel2 max-message-size=2000 streams=12" CRLF
+"a=setup:actpass" CRLF;
+
+TEST_P(NewSdpTest, NewSctpmapSdpParse) {
+  ParseSdp(kNewSctpmapOffer, false);
+  ASSERT_EQ(1U, mParser.GetParseErrors().size()) << "Missing parser errors";
+}
+
 // TODO: Tests that parse above SDP, and check various things
 // For media sections 1 and 2:
 //  Check fmtp
