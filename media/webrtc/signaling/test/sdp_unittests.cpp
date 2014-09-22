@@ -818,27 +818,32 @@ class NewSdpTest : public ::testing::Test,
     void ParseSdp(const std::string &sdp, bool expectSuccess = true) {
       mSdp = mozilla::Move(mParser.Parse(sdp));
 
-      if (expectSuccess && GetParam()) {
+      // Are we configured to do a parse and serialize before actually
+      // running the test?
+      if (GetParam()) {
         std::stringstream os;
-        ASSERT_TRUE(mSdp) << "Parse failed on first pass: "
-                          << GetParseErrors();
 
-        // Serialize and re-parse
-        mSdp->Serialize(os);
-        mSdp = mozilla::Move(mParser.Parse(os.str()));
-        ASSERT_TRUE(mSdp) << "Parse failed on second pass, SDP was: "
-                          << std::endl << os.str() <<  std::endl
-                          << "Errors were: " << GetParseErrors();
-        ASSERT_EQ(0U, mParser.GetParseErrors().size())
-                  << "Got unexpected parse errors/warnings on second pass,"
-                      " SDP was: "
-                  << std::endl << os.str() <<  std::endl
-                  << "Errors were: " << GetParseErrors();
+        if (expectSuccess) {
+          ASSERT_TRUE(mSdp) << "Parse failed on first pass: "
+                            << GetParseErrors();
+        }
 
-        // Serialize again and compare
-        std::stringstream os2;
-        mSdp->Serialize(os2);
-        ASSERT_EQ(os.str(), os2.str());
+        if (mSdp) {
+          // Serialize and re-parse
+          mSdp->Serialize(os);
+          mSdp = mozilla::Move(mParser.Parse(os.str()));
+
+          // Whether we expected the parse to work or not, it should
+          // succeed the second time if it succeeded the first.
+          ASSERT_TRUE(mSdp) << "Parse failed on second pass, SDP was: "
+            << std::endl << os.str() <<  std::endl
+            << "Errors were: " << GetParseErrors();
+
+          // Serialize again and compare
+          std::stringstream os2;
+          mSdp->Serialize(os2);
+          ASSERT_EQ(os.str(), os2.str());
+        }
       }
 
       if (expectSuccess) {
@@ -1069,6 +1074,8 @@ const std::string kBasicAudioVideoOffer =
 "a=rtpmap:8 PCMA/8000" CRLF
 "a=rtpmap:101 telephone-event/8000" CRLF
 "a=fmtp:101 0-15" CRLF
+"a=ice-ufrag:00000000" CRLF
+"a=ice-pwd:0000000000000000000000000000000" CRLF
 "a=sendonly" CRLF
 "a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level" CRLF
 "a=setup:actpass" CRLF
@@ -1381,6 +1388,41 @@ TEST_P(NewSdpTest, CheckMsid) {
   ASSERT_EQ("", msids3.mMsids[0].appdata);
 }
 
+TEST_P(NewSdpTest, CheckMediaLevelIceUfrag) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kIceUfragAttribute, true));
+  ASSERT_EQ("00000000",
+            mSdp->GetMediaSection(0).GetAttributeList().GetIceUfrag());
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kIceUfragAttribute, false));
+
+  ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+        SdpAttribute::kIceUfragAttribute, true));
+  ASSERT_EQ("4a799b2e",
+            mSdp->GetMediaSection(1).GetAttributeList().GetIceUfrag());
+}
+
+TEST_P(NewSdpTest, CheckMediaLevelIcePwd) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kIcePwdAttribute));
+  ASSERT_EQ("0000000000000000000000000000000",
+            mSdp->GetMediaSection(0).GetAttributeList().GetIcePwd());
+
+  ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+        SdpAttribute::kIcePwdAttribute));
+  ASSERT_EQ("e4cc12a910f106a0a744719425510e17",
+            mSdp->GetMediaSection(1).GetAttributeList().GetIcePwd());
+}
+
 TEST_P(NewSdpTest, CheckGroups) {
   ParseSdp(kBasicAudioVideoOffer);
   const SdpGroupAttributeList& group = mSdp->GetAttributeList().GetGroup();
@@ -1493,6 +1535,503 @@ TEST_P(NewSdpTest, CheckApplicationParameters) {
 INSTANTIATE_TEST_CASE_P(RoundTripSerialize,
                         NewSdpTest,
                         ::testing::Values(false, true));
+
+const std::string kCandidateInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 62453 typ host" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF;
+
+// This may or may not parse, but if it does, the errant candidate attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckCandidateInSessionLevel) {
+  ParseSdp(kCandidateInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kCandidateAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kCandidateAttribute));
+  }
+}
+
+const std::string kBundleOnlyInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=bundle-only" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckBundleOnlyInSessionLevel) {
+  ParseSdp(kBundleOnlyInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kBundleOnlyAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kBundleOnlyAttribute));
+  }
+}
+
+const std::string kFmtpInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=fmtp:109 0-15" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckFmtpInSessionLevel) {
+  ParseSdp(kFmtpInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kFmtpAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kFmtpAttribute));
+  }
+}
+
+const std::string kIceMismatchInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=ice-mismatch" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckIceMismatchInSessionLevel) {
+  ParseSdp(kIceMismatchInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kIceMismatchAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kIceMismatchAttribute));
+  }
+}
+
+const std::string kImageattrInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=imageattr:120 send * recv *" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckImageattrInSessionLevel) {
+  ParseSdp(kImageattrInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kImageattrAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kImageattrAttribute));
+  }
+}
+
+const std::string kLabelInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=label:foobar" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckLabelInSessionLevel) {
+  ParseSdp(kLabelInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kLabelAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kLabelAttribute));
+  }
+}
+
+const std::string kMaxptimeInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=maxptime:100" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckMaxptimeInSessionLevel) {
+  ParseSdp(kMaxptimeInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kMaxptimeAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kMaxptimeAttribute));
+  }
+}
+
+const std::string kMidInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=mid:foobar" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckMidInSessionLevel) {
+  ParseSdp(kMidInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kMidAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kMidAttribute));
+  }
+}
+
+const std::string kMsidInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=msid:foobar" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckMsidInSessionLevel) {
+  ParseSdp(kMsidInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kMsidAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kMsidAttribute));
+  }
+}
+
+const std::string kPtimeInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=ptime:50" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckPtimeInSessionLevel) {
+  ParseSdp(kPtimeInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kPtimeAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kPtimeAttribute));
+  }
+}
+
+const std::string kRemoteCandidatesInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=remote-candidates:0 10.0.0.1 5555" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckRemoteCandidatesInSessionLevel) {
+  ParseSdp(kRemoteCandidatesInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kRemoteCandidatesAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kRemoteCandidatesAttribute));
+  }
+}
+
+const std::string kRtcpInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=rtcp:5555" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckRtcpInSessionLevel) {
+  ParseSdp(kRtcpInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpAttribute));
+  }
+}
+
+const std::string kRtcpFbInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=rtcp-fb:120 nack" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckRtcpFbInSessionLevel) {
+  ParseSdp(kRtcpFbInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpFbAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpFbAttribute));
+  }
+}
+
+const std::string kRtcpMuxInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=rtcp-mux" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckRtcpMuxInSessionLevel) {
+  ParseSdp(kRtcpMuxInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpMuxAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpMuxAttribute));
+  }
+}
+
+const std::string kRtcpRsizeInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=rtcp-rsize" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckRtcpRsizeInSessionLevel) {
+  ParseSdp(kRtcpRsizeInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpRsizeAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpRsizeAttribute));
+  }
+}
+
+const std::string kRtpmapInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckRtpmapInSessionLevel) {
+  ParseSdp(kRtpmapInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kRtpmapAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kRtpmapAttribute));
+  }
+}
+
+const std::string kSctpmapInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=sctpmap:5000" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckSctpmapInSessionLevel) {
+  ParseSdp(kSctpmapInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kSctpmapAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kSctpmapAttribute));
+  }
+}
+
+const std::string kSsrcInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=ssrc:5000" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckSsrcInSessionLevel) {
+  ParseSdp(kSsrcInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kSsrcAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kSsrcAttribute));
+  }
+}
+
+const std::string kSsrcGroupInSessionSDP =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=ssrc-group:FID 5000" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+// This may or may not parse, but if it does, the errant attribute
+// should be ignored.
+TEST_P(NewSdpTest, CheckSsrcGroupInSessionLevel) {
+  ParseSdp(kSsrcGroupInSessionSDP, false);
+  if (mSdp) {
+    ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+          SdpAttribute::kSsrcGroupAttribute));
+    ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+          SdpAttribute::kSsrcGroupAttribute));
+  }
+}
+
+const std::string kNoAttributes =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"m=video 9 RTP/SAVPF 120" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF;
+
+TEST_P(NewSdpTest, CheckNoAttributes) {
+  ParseSdp(kNoAttributes);
+
+  for (auto a = SdpAttribute::kFirstAttribute;
+       a < SdpAttribute::kOtherAttribute;
+       ++a) {
+    // rtpmap is a special case right now, we throw parse errors if it is
+    // missing, and then insert one.
+    // direction is another special case that gets a default if not present
+    if (a != SdpAttribute::kRtpmapAttribute &&
+        a != SdpAttribute::kDirectionAttribute) {
+      ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(a))
+        << "Attribute " << a << " should not have been present at media level";
+      ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(a))
+        << "Attribute " << a << " should not have been present at session level";
+    }
+  }
+
+  ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+        SdpAttribute::kRtpmapAttribute));
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kDirectionAttribute));
+  ASSERT_EQ(SdpDirectionAttribute::kSendrecv,
+      mSdp->GetMediaSection(0).GetAttributeList().GetDirection());
+  ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
+        SdpAttribute::kDirectionAttribute));
+  ASSERT_EQ(SdpDirectionAttribute::kSendrecv,
+      mSdp->GetAttributeList().GetDirection());
+
+  // We cannot use kOtherAttribute above, because operator<< will assert.
+  ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kOtherAttribute));
+  ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(
+        SdpAttribute::kOtherAttribute));
+}
+
+TEST_P(NewSdpTest, CheckAttributeTypeSerialize) {
+  for (auto a = SdpAttribute::kFirstAttribute;
+       a < SdpAttribute::kOtherAttribute;
+       ++a) {
+
+    // Direction attributes are handled a little differently
+    if (a != SdpAttribute::kDirectionAttribute) {
+      std::ostringstream os;
+      os << a;
+      ASSERT_NE("", os.str());
+    }
+  }
+}
 
 } // End namespace test.
 
