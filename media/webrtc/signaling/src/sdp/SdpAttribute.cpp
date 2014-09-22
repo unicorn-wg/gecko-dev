@@ -191,4 +191,85 @@ void SdpNumberAttribute::Serialize(std::ostream& os) const
   os << "a=" << mType << ":" << mValue << CRLF;
 }
 
+bool SdpAttribute::IsAllowedAtMediaLevel(AttributeType type) {
+  switch (type) {
+    case kBundleOnlyAttribute: return true;
+    case kCandidateAttribute: return true;
+    case kConnectionAttribute: return true;
+    case kDirectionAttribute: return true;
+    case kExtmapAttribute: return true;
+    case kFingerprintAttribute: return true;
+    case kFmtpAttribute: return true;
+    case kGroupAttribute: return false;
+    case kIceLiteAttribute: return false;
+    case kIceMismatchAttribute: return true;
+    case kIceOptionsAttribute: return false;
+    case kIcePwdAttribute: return true;
+    case kIceUfragAttribute: return true;
+    case kIdentityAttribute: return false;
+    case kImageattrAttribute: return true;
+    case kInactiveAttribute: return true;
+    case kLabelAttribute: return true;
+    case kMaxptimeAttribute: return true;
+    case kMidAttribute: return true;
+    case kMsidAttribute: return true;
+    case kPtimeAttribute: return true;
+    case kRecvonlyAttribute: return true;
+    case kRemoteCandidatesAttribute: return true;
+    case kRtcpAttribute: return true;
+    case kRtcpFbAttribute: return true;
+    case kRtcpMuxAttribute: return true;
+    case kRtcpRsizeAttribute: return true;
+    case kRtpmapAttribute: return true;
+    case kSctpmapAttribute: return true;
+    case kSendonlyAttribute: return true;
+    case kSendrecvAttribute: return true;
+    case kSetupAttribute: return true;
+    case kSsrcAttribute: return true;
+    case kSsrcGroupAttribute: return true;
+    default: return true;
+  }
+}
+
+bool SdpAttribute::IsAllowedAtSessionLevel(AttributeType type) {
+  switch (type) {
+    case kBundleOnlyAttribute: return false;
+    case kCandidateAttribute: return false;
+    case kConnectionAttribute: return true;
+    case kDirectionAttribute: return true;
+    case kExtmapAttribute: return true;
+    case kFingerprintAttribute: return true;
+    case kFmtpAttribute: return false;
+    case kGroupAttribute: return true;
+    case kIceLiteAttribute: return true;
+    case kIceMismatchAttribute: return false;
+    case kIceOptionsAttribute: return true;
+    case kIcePwdAttribute: return true;
+    case kIceUfragAttribute: return true;
+    case kIdentityAttribute: return true;
+    case kImageattrAttribute: return false;
+    case kInactiveAttribute: return true;
+    case kLabelAttribute: return false;
+    case kMaxptimeAttribute: return false;
+    case kMidAttribute: return false;
+    case kMsidAttribute: return false;
+    case kPtimeAttribute: return false;
+    case kRecvonlyAttribute: return true;
+    case kRemoteCandidatesAttribute: return false;
+    case kRtcpAttribute: return false;
+    case kRtcpFbAttribute: return false;
+    case kRtcpMuxAttribute: return false;
+    case kRtcpRsizeAttribute: return false;
+    case kRtpmapAttribute: return false;
+    case kSctpmapAttribute: return false;
+    case kSendonlyAttribute: return true;
+    case kSendrecvAttribute: return true;
+    case kSetupAttribute: return true;
+    case kSsrcAttribute: return false;
+    case kSsrcGroupAttribute: return false;
+    default: return true;
+  }
+}
+
+
 } // namespace mozilla
