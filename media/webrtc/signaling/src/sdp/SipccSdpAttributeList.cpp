@@ -39,7 +39,10 @@ SipccSdpAttributeList::~SipccSdpAttributeList() {
 bool
 SipccSdpAttributeList::HasAttribute(AttributeType type, bool sessionFallback) const {
   bool isHere = mAttributes[static_cast<size_t>(type)] != nullptr;
-  if (!isHere && !AtSessionLevel() && sessionFallback) {
+  if (!isHere &&
+      !AtSessionLevel() &&
+      sessionFallback &&
+      SdpAttribute::IsAllowedAtSessionLevel(type)) {
     return mSessionLevel->HasAttribute(type, false);
   }
   return isHere;
@@ -48,14 +51,17 @@ SipccSdpAttributeList::HasAttribute(AttributeType type, bool sessionFallback) co
 const SdpAttribute*
 SipccSdpAttributeList::GetAttribute(AttributeType type, bool sessionFallback) const {
   const SdpAttribute* value = mAttributes[static_cast<size_t>(type)];
-  if (!value && !AtSessionLevel() && sessionFallback) {
+  if (!value &&
+      !AtSessionLevel() &&
+      sessionFallback &&
+      SdpAttribute::IsAllowedAtSessionLevel(type)) {
     return mSessionLevel->GetAttribute(type);
   }
   return value;
 }
 
 void SipccSdpAttributeList::RemoveAttribute(AttributeType type) {
-  if (HasAttribute(type)) {
+  if (HasAttribute(type, false)) {
     delete mAttributes[static_cast<size_t>(type)];
   }
 }
@@ -146,11 +152,11 @@ bool SipccSdpAttributeList::LoadSimpleNumbers(sdp_t* sdp, uint16_t level,
 void
 SipccSdpAttributeList::LoadFlags(sdp_t* sdp, uint16_t level) {
   bool exists = sdp_attr_valid(sdp, SDP_ATTR_RTCP_MUX, level, 0, 1);
-  if (exists) {
+  if (exists && !AtSessionLevel()) {
     SetAttribute(new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
   }
   exists = sdp_attr_valid(sdp, SDP_ATTR_ICE_LITE, level, 0, 1);
-  if (exists) {
+  if (exists && AtSessionLevel()) {
     SetAttribute(new SdpFlagAttribute(SdpAttribute::kIceLiteAttribute));
   }
 }
@@ -480,7 +486,12 @@ SipccSdpAttributeList::LoadMsids(sdp_t* sdp, uint16_t level,
     }
     msids->PushEntry(identifier, appdata);
   }
-  SetAttribute(msids);
+
+  if (msids->mMsids.empty()) {
+    delete msids;
+  } else {
+    SetAttribute(msids);
+  }
 }
 
 
@@ -494,14 +505,15 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
   }
   LoadFlags(sdp, level);
 
+  if (!LoadDirection(sdp, level, errorHolder)) {
+    return false;
+  }
+
   if (AtSessionLevel()) {
     if (!LoadGroups(sdp, level, errorHolder)) {
       return false;
     }
   } else {
-    if (!LoadDirection(sdp, level, errorHolder)) {
-      return false;
-    }
     sdp_media_e mtype = sdp_get_media_type(sdp, level);
     if (mtype == SDP_MEDIA_APPLICATION) {
       if (!LoadSctpmap(sdp, level, errorHolder)) {
