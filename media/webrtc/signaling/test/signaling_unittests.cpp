@@ -1614,14 +1614,14 @@ public:
       : init_(false),
         a1_(nullptr),
         a2_(nullptr),
-        wait_for_gather_(true),
+        wait_for_gather_(false),
         stun_addr_(g_stun_server_address),
         stun_port_(g_stun_server_port) {}
 
   SignalingTest(const std::string& stun_addr, uint16_t stun_port)
       : a1_(nullptr),
         a2_(nullptr),
-        wait_for_gather_(true),
+        wait_for_gather_(false),
         stun_addr_(stun_addr),
         stun_port_(stun_port) {}
 

@@ -253,52 +253,6 @@ nsresult PeerConnectionMedia::Init(const std::vector<NrIceStunServer>& stun_serv
       this,
       &PeerConnectionMedia::IceConnectionStateChange_s);
 
-  // Create three streams to start with.
-  // One each for audio, video and DataChannel
-  // TODO: this will be re-visited
-  RefPtr<NrIceMediaStream> audioStream =
-    mIceCtx->CreateStream((mParent->GetName()+": stream1/audio").c_str(), 2);
-  RefPtr<NrIceMediaStream> videoStream =
-    mIceCtx->CreateStream((mParent->GetName()+": stream2/video").c_str(), 2);
-  RefPtr<NrIceMediaStream> dcStream =
-    mIceCtx->CreateStream((mParent->GetName()+": stream3/data").c_str(), 2);
-
-  if (!audioStream) {
-    CSFLogError(logTag, "%s: audio stream is NULL", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  } else {
-    mIceStreams.push_back(audioStream);
-  }
-
-  if (!videoStream) {
-    CSFLogError(logTag, "%s: video stream is NULL", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  } else {
-    mIceStreams.push_back(videoStream);
-  }
-
-  if (!dcStream) {
-    CSFLogError(logTag, "%s: datachannel stream is NULL", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  } else {
-    mIceStreams.push_back(dcStream);
-  }
-
-  // TODO(ekr@rtfm.com): This is not connected to the PCCimpl.
-  // Will need to do that later.
-  for (std::size_t i=0; i<mIceStreams.size(); i++) {
-    mIceStreams[i]->SetLevel(i + 1);
-    mIceStreams[i]->SignalReady.connect(this, &PeerConnectionMedia::IceStreamReady);
-    mIceStreams[i]->SignalCandidate.connect(
-        this,
-        &PeerConnectionMedia::OnCandidateFound_s);
-  }
-
-  // TODO(ekr@rtfm.com): When we have a generic error reporting mechanism,
-  // figure out how to report that StartGathering failed. Bug 827982.
-  RUN_ON_THREAD(mIceCtx->thread(),
-                WrapRunnable(mIceCtx, &NrIceCtx::StartGathering), NS_DISPATCH_NORMAL);
-
   return NS_OK;
 }
 
