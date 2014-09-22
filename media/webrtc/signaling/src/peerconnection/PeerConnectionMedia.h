@@ -314,6 +314,10 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
     return mIceStreams.size();
   }
 
+  // Create and modify transports in response to negotiation events.
+  void UpdateTransports(const mozilla::UniquePtr<mozilla::jsep::JsepSession>&
+                        session);
+
   // Add a stream (main thread only)
   nsresult AddStream(DOMMediaStream* aMediaStream, uint32_t hints,
                      uint32_t *stream_id);
@@ -362,7 +366,8 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
 
   const nsCOMPtr<nsIThread>& GetMainThread() const { return mMainThread; }
   const nsCOMPtr<nsIEventTarget>& GetSTSThread() const { return mSTSThread; }
-
+private:
+  // TODO(ekr@rtfm.com): Can we get rid of this?
   // Get a transport flow either RTP/RTCP for a particular stream
   // A stream can be of audio/video/datachannel/budled(?) types
   mozilla::RefPtr<mozilla::TransportFlow> GetTransportFlow(int aStreamIndex,
@@ -378,12 +383,16 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   // Add a transport flow
   void AddTransportFlow(int aIndex, bool aRtcp,
                         const mozilla::RefPtr<mozilla::TransportFlow> &aFlow);
+
+public:
   void ConnectDtlsListener_s(const mozilla::RefPtr<mozilla::TransportFlow>& aFlow);
   void DtlsConnected_s(mozilla::TransportLayer* aFlow,
                        mozilla::TransportLayer::State state);
   static void DtlsConnected_m(const std::string& aParentHandle,
                               bool aPrivacyRequested);
 
+private:
+  // TODO(ekr@rtfm.com): Can we get rid of this?
   mozilla::RefPtr<mozilla::MediaSessionConduit> GetConduit(int aStreamIndex, bool aReceive) {
     int index_inner = aStreamIndex * 2 + (aReceive ? 0 : 1);
 
@@ -401,7 +410,7 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
     MOZ_ASSERT(!mConduits[index_inner]);
     mConduits[index_inner] = aConduit;
   }
-
+public:
   // ICE state signals
   sigslot::signal2<mozilla::NrIceCtx*, mozilla::NrIceCtx::GatheringState>
       SignalIceGatheringStateChange;
@@ -416,6 +425,9 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   // Final destruction of the media stream. Must be called on the main
   // thread.
   void SelfDestruct_m();
+
+  // Create a transport.
+  void CreateIceMediaStream(size_t components);
 
   // ICE events
   void IceGatheringStateChange_s(mozilla::NrIceCtx* ctx,

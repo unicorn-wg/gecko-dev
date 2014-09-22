@@ -256,6 +256,48 @@ nsresult PeerConnectionMedia::Init(const std::vector<NrIceStunServer>& stun_serv
   return NS_OK;
 }
 
+void
+PeerConnectionMedia::UpdateTransports(
+    const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+  size_t num_transports = session->num_transports();
+  for (size_t i = 0; i < num_transports; ++i) {
+    RefPtr<mozilla::jsep::JsepTransport> transport;
+
+    nsresult rv = session->transport(i, &transport);
+    MOZ_ASSERT(NS_SUCCEEDED(rv));
+    if (NS_FAILED(rv))
+      break;
+
+    if (transport->mState ==
+        mozilla::jsep::JsepTransport::kJsepTransportOffered) {
+      // This is an offered but not yet accepted transport, so make
+      // the transport.
+      RUN_ON_THREAD(GetSTSThread(),
+                    WrapRunnable(RefPtr<PeerConnectionMedia>(this),
+                                 &PeerConnectionMedia::CreateIceMediaStream,
+                                 transport->mComponents),
+                    NS_DISPATCH_NORMAL);
+    }
+  }
+
+  // TODO(ekr@rtfm.com): Need to deal properly with renegotatiation.
+  // For now just start gathering.
+  RUN_ON_THREAD(mIceCtx->thread(),
+                WrapRunnable(mIceCtx, &NrIceCtx::StartGathering),
+                NS_DISPATCH_NORMAL);
+
+}
+
+void
+PeerConnectionMedia::CreateIceMediaStream(size_t components) {
+  RefPtr<NrIceMediaStream> stream =
+    mIceCtx->CreateStream((mParent->GetName()+": unknown").c_str(),
+                          components);
+
+  MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check.
+  mIceStreams.push_back(stream);
+}
+
 nsresult
 PeerConnectionMedia::AddStream(DOMMediaStream* aMediaStream,
                                uint32_t hints,
