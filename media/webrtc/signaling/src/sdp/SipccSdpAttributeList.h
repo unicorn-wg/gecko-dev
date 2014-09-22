@@ -95,6 +95,7 @@ private:
   void LoadFmtp(sdp_t* sdp, uint16_t level);
   void LoadMsids(sdp_t* sdp, uint16_t level,
                  SdpErrorHolder& errorHolder);
+  void LoadExtmap(sdp_t* sdp, uint16_t level, SdpErrorHolder& errorHolder);
 
   bool AtSessionLevel() const { return !mSessionLevel; }
   const SipccSdpAttributeList* mSessionLevel;
