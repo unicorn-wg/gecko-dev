@@ -313,14 +313,24 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
   if (count > 0) {
     SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
 
-    uint32_t stream = 0;
-    sdp_attr_get_sctpmap_streams(sdp, level, 0, 1, &stream);
+    uint16_t num = sdp_get_media_sctp_port(sdp, level);
 
     char * writable = new char[SDP_MAX_STRING_LEN + 1];
-    sdp_attr_get_sctpmap_protocol(sdp, level, 0, 1, writable);
+    memset(writable, '\0', SDP_MAX_STRING_LEN + 1);
+    sdp_result_e result = sdp_attr_get_sctpmap_protocol(sdp, level, 0, 1, writable);
+    if (result != SDP_SUCCESS) {
+      delete sctpmap;
+      return false;
+    }
     std::string app(writable);
 
-    uint16_t num = sdp_get_media_sctp_port(sdp, level);
+    uint32_t stream = 0;
+    // TODO streams are optional according to latest draft
+    result = sdp_attr_get_sctpmap_streams(sdp, level, 0, 1, &stream);
+    if (result != SDP_SUCCESS) {
+      delete sctpmap;
+      return false;
+    }
 
     // TODO our parser does not support max-message-size
     sctpmap->PushEntry(num, app, 0, stream);
