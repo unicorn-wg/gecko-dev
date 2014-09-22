@@ -1970,6 +1970,11 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   }
 
   mSignalingState = aSignalingState;
+
+  if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer) {
+    mMedia->UpdateTransports(mJsepSession);
+  }
+
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
   if (!pco) {
     return;
@@ -2005,7 +2010,6 @@ PeerConnectionImpl::UpdateSignalingState() {
     default:
       MOZ_CRASH();
   }
-
   if (newState == PCImplSignalingState::SignalingClosed) {
     MOZ_CRASH();   // TODO(ekr@rtfm.com): Revisit this.
     Close();
