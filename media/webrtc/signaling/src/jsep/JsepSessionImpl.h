@@ -76,6 +76,21 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) MOZ_OVERRIDE;
 
+  // Access transports.
+  virtual size_t num_transports() const MOZ_OVERRIDE {
+    return mTransports.size();
+  }
+
+  virtual nsresult transport(size_t index, RefPtr<JsepTransport>* transport)
+    const MOZ_OVERRIDE {
+    if (index >= mTransports.size())
+      return NS_ERROR_INVALID_ARG;
+
+    *transport = mTransports[index];
+
+    return NS_OK;
+  }
+
   // Access the negotiated track pairs.
   virtual size_t num_negotiated_track_pairs()
       const MOZ_OVERRIDE {
@@ -143,14 +158,18 @@ class JsepSessionImpl : public JsepSession {
     }
     mNegotiatedTrackPairs.clear();
   }
-  nsresult CreateTransport(const SdpAttributeList& remote,
-                           const SdpAttributeList& offer,
-                           const SdpAttributeList& answer,
+  nsresult CreateTransport(const SdpMediaSection& msection,
                            RefPtr<JsepTransport>* transport);
+
+  nsresult SetupTransport(const SdpAttributeList& remote,
+                          const SdpAttributeList& offer,
+                          const SdpAttributeList& answer,
+                          const RefPtr<JsepTransport>& transport);
 
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
+  std::vector<RefPtr<JsepTransport>> mTransports;
   std::vector<JsepTrackPair*> mNegotiatedTrackPairs;  // TODO(ekr@rtfm.com): Add to dtor
 
   std::string mIceUfrag;

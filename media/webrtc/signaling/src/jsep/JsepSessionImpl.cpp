@@ -303,6 +303,21 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
+  // Create transport objects.
+  size_t  num_msections = parsed->GetMediaSectionCount();
+  for (size_t t = 0; t < num_msections; ++t) {
+    if (t < mTransports.size())
+      continue; // This transport already exists (assume we are renegotiating).
+
+    // TODO(ekr@rtfm.com): Deal with bundle-only and the like.
+    RefPtr<JsepTransport> transport;
+    nsresult rv = CreateTransport(parsed->GetMediaSection(t), &transport);
+    if (NS_FAILED(rv))
+      return rv;
+
+    mTransports.push_back(transport);
+  }
+
   // TODO(ekr@rtfm.com): Compare the generated offer to the passed
   // in argument.
 
@@ -393,19 +408,29 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
       return NS_ERROR_FAILURE;
     }
 
+    RefPtr<JsepTransport> transport;
+    nsresult rv;
+
+    // Transports are created in SetLocal.
+    MOZ_ASSERT(mTransports.size() > i);
+    if (mTransports.size() < i)
+      return NS_ERROR_FAILURE;
+    transport = mTransports[i];
+
     // If the answer says it's inactive we're not doing anything with it.
     // TODO(ekr@rtfm.com): Need to handle renegotiation somehow.
     if (answer.GetDirectionAttribute().mValue ==
-        SdpDirectionAttribute::kInactive)
+        SdpDirectionAttribute::kInactive) {
+      transport->mState = JsepTransport::kJsepTransportClosed;
       continue;
+    }
 
     bool sending;
     bool receiving;
 
-    nsresult rv = DetermineSendingDirection(
-        offer.GetDirectionAttribute().mValue,
-        answer.GetDirectionAttribute().mValue,
-        is_offerer, &sending, &receiving);
+    rv = DetermineSendingDirection(offer.GetDirectionAttribute().mValue,
+                                   answer.GetDirectionAttribute().mValue,
+                                   is_offerer, &sending, &receiving);
     if (NS_FAILED(rv))
       return rv;
 
@@ -425,13 +450,16 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
         return rv;
     }
 
-    rv = CreateTransport(offer.GetAttributeList(),
-                         answer.GetAttributeList(),
-                         rm.GetAttributeList(),
-                         &jpair->mRtpTransport
-                         );
+
+    rv = SetupTransport(offer.GetAttributeList(),
+                        answer.GetAttributeList(),
+                        rm.GetAttributeList(),
+                        transport
+                        );
     if (NS_FAILED(rv))
       return rv;
+
+    jpair->mRtpTransport = transport;
 
     // TODO(ekr@rtfm.com): Check for RTCP mux, don't just assume it.
     jpair->mRtcpTransport = jpair->mRtpTransport;
@@ -476,10 +504,34 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
   return NS_OK;
 }
 
-nsresult JsepSessionImpl::CreateTransport(const SdpAttributeList& remote,
-                                          const SdpAttributeList& offer,
-                                          const SdpAttributeList& answer,
+nsresult JsepSessionImpl::CreateTransport(const SdpMediaSection& msection,
                                           RefPtr<JsepTransport>* transport) {
+  size_t components;
+
+  switch (msection.GetMediaType()) {
+    case SdpMediaSection::kAudio:
+    case SdpMediaSection::kVideo:
+      components = 2;
+      break;
+    case SdpMediaSection::kApplication:
+      components = 1;
+      break;
+    default:
+      MOZ_CRASH(); // This shouldn't happen.
+  }
+
+  RefPtr<JsepTransport> trans = new JsepTransport("transport-id",
+                                                  components);
+  *transport = trans;
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
+                                         const SdpAttributeList& offer,
+                                         const SdpAttributeList& answer,
+                                         const RefPtr<JsepTransport>&
+                                         transport) {
   UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
   if (!remote.HasAttribute(SdpAttribute::kIceUfragAttribute, true)) {
     MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE ufrag");
@@ -504,8 +556,9 @@ nsresult JsepSessionImpl::CreateTransport(const SdpAttributeList& remote,
   }
   dtls->mFingerprints = remote.GetFingerprint();
 
-  *transport = new JsepTransport("transport-id",
-                                 Move(ice), Move(dtls));
+  transport->mIce = Move(ice);
+  transport->mDtls = Move(dtls);
+  transport->mState = JsepTransport::kJsepTransportAccepted;
 
   return NS_OK;
 }

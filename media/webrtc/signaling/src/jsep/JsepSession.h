@@ -8,8 +8,10 @@
 #include <string>
 #include <vector>
 #include "mozilla/Maybe.h"
+#include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
 
+#include "signaling/src/jsep/JsepTransport.h"
 #include "signaling/src/sdp/Sdp.h"
 
 
@@ -83,6 +85,11 @@ class JsepSession {
                                        const std::string& sdp) = 0;
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) = 0;
+
+  // Acces transports.
+  virtual size_t num_transports() const = 0;
+  virtual nsresult transport(size_t index, RefPtr<JsepTransport>* transport)
+    const = 0;
 
   // Access the negotiated track pairs.
   virtual size_t num_negotiated_track_pairs() const = 0;
