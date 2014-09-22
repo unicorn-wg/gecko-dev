@@ -74,6 +74,9 @@ public:
     return GetAttributeTypeString(mType);
   }
 
+  static bool IsAllowedAtSessionLevel(AttributeType type);
+  static bool IsAllowedAtMediaLevel(AttributeType type);
+
   virtual void Serialize(std::ostream&) const = 0;
 
   static const std::string GetAttributeTypeString(AttributeType type) {
