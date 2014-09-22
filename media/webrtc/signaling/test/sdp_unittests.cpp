@@ -2003,17 +2003,22 @@ const std::string kNoAttributes =
 TEST_P(NewSdpTest, CheckNoAttributes) {
   ParseSdp(kNoAttributes);
 
-  for (auto a = SdpAttribute::kFirstAttribute;
-       a < SdpAttribute::kOtherAttribute;
+  for (auto a = static_cast<size_t>(SdpAttribute::kFirstAttribute);
+       a < static_cast<size_t>(SdpAttribute::kOtherAttribute);
        ++a) {
+
+    SdpAttribute::AttributeType type =
+      static_cast<SdpAttribute::AttributeType>(a);
+
     // rtpmap is a special case right now, we throw parse errors if it is
     // missing, and then insert one.
     // direction is another special case that gets a default if not present
-    if (a != SdpAttribute::kRtpmapAttribute &&
-        a != SdpAttribute::kDirectionAttribute) {
-      ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(a))
+    if (type != SdpAttribute::kRtpmapAttribute &&
+        type != SdpAttribute::kDirectionAttribute) {
+      ASSERT_FALSE(
+          mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(type))
         << "Attribute " << a << " should not have been present at media level";
-      ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(a))
+      ASSERT_FALSE(mSdp->GetAttributeList().HasAttribute(type))
         << "Attribute " << a << " should not have been present at session level";
     }
   }
@@ -2037,15 +2042,18 @@ TEST_P(NewSdpTest, CheckNoAttributes) {
         SdpAttribute::kOtherAttribute));
 }
 
-TEST_P(NewSdpTest, CheckAttributeTypeSerialize) {
-  for (auto a = SdpAttribute::kFirstAttribute;
-       a < SdpAttribute::kOtherAttribute;
+TEST(NewSdpTestNoFixture, CheckAttributeTypeSerialize) {
+  for (auto a = static_cast<size_t>(SdpAttribute::kFirstAttribute);
+       a < static_cast<size_t>(SdpAttribute::kOtherAttribute);
        ++a) {
 
+    SdpAttribute::AttributeType type =
+      static_cast<SdpAttribute::AttributeType>(a);
+
     // Direction attributes are handled a little differently
-    if (a != SdpAttribute::kDirectionAttribute) {
+    if (type != SdpAttribute::kDirectionAttribute) {
       std::ostringstream os;
-      os << a;
+      os << type;
       ASSERT_NE("", os.str());
     }
   }
