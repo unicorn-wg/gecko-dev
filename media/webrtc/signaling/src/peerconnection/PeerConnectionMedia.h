@@ -427,7 +427,8 @@ public:
   void SelfDestruct_m();
 
   // Create a transport.
-  void CreateIceMediaStream(size_t components);
+  void UpdateIceMediaStream(size_t index, size_t components);
+  void EnsureIceGathering();
 
   // ICE events
   void IceGatheringStateChange_s(mozilla::NrIceCtx* ctx,

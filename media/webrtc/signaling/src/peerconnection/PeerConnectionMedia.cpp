@@ -268,28 +268,40 @@ PeerConnectionMedia::UpdateTransports(
     if (NS_FAILED(rv))
       break;
 
-    if (transport->mState ==
-        mozilla::jsep::JsepTransport::kJsepTransportOffered) {
-      // This is an offered but not yet accepted transport, so make
-      // the transport.
-      RUN_ON_THREAD(GetSTSThread(),
-                    WrapRunnable(RefPtr<PeerConnectionMedia>(this),
-                                 &PeerConnectionMedia::CreateIceMediaStream,
-                                 transport->mComponents),
-                    NS_DISPATCH_NORMAL);
-    }
+    // Update the transport.
+    RUN_ON_THREAD(GetSTSThread(),
+                  WrapRunnable(RefPtr<PeerConnectionMedia>(this),
+                               &PeerConnectionMedia::UpdateIceMediaStream,
+                               i,
+                               transport->mComponents),
+                  NS_DISPATCH_NORMAL);
   }
+
 
   // TODO(ekr@rtfm.com): Need to deal properly with renegotatiation.
   // For now just start gathering.
-  RUN_ON_THREAD(mIceCtx->thread(),
-                WrapRunnable(mIceCtx, &NrIceCtx::StartGathering),
+  RUN_ON_THREAD(GetSTSThread(),
+                WrapRunnable(
+                    RefPtr<PeerConnectionMedia>(this),
+                    &PeerConnectionMedia::EnsureIceGathering),
                 NS_DISPATCH_NORMAL);
 
 }
 
 void
-PeerConnectionMedia::CreateIceMediaStream(size_t components) {
+PeerConnectionMedia::EnsureIceGathering() {
+  if (mIceCtx->gathering_state() == NrIceCtx::ICE_CTX_GATHER_INIT) {
+    mIceCtx->StartGathering();
+  }
+}
+
+void
+PeerConnectionMedia::UpdateIceMediaStream(size_t index,
+                                          size_t components) {
+  // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE.
+  if (mIceStreams.size() > index)
+    return;
+
   RefPtr<NrIceMediaStream> stream =
     mIceCtx->CreateStream((mParent->GetName()+": unknown").c_str(),
                           components);
