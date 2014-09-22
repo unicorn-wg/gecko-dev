@@ -1020,29 +1020,27 @@ PeerConnectionImpl::CreateAnswer()
 {
   PC_AUTO_ENTER_API_CALL(true);
 
-  JSErrorResult rv;
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
   if (!pco) {
     return NS_OK;
   }
 
   STAMP_TIMECARD(mTimeCard, "Create Answer");
-#ifdef KEEP_SIPCC
-  cc_int32_t error = mInternal->mCall->createAnswer(mTimeCard);
+  JsepAnswerOptions options; // TODO(ekr@rtfm.com): actually set these
+  std::string answer;
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    CSFLogError(logTag, "%s: pc = %s, error = %s",
-                __FUNCTION__, mHandle.c_str(), error_string.c_str());
+  nsresult nrv = mJsepSession->CreateAnswer(options, &answer);
+  JSErrorResult rv;
+  if (NS_FAILED(nrv)) {
+    std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
     pco->OnCreateAnswerError(error, ObString(error_string.c_str()), rv);
   } else {
-    std::string sdp;
-    mInternal->mCall->getLocalSdp(&sdp);
-    pco->OnCreateAnswerSuccess(ObString(sdp.c_str()), rv);
+    pco->OnCreateAnswerSuccess(ObString(answer.c_str()), rv);
   }
-#endif
+
   UpdateSignalingState();
+
   return NS_OK;
 }
 
@@ -1162,27 +1160,38 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
   STAMP_TIMECARD(mTimeCard, "Set Remote Description");
 
   mRemoteRequestedSDP = aSDP;
-#ifdef KEEP_SIPCC
-  cc_int32_t error = mInternal->mCall->setRemoteDescription(
-                                         (cc_jsep_action_t)action,
-                                         mRemoteRequestedSDP, mTimeCard);
+  JsepSdpType sdpType;
+  switch (action) {
+    case IPeerConnection::kActionOffer:
+      sdpType = mozilla::jsep::kJsepSdpOffer;
+      break;
+    case IPeerConnection::kActionAnswer:
+      sdpType = mozilla::jsep::kJsepSdpAnswer;
+      break;
+    case IPeerConnection::kActionPRAnswer:
+      sdpType = mozilla::jsep::kJsepSdpPranswer;
+      break;
+    default:
+      MOZ_ASSERT(false);
+      return NS_ERROR_FAILURE;
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
+  }
+  nsresult nrv = mJsepSession->SetRemoteDescription(sdpType,
+                                                   mRemoteRequestedSDP);
+  if (NS_FAILED(nrv)) {
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    std::string error_string = mJsepSession->last_error();
+    // appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
     CSFLogError(logTag, "%s: pc = %s, error = %s",
                 __FUNCTION__, mHandle.c_str(), error_string.c_str());
     pco->OnSetRemoteDescriptionError(error, ObString(error_string.c_str()), rv);
   } else {
-    mInternal->mCall->getRemoteSdp(&mRemoteSDP);
+    mRemoteSDP = mRemoteRequestedSDP;
     pco->OnSetRemoteDescriptionSuccess(rv);
 #ifdef MOZILLA_INTERNAL_API
     startCallTelem();
 #endif
   }
-#endif
-  ClearSdpParseErrorMessages();
 
   UpdateSignalingState();
   return NS_OK;
