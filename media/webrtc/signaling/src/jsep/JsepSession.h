@@ -86,7 +86,7 @@ class JsepSession {
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) = 0;
 
-  // Acces transports.
+  // Access transports.
   virtual size_t num_transports() const = 0;
   virtual nsresult transport(size_t index, RefPtr<JsepTransport>* transport)
     const = 0;
@@ -96,6 +96,8 @@ class JsepSession {
   virtual nsresult negotiated_track_pair(size_t index,
                                          const JsepTrackPair** pair)
       const = 0;
+
+  virtual const std::string last_error() const { return "Error"; }
 
   static const char* state_str(JsepSignalingState state) {
     static const char *states[] = {
