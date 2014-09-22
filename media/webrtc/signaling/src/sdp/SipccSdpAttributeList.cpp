@@ -63,6 +63,7 @@ SipccSdpAttributeList::GetAttribute(AttributeType type, bool sessionFallback) co
 void SipccSdpAttributeList::RemoveAttribute(AttributeType type) {
   if (HasAttribute(type, false)) {
     delete mAttributes[static_cast<size_t>(type)];
+    mAttributes[static_cast<size_t>(type)] = nullptr;
   }
 }
 
