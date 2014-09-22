@@ -369,29 +369,24 @@ public:
   SdpExtmapAttributeList() :
     SdpAttribute(kExtmapAttribute) {}
 
-  enum Direction {
-    kNotSpecified,
-    kSendonly,
-    kRecvonly,
-    kSendrecv,
-    kInactive
-  };
-
   struct Extmap
   {
     uint16_t entry;
-    Direction direction;
+    SdpDirectionAttribute::Direction direction;
+    bool direction_specified;
     std::string extensionname;
     std::string extensionattributes;
   };
 
   void PushEntry(uint16_t entry,
-                 Direction direction,
+                 SdpDirectionAttribute::Direction direction,
+                 bool direction_specified,
                  const std::string& extensionname,
                  const std::string& extensionattributes = "") {
     mExtmaps.push_back({
       entry,
       direction,
+      direction_specified,
       extensionname,
       extensionattributes
     });
@@ -401,19 +396,6 @@ public:
 
   std::vector<Extmap> mExtmaps;
 };
-
-inline std::ostream& operator <<(std::ostream& os,
-                                 SdpExtmapAttributeList::Direction d)
-{
-  switch (d) {
-    case SdpExtmapAttributeList::kSendonly: os << "sendonly"; break;
-    case SdpExtmapAttributeList::kRecvonly: os << "recvonly"; break;
-    case SdpExtmapAttributeList::kSendrecv: os << "sendrecv"; break;
-    case SdpExtmapAttributeList::kInactive: os << "inactive"; break;
-    default: MOZ_ASSERT(false); os << "?";
-  }
-  return os;
-}
 
 ///////////////////////////////////////////////////////////////////////////
 // a=fingerprint, RFC4572
