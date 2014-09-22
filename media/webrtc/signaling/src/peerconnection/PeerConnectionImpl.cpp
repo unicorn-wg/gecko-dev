@@ -1970,8 +1970,8 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   }
 
   mSignalingState = aSignalingState;
-
-  if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer) {
+  if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer ||
+      mSignalingState == PCImplSignalingState::SignalingStable) {
     mMedia->UpdateTransports(mJsepSession);
   }
 
