@@ -2042,15 +2042,18 @@ TEST_P(NewSdpTest, CheckNoAttributes) {
         SdpAttribute::kOtherAttribute));
 }
 
-TEST_P(NewSdpTest, CheckAttributeTypeSerialize) {
-  for (auto a = SdpAttribute::kFirstAttribute;
-       a < SdpAttribute::kOtherAttribute;
+TEST(NewSdpTestNoFixture, CheckAttributeTypeSerialize) {
+  for (auto a = static_cast<size_t>(SdpAttribute::kFirstAttribute);
+       a < static_cast<size_t>(SdpAttribute::kOtherAttribute);
        ++a) {
 
+    SdpAttribute::AttributeType type =
+      static_cast<SdpAttribute::AttributeType>(a);
+
     // Direction attributes are handled a little differently
-    if (a != SdpAttribute::kDirectionAttribute) {
+    if (type != SdpAttribute::kDirectionAttribute) {
       std::ostringstream os;
-      os << a;
+      os << type;
       ASSERT_NE("", os.str());
     }
   }
