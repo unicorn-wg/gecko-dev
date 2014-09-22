@@ -434,7 +434,11 @@ public:
   void SelfDestruct_m();
 
   // Manage ICE transports.
-  void UpdateIceMediaStream(size_t index, size_t components);
+  void UpdateIceMediaStream(size_t index, size_t components,
+                            bool has_attrs,
+                            const std::string& ufrag,
+                            const std::string& password,
+                            const std::vector<std::string>& candidates);
   void EnsureIceGathering();
   void StartIceChecks_m();
 

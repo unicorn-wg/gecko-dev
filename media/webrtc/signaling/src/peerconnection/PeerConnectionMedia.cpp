@@ -268,12 +268,30 @@ PeerConnectionMedia::UpdateTransports(
     if (NS_FAILED(rv))
       break;
 
+    std::string ufrag;
+    std::string pwd;
+    std::vector<std::string> candidates;
+
+    bool has_attrs = false;
+    if (transport->mIce) {
+      has_attrs = true;
+      ufrag = transport->mIce->ufrag();
+      pwd = transport->mIce->password();
+      candidates = transport->mIce->candidates();
+    }
+
     // Update the transport.
+    // TODO(ekr@rtfm.com): don't repeat candidates on renegotiation. Perhaps
+    // suppress inside nICEr?
     RUN_ON_THREAD(GetSTSThread(),
                   WrapRunnable(RefPtr<PeerConnectionMedia>(this),
                                &PeerConnectionMedia::UpdateIceMediaStream,
                                i,
-                               transport->mComponents),
+                               transport->mComponents,
+                               has_attrs,
+                               ufrag,
+                               pwd,
+                               candidates),
                   NS_DISPATCH_NORMAL);
   }
 
@@ -337,17 +355,34 @@ PeerConnectionMedia::EnsureIceGathering() {
 
 void
 PeerConnectionMedia::UpdateIceMediaStream(size_t index,
-                                          size_t components) {
+                                          size_t components,
+                                          bool has_attrs,
+                                          const std::string& ufrag,
+                                          const std::string& password,
+                                          const std::vector<std::string>& candidates
+                                          ) {
   // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE.
-  if (mIceStreams.size() > index)
-    return;
+  RefPtr<NrIceMediaStream> stream;
+  if (mIceStreams.size() <= index) {
+    stream = mIceCtx->CreateStream((mParent->GetName()+": unknown").c_str(),
+                            components);
+    MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check.
+    mIceStreams.push_back(stream);
+  } else {
+    stream = mIceStreams[index];
+  }
 
-  RefPtr<NrIceMediaStream> stream =
-    mIceCtx->CreateStream((mParent->GetName()+": unknown").c_str(),
-                          components);
+  if (has_attrs) {
+    std::vector<std::string> attrs;
+    attrs.push_back("ice-ufrag:" + ufrag);
+    attrs.push_back("ice-pwd:" + password);
 
-  MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check.
-  mIceStreams.push_back(stream);
+    // TODO(ekr@rtfm.com):Add non-trickle candidates.
+    nsresult rv = stream->ParseAttributes(attrs);
+    if (NS_FAILED(rv)) {
+      CSFLogError(logTag, "Couldn't parse ICE attributes");
+    }
+  }
 }
 
 nsresult

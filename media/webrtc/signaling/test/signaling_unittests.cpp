@@ -1736,7 +1736,6 @@ public:
                    TrickleType trickleType = BOTH_TRICKLE) {
     EnsureInit();
     Offer(options, offerAnswerFlags, offerSdpCheck, trickleType);
-
     if(finishAfterAnswer) {
       Answer(options, offerAnswerFlags, answerSdpCheck, trickleType);
       Trickle(trickleType);
