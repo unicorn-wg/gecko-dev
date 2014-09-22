@@ -287,6 +287,46 @@ PeerConnectionMedia::UpdateTransports(
                 NS_DISPATCH_NORMAL);
 
 }
+void
+PeerConnectionMedia::StartIceChecks() {
+  // Need to add candidates, etc.
+}
+
+void
+PeerConnectionMedia::AddIceCandidate(const std::string& candidate,
+                                     const std::string& mid,
+                                     uint32_t level) {
+  RUN_ON_THREAD(GetSTSThread(),
+                WrapRunnable(
+                    RefPtr<PeerConnectionMedia>(this),
+                    &PeerConnectionMedia::AddIceCandidate_s,
+                    candidate,
+                    mid,
+                    level),
+                NS_DISPATCH_NORMAL);
+}
+void
+PeerConnectionMedia::AddIceCandidate_s(const std::string& candidate,
+                                       const std::string& mid,
+                                       uint32_t level) {
+  if (level >= mIceStreams.size()) {
+    CSFLogError(logTag, "Couldn't process ICE candidate for bogus level %u",
+                level);
+    return;
+  }
+
+  nsresult rv = mIceStreams[level]->ParseTrickleCandidate(candidate);
+  if (NS_FAILED(rv)) {
+    CSFLogError(logTag, "Couldn't process ICE candidate at level %u",
+                level);
+    return;
+  }
+}
+
+void
+PeerConnectionMedia::UpdateMediaPipelines(
+    const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+}
 
 void
 PeerConnectionMedia::EnsureIceGathering() {

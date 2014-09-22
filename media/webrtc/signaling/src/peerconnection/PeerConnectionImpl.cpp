@@ -786,6 +786,9 @@ PeerConnectionImpl::InitializeDataChannel(int track_id,
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
 
+  // TODO(ekr@rtfm.com): Restore.
+  MOZ_CRASH();
+#if 0
 #ifdef MOZILLA_INTERNAL_API
   nsresult rv = EnsureDataConnection(aNumstreams);
   if (NS_SUCCEEDED(rv)) {
@@ -801,6 +804,7 @@ PeerConnectionImpl::InitializeDataChannel(int track_id,
     mDataConnection->Destroy();
   }
   mDataConnection = nullptr;
+#endif
 #endif
   return NS_ERROR_FAILURE;
 }
@@ -1280,6 +1284,7 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
   }
 #endif
 
+
 #ifdef KEEP_SIPCC
   cc_int32_t error = mInternal->mCall->addICECandidate(aCandidate, aMid, aLevel, mTimeCard);
 
@@ -1298,6 +1303,9 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
     mInternal->mCall->getRemoteSdp(&mRemoteSDP);
   }
 #endif
+  // TODO(ekr@rtfm.com): Do we check for not being closed?
+  mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
+
   UpdateSignalingState();
   return NS_OK;
 }
@@ -1975,6 +1983,11 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer ||
       mSignalingState == PCImplSignalingState::SignalingStable) {
     mMedia->UpdateTransports(mJsepSession);
+  }
+
+  if (mSignalingState == PCImplSignalingState::SignalingStable) {
+    mMedia->UpdateMediaPipelines(mJsepSession);
+    mMedia->StartIceChecks();
   }
 
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
