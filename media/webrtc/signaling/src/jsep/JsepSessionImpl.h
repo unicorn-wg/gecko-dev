@@ -33,7 +33,7 @@ class JsepSessionImpl : public JsepSession {
     Init();
   }
 
-   virtual ~JsepSessionImpl() {}
+  virtual ~JsepSessionImpl() {}
 
   // Implement JsepSession methods.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track)
@@ -41,6 +41,11 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult RemoveTrack(size_t track_index) MOZ_OVERRIDE {
     MOZ_CRASH();  // Stub
   }
+  virtual nsresult SetIceCredentials(const std::string& ufrag,
+                                     const std::string& pwd) MOZ_OVERRIDE;
+  virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
+                                      const std::string& value) MOZ_OVERRIDE;
+
   virtual nsresult ReplaceTrack(
     size_t track_index,
       const RefPtr<JsepMediaStreamTrack>& track) MOZ_OVERRIDE {
@@ -88,6 +93,11 @@ class JsepSessionImpl : public JsepSession {
   }
 
  private:
+  struct JsepDtlsFingerprint {
+    std::string mAlgorithm;
+    std::string mValue;
+  };
+
   struct JsepSendingTrack {
     RefPtr<JsepMediaStreamTrack> mTrack;
     Maybe<size_t> mAssignedMLine;
@@ -122,6 +132,7 @@ class JsepSessionImpl : public JsepSession {
                                     SdpDirectionAttribute::Direction answer,
                                     bool is_offerer,
                                     bool* sending, bool* receiving);
+  nsresult AddTransportAttributes(SdpMediaSection* msection);
   nsresult CreateTrack(const SdpMediaSection& receive,
                        const SdpMediaSection& send,
                        UniquePtr<JsepTrack>* track);
@@ -132,11 +143,19 @@ class JsepSessionImpl : public JsepSession {
     }
     mNegotiatedTrackPairs.clear();
   }
+  nsresult CreateTransport(const SdpAttributeList& remote,
+                           const SdpAttributeList& offer,
+                           const SdpAttributeList& answer,
+                           RefPtr<JsepTransport>* transport);
+
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
   std::vector<JsepTrackPair*> mNegotiatedTrackPairs;  // TODO(ekr@rtfm.com): Add to dtor
 
+  std::string mIceUfrag;
+  std::string mIcePwd;
+  std::vector<JsepDtlsFingerprint> mDtlsFingerprints;
   uint64_t mSessionId;
   uint64_t mSessionVersion;
   UniquePtr<Sdp> mGeneratedLocalDescription; // Created but not set.

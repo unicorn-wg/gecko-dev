@@ -17,6 +17,8 @@
 
 #include "signaling/src/jsep/JsepTrack.h"
 #include "signaling/src/jsep/JsepTrackImpl.h"
+#include "signaling/src/jsep/JsepTransport.h"
+#include "signaling/src/jsep/JsepTransportImpl.h"
 #include "signaling/src/sdp/Sdp.h"
 #include "signaling/src/sdp/SipccSdp.h"
 #include "signaling/src/sdp/SipccSdpParser.h"
@@ -62,6 +64,25 @@ nsresult JsepSessionImpl::AddTrack(const RefPtr<JsepMediaStreamTrack>& track) {
   strack.mTrack = track;
 
   mLocalTracks.push_back(strack);
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::SetIceCredentials(const std::string& ufrag,
+                                            const std::string& pwd) {
+  mIceUfrag = ufrag;
+  mIcePwd = pwd;
+
+  return NS_OK;
+}
+nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
+                                             const std::string& value) {
+  JsepDtlsFingerprint fp;
+
+  fp.mAlgorithm = algorithm;
+  fp.mValue = value;
+
+  mDtlsFingerprints.push_back(fp);
 
   return NS_OK;
 }
@@ -123,6 +144,10 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     }
 
     SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
+
     AddCodecs(mediatype, &msection);
 
     track->mAssignedMLine = Some(mline_index);
@@ -133,12 +158,18 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kAudio, &msection);
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
     ++nAudio;
   }
   while (options.mOfferToReceiveVideo && nVideo < *options.mOfferToReceiveVideo) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kVideo, &msection);
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
     ++nVideo;
   }
 
@@ -222,8 +253,12 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
   for (size_t i = 0; i < num_m_lines; ++i) {
     const SdpMediaSection& remote_msection = offer.GetMediaSection(i);
+    // TODO(ekr@rtfm.com): Reflect protocol value.
     SdpMediaSection& msection =
       sdp->AddMediaSection(remote_msection.GetMediaType());
+    rv = AddTransportAttributes(&msection);
+    if (NS_FAILED(rv))
+      return rv;
 
     bool matched = false;
 
@@ -318,6 +353,8 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
+  // TODO(ekr@rtfm.com): Validate that this is a plausible SDP
+  // with ICE, DTLS, etc.
   switch (type ) {
     case kJsepSdpOffer:
       rv = SetRemoteDescriptionOffer(Move(parsed));
@@ -388,6 +425,17 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
         return rv;
     }
 
+    rv = CreateTransport(offer.GetAttributeList(),
+                         answer.GetAttributeList(),
+                         rm.GetAttributeList(),
+                         &jpair->mRtpTransport
+                         );
+    if (NS_FAILED(rv))
+      return rv;
+
+    // TODO(ekr@rtfm.com): Check for RTCP mux, don't just assume it.
+    jpair->mRtcpTransport = jpair->mRtpTransport;
+
     track_pairs.push_back(jpair.release());
   }
 
@@ -403,8 +451,9 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
                                       UniquePtr<JsepTrack>* trackp) {
   UniquePtr<JsepTrackImpl> track = MakeUnique<JsepTrackImpl>();
   track->mMediaType = receive.GetMediaType();
+  track->mProtocol = receive.GetProtocol();
 
-  // Insert all the codecs we support.
+  // Insert all the codecs we jointly support.
   const std::vector<std::string>& formats = receive.GetFormats();
   const SdpRtpmapAttributeList& rtpmap = receive.
        GetAttributeList().GetRtpmap();
@@ -424,6 +473,40 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
   }
 
   *trackp = Move(track);
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::CreateTransport(const SdpAttributeList& remote,
+                                          const SdpAttributeList& offer,
+                                          const SdpAttributeList& answer,
+                                          RefPtr<JsepTransport>* transport) {
+  UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
+  if (!remote.HasAttribute(SdpAttribute::kIceUfragAttribute, true)) {
+    MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE ufrag");
+    return NS_ERROR_FAILURE;
+  }
+  if (!remote.HasAttribute(SdpAttribute::kIcePwdAttribute, true)) {
+    MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE pwd");
+    return NS_ERROR_FAILURE;
+  }
+  // TODO(ekr@rtfm.com): ICE lite, ICE trickle.
+  ice->mUfrag = remote.GetIceUfrag();
+  ice->mPwd = remote.GetIcePwd();
+
+  if (remote.HasAttribute(SdpAttribute::kCandidateAttribute, true)) {
+    ice->mCandidates = remote.GetCandidate();
+  }
+
+  UniquePtr<JsepDtlsTransportImpl> dtls = MakeUnique<JsepDtlsTransportImpl>();
+  if (!remote.HasAttribute(SdpAttribute::kFingerprintAttribute, true)) {
+     MOZ_MTLOG(ML_ERROR, "Peer does not have a fingeprrint");
+    return NS_ERROR_FAILURE;
+  }
+  dtls->mFingerprints = remote.GetFingerprint();
+
+  *transport = new JsepTransport("transport-id",
+                                 Move(ice), Move(dtls));
+
   return NS_OK;
 }
 
@@ -471,6 +554,34 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
   } else {
     MOZ_CRASH(); // Can't happen.
   }
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection) {
+  if (mIceUfrag.empty() || mIcePwd.empty()) {
+    MOZ_MTLOG(ML_ERROR, "Missing ICE ufrag and password");
+    return NS_ERROR_FAILURE;
+  }
+
+  if (mDtlsFingerprints.empty()) {
+    MOZ_MTLOG(ML_ERROR, "Missing DTLS fingerprint");
+    return NS_ERROR_FAILURE;
+  }
+
+  msection->GetAttributeList().SetAttribute(new SdpStringAttribute(
+      SdpAttribute::kIceUfragAttribute, mIceUfrag));
+  msection->GetAttributeList().SetAttribute(new SdpStringAttribute(
+      SdpAttribute::kIcePwdAttribute, mIcePwd));
+
+
+  UniquePtr<SdpFingerprintAttributeList> fpl =
+      MakeUnique<SdpFingerprintAttributeList>();
+  for (auto fp = mDtlsFingerprints.begin();
+       fp != mDtlsFingerprints.end(); ++fp) {
+    fpl->PushEntry(fp->mAlgorithm, fp->mValue);
+  }
+  msection->GetAttributeList().SetAttribute(fpl.release());
 
   return NS_OK;
 }
@@ -553,8 +664,9 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
                                       sdp::kIPv4,
                                       "0.0.0.0");
 
-  *sdpp = MakeUnique<SipccSdp>(origin.release());
+  UniquePtr<Sdp> sdp = MakeUnique<SipccSdp>(origin.release());
 
+  *sdpp = Move(sdp);
   return NS_OK;
 }
 

@@ -30,14 +30,14 @@ class JsepTrack {
   virtual nsresult get_codec(size_t index,
                              const JsepCodecDescription** config)
       const = 0;
-  virtual bool rtcp_mux() const = 0;
 };
 
 
 struct JsepTrackPair {
   UniquePtr<JsepTrack> mSending;
   UniquePtr<JsepTrack> mReceiving;
-//  RefPtr<JsepTransport> mTransport;
+  RefPtr<JsepTransport> mRtpTransport;
+  RefPtr<JsepTransport> mRtcpTransport;
 };
 
 }  // namespace jsep

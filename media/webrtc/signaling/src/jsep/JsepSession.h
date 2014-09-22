@@ -12,10 +12,6 @@
 
 #include "signaling/src/sdp/Sdp.h"
 
-#include <mozilla/RefPtr.h>
-#include <mozilla/UniquePtr.h>
-
-#include "signaling/src/sdp/Sdp.h"
 
 namespace mozilla {
 namespace jsep {
@@ -56,6 +52,14 @@ class JsepSession {
   // Accessors for basic properties.
   virtual const std::string& name() const { return mName; }
   virtual JsepSignalingState state() const { return mState; }
+
+  // Set up the ICE And DTLS data.
+  virtual nsresult SetIceCredentials(const std::string& ufrag,
+                                     const std::string& pwd) = 0;
+  // TODO(ekr@rtfm.com): Need code to add candidates and to set
+  // the negotiated candidate.
+  virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
+                                      const std::string& value) = 0;
 
   // Manage tracks. We take shared ownership of any track.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;
