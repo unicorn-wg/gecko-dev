@@ -253,53 +253,101 @@ nsresult PeerConnectionMedia::Init(const std::vector<NrIceStunServer>& stun_serv
       this,
       &PeerConnectionMedia::IceConnectionStateChange_s);
 
-  // Create three streams to start with.
-  // One each for audio, video and DataChannel
-  // TODO: this will be re-visited
-  RefPtr<NrIceMediaStream> audioStream =
-    mIceCtx->CreateStream((mParent->GetName()+": stream1/audio").c_str(), 2);
-  RefPtr<NrIceMediaStream> videoStream =
-    mIceCtx->CreateStream((mParent->GetName()+": stream2/video").c_str(), 2);
-  RefPtr<NrIceMediaStream> dcStream =
-    mIceCtx->CreateStream((mParent->GetName()+": stream3/data").c_str(), 2);
-
-  if (!audioStream) {
-    CSFLogError(logTag, "%s: audio stream is NULL", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  } else {
-    mIceStreams.push_back(audioStream);
-  }
-
-  if (!videoStream) {
-    CSFLogError(logTag, "%s: video stream is NULL", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  } else {
-    mIceStreams.push_back(videoStream);
-  }
-
-  if (!dcStream) {
-    CSFLogError(logTag, "%s: datachannel stream is NULL", __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  } else {
-    mIceStreams.push_back(dcStream);
-  }
-
-  // TODO(ekr@rtfm.com): This is not connected to the PCCimpl.
-  // Will need to do that later.
-  for (std::size_t i=0; i<mIceStreams.size(); i++) {
-    mIceStreams[i]->SetLevel(i + 1);
-    mIceStreams[i]->SignalReady.connect(this, &PeerConnectionMedia::IceStreamReady);
-    mIceStreams[i]->SignalCandidate.connect(
-        this,
-        &PeerConnectionMedia::OnCandidateFound_s);
-  }
-
-  // TODO(ekr@rtfm.com): When we have a generic error reporting mechanism,
-  // figure out how to report that StartGathering failed. Bug 827982.
-  RUN_ON_THREAD(mIceCtx->thread(),
-                WrapRunnable(mIceCtx, &NrIceCtx::StartGathering), NS_DISPATCH_NORMAL);
-
   return NS_OK;
+}
+
+void
+PeerConnectionMedia::UpdateTransports(
+    const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+  size_t num_transports = session->num_transports();
+  for (size_t i = 0; i < num_transports; ++i) {
+    RefPtr<mozilla::jsep::JsepTransport> transport;
+
+    nsresult rv = session->transport(i, &transport);
+    MOZ_ASSERT(NS_SUCCEEDED(rv));
+    if (NS_FAILED(rv))
+      break;
+
+    // Update the transport.
+    RUN_ON_THREAD(GetSTSThread(),
+                  WrapRunnable(RefPtr<PeerConnectionMedia>(this),
+                               &PeerConnectionMedia::UpdateIceMediaStream,
+                               i,
+                               transport->mComponents),
+                  NS_DISPATCH_NORMAL);
+  }
+
+
+  // TODO(ekr@rtfm.com): Need to deal properly with renegotatiation.
+  // For now just start gathering.
+  RUN_ON_THREAD(GetSTSThread(),
+                WrapRunnable(
+                    RefPtr<PeerConnectionMedia>(this),
+                    &PeerConnectionMedia::EnsureIceGathering),
+                NS_DISPATCH_NORMAL);
+
+}
+void
+PeerConnectionMedia::StartIceChecks() {
+  // Need to add candidates, etc.
+}
+
+void
+PeerConnectionMedia::AddIceCandidate(const std::string& candidate,
+                                     const std::string& mid,
+                                     uint32_t level) {
+  RUN_ON_THREAD(GetSTSThread(),
+                WrapRunnable(
+                    RefPtr<PeerConnectionMedia>(this),
+                    &PeerConnectionMedia::AddIceCandidate_s,
+                    candidate,
+                    mid,
+                    level),
+                NS_DISPATCH_NORMAL);
+}
+void
+PeerConnectionMedia::AddIceCandidate_s(const std::string& candidate,
+                                       const std::string& mid,
+                                       uint32_t level) {
+  if (level >= mIceStreams.size()) {
+    CSFLogError(logTag, "Couldn't process ICE candidate for bogus level %u",
+                level);
+    return;
+  }
+
+  nsresult rv = mIceStreams[level]->ParseTrickleCandidate(candidate);
+  if (NS_FAILED(rv)) {
+    CSFLogError(logTag, "Couldn't process ICE candidate at level %u",
+                level);
+    return;
+  }
+}
+
+void
+PeerConnectionMedia::UpdateMediaPipelines(
+    const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+}
+
+void
+PeerConnectionMedia::EnsureIceGathering() {
+  if (mIceCtx->gathering_state() == NrIceCtx::ICE_CTX_GATHER_INIT) {
+    mIceCtx->StartGathering();
+  }
+}
+
+void
+PeerConnectionMedia::UpdateIceMediaStream(size_t index,
+                                          size_t components) {
+  // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE.
+  if (mIceStreams.size() > index)
+    return;
+
+  RefPtr<NrIceMediaStream> stream =
+    mIceCtx->CreateStream((mParent->GetName()+": unknown").c_str(),
+                          components);
+
+  MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check.
+  mIceStreams.push_back(stream);
 }
 
 nsresult

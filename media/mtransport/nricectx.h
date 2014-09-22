@@ -210,6 +210,10 @@ class NrIceCtx {
   // The name of the ctx
   const std::string& name() const { return name_; }
 
+  // Get ufrag and password.
+  std::string ufrag() const;
+  std::string pwd() const;
+
   // Current state
   ConnectionState connection_state() const {
     return connection_state_;

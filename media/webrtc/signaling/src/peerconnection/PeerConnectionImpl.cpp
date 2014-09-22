@@ -38,6 +38,9 @@
 #include "nsDOMDataChannelDeclarations.h"
 #include "dtlsidentity.h"
 
+#include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepSessionImpl.h"
+
 #ifdef MOZILLA_INTERNAL_API
 #ifdef XP_WIN
 // We need to undef the MS macro for nsIDocument::CreateEvent
@@ -107,6 +110,7 @@
 #define ICE_PARSING "In RTCConfiguration passed to RTCPeerConnection constructor"
 
 using namespace mozilla;
+using namespace mozilla::jsep;
 using namespace mozilla::dom;
 
 typedef PCObserverString ObString;
@@ -565,6 +569,7 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return NS_ERROR_UNEXPECTED;
   }
 
+  // TODO(ekr@rtfm.com): Do we still need a handle?
   char hex[17];
   PR_snprintf(hex,sizeof(hex),"%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",
     handle_bin[0],
@@ -586,12 +591,7 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   MOZ_ASSERT(pcctx);
   STAMP_TIMECARD(mTimeCard, "Done Initializing PC Ctx");
 
-  // EKR: REMOVED
-  // mInternal->mCall = pcctx->createCall();
-  //   if (!mInternal->mCall.get()) {
-  //    CSFLogError(logTag, "%s: Couldn't Create Call Object", __FUNCTION__);
-  //     return NS_ERROR_FAILURE;
-  //   }
+  mJsepSession = MakeUnique<JsepSessionImpl>(mName);
 
   IceConfiguration converted;
   if (aRTCConfiguration) {
@@ -624,10 +624,12 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return res;
   }
 
-  // Store under mHandle
-  // TODO: REMOVED
-  // mInternal->mCall->setPeerConnection(mHandle);
-  PeerConnectionCtx::GetInstance()->mPeerConnections[mHandle] = this;
+  res = mJsepSession->SetIceCredentials(mMedia->ice_ctx()->ufrag(),
+                                        mMedia->ice_ctx()->pwd());
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "%s: Couldn't set ICE credentials", __FUNCTION__);
+    return res;
+  }
 
   STAMP_TIMECARD(mTimeCard, "Generating DTLS Identity");
   // Create the DTLS Identity
@@ -642,6 +644,12 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   mFingerprint = mIdentity->GetFormattedFingerprint();
   if (mFingerprint.empty()) {
     CSFLogError(logTag, "%s: unable to get fingerprint", __FUNCTION__);
+    return res;
+  }
+  res = mJsepSession->AddDtlsFingerprint(GetFingerprintAlgorithm(),
+                                         GetFingerprintHexValue());
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "%s: Couldn't set DTLS credentials", __FUNCTION__);
     return res;
   }
 
@@ -778,6 +786,9 @@ PeerConnectionImpl::InitializeDataChannel(int track_id,
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
 
+  // TODO(ekr@rtfm.com): Restore.
+  MOZ_CRASH();
+#if 0
 #ifdef MOZILLA_INTERNAL_API
   nsresult rv = EnsureDataConnection(aNumstreams);
   if (NS_SUCCEEDED(rv)) {
@@ -793,6 +804,7 @@ PeerConnectionImpl::InitializeDataChannel(int track_id,
     mDataConnection->Destroy();
   }
   mDataConnection = nullptr;
+#endif
 #endif
   return NS_ERROR_FAILURE;
 }
@@ -975,7 +987,6 @@ PeerConnectionImpl::CreateOffer(const SipccOfferOptions& aOptions)
 {
   PC_AUTO_ENTER_API_CALL(true);
 
-  JSErrorResult rv;
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
   if (!pco) {
     return NS_OK;
@@ -991,27 +1002,18 @@ PeerConnectionImpl::CreateOffer(const SipccOfferOptions& aOptions)
 
   STAMP_TIMECARD(mTimeCard, "Create Offer");
 
-  // EKR: REMOVED
-  // cc_media_options_t* cc_options = aOptions.build();
-  // NS_ENSURE_TRUE(cc_options, NS_ERROR_UNEXPECTED);
+  JsepOfferOptions options; // TODO(ekr@rtfm.com): actually set these
+  std::string offer;
 
-  // EKR: REMOVED
-  // cc_int32_t error = mInternal->mCall->createOffer(cc_options, mTimeCard);
-
-#ifdef KEEP_SIPCC
-  if (error) {
-    std::string error_string;
-    // EKR: REMOVED
-    // mInternal->mCall->getErrorString(&error_string);
-    // CSFLogError(logTag, "%s: pc = %s, error = %s",
-    //            __FUNCTION__, mHandle.c_str(), error_string.c_str());
-    // pco->OnCreateOfferError(error, ObString(error_string.c_str()), rv);
+  nsresult nrv = mJsepSession->CreateOffer(options, &offer);
+  JSErrorResult rv;
+  if (NS_FAILED(nrv)) {
+    std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    pco->OnCreateOfferError(error, ObString(error_string.c_str()), rv);
   } else {
-    std::string sdp;
-    mInternal->mCall->getLocalSdp(&sdp);
-    pco->OnCreateOfferSuccess(ObString(sdp.c_str()), rv);
+    pco->OnCreateOfferSuccess(ObString(offer.c_str()), rv);
   }
-#endif
 
   UpdateSignalingState();
   return NS_OK;
@@ -1022,29 +1024,27 @@ PeerConnectionImpl::CreateAnswer()
 {
   PC_AUTO_ENTER_API_CALL(true);
 
-  JSErrorResult rv;
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
   if (!pco) {
     return NS_OK;
   }
 
   STAMP_TIMECARD(mTimeCard, "Create Answer");
-#ifdef KEEP_SIPCC
-  cc_int32_t error = mInternal->mCall->createAnswer(mTimeCard);
+  JsepAnswerOptions options; // TODO(ekr@rtfm.com): actually set these
+  std::string answer;
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    CSFLogError(logTag, "%s: pc = %s, error = %s",
-                __FUNCTION__, mHandle.c_str(), error_string.c_str());
+  nsresult nrv = mJsepSession->CreateAnswer(options, &answer);
+  JSErrorResult rv;
+  if (NS_FAILED(nrv)) {
+    std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
     pco->OnCreateAnswerError(error, ObString(error_string.c_str()), rv);
   } else {
-    std::string sdp;
-    mInternal->mCall->getLocalSdp(&sdp);
-    pco->OnCreateAnswerSuccess(ObString(sdp.c_str()), rv);
+    pco->OnCreateAnswerSuccess(ObString(answer.c_str()), rv);
   }
-#endif
+
   UpdateSignalingState();
+
   return NS_OK;
 }
 
@@ -1083,25 +1083,37 @@ PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
 #endif
 
   mLocalRequestedSDP = aSDP;
-#ifdef KEEP_SIPCC
-  cc_int32_t error  = mInternal->mCall->setLocalDescription(
-      (cc_jsep_action_t)aAction,
-      mLocalRequestedSDP, mTimeCard);
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
+  JsepSdpType sdpType;
+  switch (aAction) {
+    case IPeerConnection::kActionOffer:
+      sdpType = mozilla::jsep::kJsepSdpOffer;
+      break;
+    case IPeerConnection::kActionAnswer:
+      sdpType = mozilla::jsep::kJsepSdpAnswer;
+      break;
+    case IPeerConnection::kActionPRAnswer:
+      sdpType = mozilla::jsep::kJsepSdpPranswer;
+      break;
+    default:
+      MOZ_ASSERT(false);
+      return NS_ERROR_FAILURE;
+
+  }
+  nsresult nrv = mJsepSession->SetLocalDescription(sdpType,
+                                                   mLocalRequestedSDP);
+  if (NS_FAILED(nrv)) {
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    std::string error_string = mJsepSession->last_error();
+    // appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
     CSFLogError(logTag, "%s: pc = %s, error = %s",
                 __FUNCTION__, mHandle.c_str(), error_string.c_str());
     pco->OnSetLocalDescriptionError(error, ObString(error_string.c_str()), rv);
   } else {
-    mInternal->mCall->getLocalSdp(&mLocalSDP);
+    mLocalSDP = mLocalRequestedSDP;
     pco->OnSetLocalDescriptionSuccess(rv);
     StartTrickle();
   }
-#endif
-  ClearSdpParseErrorMessages();
 
   UpdateSignalingState();
   return NS_OK;
@@ -1152,27 +1164,38 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
   STAMP_TIMECARD(mTimeCard, "Set Remote Description");
 
   mRemoteRequestedSDP = aSDP;
-#ifdef KEEP_SIPCC
-  cc_int32_t error = mInternal->mCall->setRemoteDescription(
-                                         (cc_jsep_action_t)action,
-                                         mRemoteRequestedSDP, mTimeCard);
+  JsepSdpType sdpType;
+  switch (action) {
+    case IPeerConnection::kActionOffer:
+      sdpType = mozilla::jsep::kJsepSdpOffer;
+      break;
+    case IPeerConnection::kActionAnswer:
+      sdpType = mozilla::jsep::kJsepSdpAnswer;
+      break;
+    case IPeerConnection::kActionPRAnswer:
+      sdpType = mozilla::jsep::kJsepSdpPranswer;
+      break;
+    default:
+      MOZ_ASSERT(false);
+      return NS_ERROR_FAILURE;
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
+  }
+  nsresult nrv = mJsepSession->SetRemoteDescription(sdpType,
+                                                   mRemoteRequestedSDP);
+  if (NS_FAILED(nrv)) {
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    std::string error_string = mJsepSession->last_error();
+    // appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
     CSFLogError(logTag, "%s: pc = %s, error = %s",
                 __FUNCTION__, mHandle.c_str(), error_string.c_str());
     pco->OnSetRemoteDescriptionError(error, ObString(error_string.c_str()), rv);
   } else {
-    mInternal->mCall->getRemoteSdp(&mRemoteSDP);
+    mRemoteSDP = mRemoteRequestedSDP;
     pco->OnSetRemoteDescriptionSuccess(rv);
 #ifdef MOZILLA_INTERNAL_API
     startCallTelem();
 #endif
   }
-#endif
-  ClearSdpParseErrorMessages();
 
   UpdateSignalingState();
   return NS_OK;
@@ -1261,6 +1284,7 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
   }
 #endif
 
+
 #ifdef KEEP_SIPCC
   cc_int32_t error = mInternal->mCall->addICECandidate(aCandidate, aMid, aLevel, mTimeCard);
 
@@ -1279,6 +1303,9 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
     mInternal->mCall->getRemoteSdp(&mRemoteSDP);
   }
 #endif
+  // TODO(ekr@rtfm.com): Do we check for not being closed?
+  mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
+
   UpdateSignalingState();
   return NS_OK;
 }
@@ -1494,12 +1521,12 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
     aMediaStream.AddPrincipalChangeObserver(this);
   }
 
-#ifdef KEEP_SIPCC
   // TODO(ekr@rtfm.com): these integers should be the track IDs
   if (hints & DOMMediaStream::HINT_CONTENTS_AUDIO) {
-    if (mInternal->mCall->addStream(stream_id, 0, AUDIO)) {
-      std::string error_string;
-      mInternal->mCall->getErrorString(&error_string);
+    res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
+        mozilla::SdpMediaSection::kAudio));
+    if (NS_FAILED(res)) {
+      std::string error_string = mJsepSession->last_error();
       CSFLogError(logTag, "%s (audio) : pc = %s, error = %s",
                   __FUNCTION__, mHandle.c_str(), error_string.c_str());
       return NS_ERROR_FAILURE;
@@ -1508,16 +1535,16 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
   }
 
   if (hints & DOMMediaStream::HINT_CONTENTS_VIDEO) {
-    if (mInternal->mCall->addStream(stream_id, 1, VIDEO)) {
-      std::string error_string;
-      mInternal->mCall->getErrorString(&error_string);
-      CSFLogError(logTag, "%s: (video) pc = %s, error = %s",
+    res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
+        mozilla::SdpMediaSection::kVideo));
+    if (NS_FAILED(res)) {
+      std::string error_string = "Error"; // TODO(ekr@rtfm.com): Fill in
+      CSFLogError(logTag, "%s (video) : pc = %s, error = %s",
                   __FUNCTION__, mHandle.c_str(), error_string.c_str());
       return NS_ERROR_FAILURE;
     }
     mNumVideoStreams++;
   }
-#endif
   return NS_OK;
 }
 
@@ -1953,6 +1980,16 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   }
 
   mSignalingState = aSignalingState;
+  if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer ||
+      mSignalingState == PCImplSignalingState::SignalingStable) {
+    mMedia->UpdateTransports(mJsepSession);
+  }
+
+  if (mSignalingState == PCImplSignalingState::SignalingStable) {
+    mMedia->UpdateMediaPipelines(mJsepSession);
+    mMedia->StartIceChecks();
+  }
+
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
   if (!pco) {
     return;
@@ -1964,31 +2001,36 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
 
 void
 PeerConnectionImpl::UpdateSignalingState() {
-#ifdef KEEP_SIPCC
-  fsmdef_states_t state = mInternal->mCall->getFsmState();
-  /*
-   * While the fsm_states_t (FSM_DEF_*) constants are a proper superset
-   * of SignalingState, and the order in which the SignalingState values
-   * appear matches the order they appear in fsm_states_t, their underlying
-   * numeric representation is different. Hence, we need to perform an
-   * offset calculation to map from one to the other.
-   */
+  mozilla::jsep::JsepSignalingState state =
+      mJsepSession->state();
 
-  if (state >= FSMDEF_S_STABLE && state <= FSMDEF_S_CLOSED) {
-    int offset = FSMDEF_S_STABLE - int(PCImplSignalingState::SignalingStable);
-    PCImplSignalingState newState =
-      static_cast<PCImplSignalingState>(state - offset);
-    if (newState == PCImplSignalingState::SignalingClosed) {
-      Close();
-    } else {
-      SetSignalingState_m(newState);
-    }
-  } else {
-    CSFLogError(logTag, ": **** UNHANDLED SIGNALING STATE : %d (%s)",
-                state,
-                mInternal->mCall->fsmStateToString(state).c_str());
+  PCImplSignalingState newState;
+
+  switch(state) {
+    case kJsepStateStable:
+      newState = PCImplSignalingState::SignalingStable;
+      break;
+    case kJsepStateHaveLocalOffer:
+      newState = PCImplSignalingState::SignalingHaveLocalOffer;
+      break;
+    case kJsepStateHaveRemoteOffer:
+      newState = PCImplSignalingState::SignalingHaveRemoteOffer;
+      break;
+    case kJsepStateHaveLocalPranswer:
+      newState = PCImplSignalingState::SignalingHaveLocalPranswer;
+      break;
+    case kJsepStateHaveRemotePranswer:
+      newState = PCImplSignalingState::SignalingHaveRemotePranswer;
+      break;
+    default:
+      MOZ_CRASH();
   }
-#endif
+  if (newState == PCImplSignalingState::SignalingClosed) {
+    MOZ_CRASH();   // TODO(ekr@rtfm.com): Revisit this.
+    Close();
+  } else {
+    SetSignalingState_m(newState);
+  }
 }
 
 bool

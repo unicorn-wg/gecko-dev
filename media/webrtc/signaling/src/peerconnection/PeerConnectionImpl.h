@@ -24,6 +24,10 @@
 #include "nsPIDOMWindow.h"
 #include "nsIThread.h"
 
+#include "signaling/src/jsep/JsepSession.h"
+#include "signaling/src/jsep/JsepSessionImpl.h"
+#include "signaling/src/sdp/SdpMediaSection.h"
+
 #include "mozilla/ErrorResult.h"
 #include "mozilla/dom/PeerConnectionImplEnumsBinding.h"
 #include "StreamBuffer.h"
@@ -735,6 +739,9 @@ private:
   bool mAllowIceLoopback;
   nsRefPtr<PeerConnectionMedia> mMedia;
 
+  // The JSEP negotiation session.
+  mozilla::UniquePtr<mozilla::jsep::JsepSession> mJsepSession;
+
 #ifdef MOZILLA_INTERNAL_API
   // Start time of ICE, used for telemetry
   mozilla::TimeStamp mIceStartTime;
@@ -776,6 +783,18 @@ class PeerConnectionWrapper
 
  private:
   nsRefPtr<PeerConnectionImpl> impl_;
+};
+
+class PeerConnectionJsepMST : public mozilla::jsep::JsepMediaStreamTrack {
+ public:
+  PeerConnectionJsepMST(mozilla::SdpMediaSection::MediaType type) :
+      mType(type) {}
+
+  virtual mozilla::SdpMediaSection::MediaType media_type() const MOZ_OVERRIDE
+    {return mType; }
+
+ private:
+  mozilla::SdpMediaSection::MediaType mType;
 };
 
 }  // end sipcc namespace
