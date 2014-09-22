@@ -314,6 +314,16 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   // Create and modify transports in response to negotiation events.
   void UpdateTransports(const mozilla::UniquePtr<mozilla::jsep::JsepSession>&
                         session);
+  // Start ICE checks.
+  void StartIceChecks();
+
+  // Process a trickle ICE candidate.
+  void AddIceCandidate(const std::string& candidate, const std::string& mid,
+                       uint32_t level);
+
+  // Handle complete media pipelines.
+  void UpdateMediaPipelines(
+    const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session);
 
   // Add a stream (main thread only)
   nsresult AddStream(nsIDOMMediaStream* aMediaStream, uint32_t hints,
@@ -363,8 +373,7 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
 
   const nsCOMPtr<nsIThread>& GetMainThread() const { return mMainThread; }
   const nsCOMPtr<nsIEventTarget>& GetSTSThread() const { return mSTSThread; }
-private:
-  // TODO(ekr@rtfm.com): Can we get rid of this?
+
   // Get a transport flow either RTP/RTCP for a particular stream
   // A stream can be of audio/video/datachannel/budled(?) types
   mozilla::RefPtr<mozilla::TransportFlow> GetTransportFlow(int aStreamIndex,
@@ -380,8 +389,6 @@ private:
   // Add a transport flow
   void AddTransportFlow(int aIndex, bool aRtcp,
                         const mozilla::RefPtr<mozilla::TransportFlow> &aFlow);
-
-public:
   void ConnectDtlsListener_s(const mozilla::RefPtr<mozilla::TransportFlow>& aFlow);
   void DtlsConnected_s(mozilla::TransportLayer* aFlow,
                        mozilla::TransportLayer::State state);
@@ -423,9 +430,15 @@ public:
   // thread.
   void SelfDestruct_m();
 
-  // Create a transport.
+  // Manage ICE transports.
   void UpdateIceMediaStream(size_t index, size_t components);
   void EnsureIceGathering();
+  void StartIceChecks_m();
+
+  // Process a trickle ICE candidate.
+  void AddIceCandidate_s(const std::string& candidate, const std::string& mid,
+                         uint32_t level);
+
 
   // ICE events
   void IceGatheringStateChange(mozilla::NrIceCtx* ctx,
