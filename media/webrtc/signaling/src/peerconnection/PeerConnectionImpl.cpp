@@ -1081,25 +1081,37 @@ PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
 #endif
 
   mLocalRequestedSDP = aSDP;
-#ifdef KEEP_SIPCC
-  cc_int32_t error  = mInternal->mCall->setLocalDescription(
-      (cc_jsep_action_t)aAction,
-      mLocalRequestedSDP, mTimeCard);
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
+  JsepSdpType sdpType;
+  switch (aAction) {
+    case IPeerConnection::kActionOffer:
+      sdpType = mozilla::jsep::kJsepSdpOffer;
+      break;
+    case IPeerConnection::kActionAnswer:
+      sdpType = mozilla::jsep::kJsepSdpAnswer;
+      break;
+    case IPeerConnection::kActionPRAnswer:
+      sdpType = mozilla::jsep::kJsepSdpPranswer;
+      break;
+    default:
+      MOZ_ASSERT(false);
+      return NS_ERROR_FAILURE;
+
+  }
+  nsresult nrv = mJsepSession->SetLocalDescription(sdpType,
+                                                   mLocalRequestedSDP);
+  if (NS_FAILED(nrv)) {
+    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    std::string error_string = mJsepSession->last_error();
+    // appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
     CSFLogError(logTag, "%s: pc = %s, error = %s",
                 __FUNCTION__, mHandle.c_str(), error_string.c_str());
     pco->OnSetLocalDescriptionError(error, ObString(error_string.c_str()), rv);
   } else {
-    mInternal->mCall->getLocalSdp(&mLocalSDP);
+    mLocalSDP = mLocalRequestedSDP;
     pco->OnSetLocalDescriptionSuccess(rv);
     StartTrickle();
   }
-#endif
-  ClearSdpParseErrorMessages();
 
   UpdateSignalingState();
   return NS_OK;
@@ -1497,7 +1509,7 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
     res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
         mozilla::SdpMediaSection::kAudio));
     if (NS_FAILED(res)) {
-      std::string error_string = "Error"; // TODO(ekr@rtfm.com): Fill in
+      std::string error_string = mJsepSession->last_error();
       CSFLogError(logTag, "%s (audio) : pc = %s, error = %s",
                   __FUNCTION__, mHandle.c_str(), error_string.c_str());
       return NS_ERROR_FAILURE;
@@ -1962,31 +1974,37 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
 
 void
 PeerConnectionImpl::UpdateSignalingState() {
-#ifdef KEEP_SIPCC
-  fsmdef_states_t state = mInternal->mCall->getFsmState();
-  /*
-   * While the fsm_states_t (FSM_DEF_*) constants are a proper superset
-   * of SignalingState, and the order in which the SignalingState values
-   * appear matches the order they appear in fsm_states_t, their underlying
-   * numeric representation is different. Hence, we need to perform an
-   * offset calculation to map from one to the other.
-   */
+  mozilla::jsep::JsepSignalingState state =
+      mJsepSession->state();
 
-  if (state >= FSMDEF_S_STABLE && state <= FSMDEF_S_CLOSED) {
-    int offset = FSMDEF_S_STABLE - int(PCImplSignalingState::SignalingStable);
-    PCImplSignalingState newState =
-      static_cast<PCImplSignalingState>(state - offset);
-    if (newState == PCImplSignalingState::SignalingClosed) {
-      Close();
-    } else {
-      SetSignalingState_m(newState);
-    }
-  } else {
-    CSFLogError(logTag, ": **** UNHANDLED SIGNALING STATE : %d (%s)",
-                state,
-                mInternal->mCall->fsmStateToString(state).c_str());
+  PCImplSignalingState newState;
+
+  switch(state) {
+    case kJsepStateStable:
+      newState = PCImplSignalingState::SignalingStable;
+      break;
+    case kJsepStateHaveLocalOffer:
+      newState = PCImplSignalingState::SignalingHaveLocalOffer;
+      break;
+    case kJsepStateHaveRemoteOffer:
+      newState = PCImplSignalingState::SignalingHaveRemoteOffer;
+      break;
+    case kJsepStateHaveLocalPranswer:
+      newState = PCImplSignalingState::SignalingHaveLocalPranswer;
+      break;
+    case kJsepStateHaveRemotePranswer:
+      newState = PCImplSignalingState::SignalingHaveRemotePranswer;
+      break;
+    default:
+      MOZ_CRASH();
   }
-#endif
+
+  if (newState == PCImplSignalingState::SignalingClosed) {
+    MOZ_CRASH();   // TODO(ekr@rtfm.com): Revisit this.
+    Close();
+  } else {
+    SetSignalingState_m(newState);
+  }
 }
 
 bool
