@@ -1464,6 +1464,8 @@ const std::string kBasicAudioVideoDataOffer =
 "a=fmtp:101 0-15" CRLF
 "a=sendrecv" CRLF
 "a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level" CRLF
+"a=extmap:2/sendonly some_extension" CRLF
+"a=extmap:3 some_other_extension some_params some more params" CRLF
 "a=setup:actpass" CRLF
 "a=rtcp-mux" CRLF
 "m=video 9 RTP/SAVPF 120 126 97" CRLF
@@ -1526,6 +1528,45 @@ TEST_P(NewSdpTest, CheckApplicationParameters) {
       mSdp->GetMediaSection(2).GetAttributeList().GetSetup().mRole);
 }
 
+TEST_P(NewSdpTest, CheckExtmap) {
+  ParseSdp(kBasicAudioVideoDataOffer);
+  ASSERT_TRUE(mSdp);
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kExtmapAttribute));
+
+  auto extmaps =
+    mSdp->GetMediaSection(0).GetAttributeList().GetExtmap().mExtmaps;
+  ASSERT_EQ(3U, extmaps.size());
+
+  ASSERT_EQ(1U, extmaps[0].entry);
+  ASSERT_FALSE(extmaps[0].direction_specified);
+  ASSERT_EQ("urn:ietf:params:rtp-hdrext:ssrc-audio-level",
+      extmaps[0].extensionname);
+  ASSERT_EQ("",
+      extmaps[0].extensionattributes);
+
+  ASSERT_EQ(2U, extmaps[1].entry);
+  ASSERT_TRUE(extmaps[1].direction_specified);
+  ASSERT_EQ(SdpDirectionAttribute::kSendonly, extmaps[1].direction);
+  ASSERT_EQ("some_extension",
+      extmaps[1].extensionname);
+  ASSERT_EQ("",
+      extmaps[1].extensionattributes);
+
+  ASSERT_EQ(3U, extmaps[2].entry);
+  ASSERT_FALSE(extmaps[2].direction_specified);
+  ASSERT_EQ("some_other_extension",
+      extmaps[2].extensionname);
+  ASSERT_EQ("some_params some more params",
+      extmaps[2].extensionattributes);
+}
+
+// TODO: Tests that parse above SDP, and check various things
+// For media sections 1 and 2:
+//  Check fmtp
+
 const std::string kNewSctpmapOffer =
 "v=0" CRLF
 "o=Mozilla-SIPUA-35.0a1 27987 0 IN IP4 0.0.0.0" CRLF
@@ -1543,12 +1584,6 @@ TEST_P(NewSdpTest, NewSctpmapSdpParse) {
   ParseSdp(kNewSctpmapOffer, false);
   ASSERT_EQ(1U, mParser.GetParseErrors().size()) << "Missing parser errors";
 }
-
-// TODO: Tests that parse above SDP, and check various things
-// For media sections 1 and 2:
-//  Check fmtp
-//  Check extmap
-//  Check rtcp-mux
 
 INSTANTIATE_TEST_CASE_P(RoundTripSerialize,
                         NewSdpTest,

@@ -21,7 +21,7 @@ void SdpExtmapAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mExtmaps.begin(); i != mExtmaps.end(); ++i) {
     os << "a=" << mType << ":" << i->entry;
-    if (i->direction != kNotSpecified) {
+    if (i->direction_specified) {
       os << "/" << i->direction;
     }
     os << " " << i->extensionname;

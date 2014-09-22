@@ -911,6 +911,7 @@ typedef struct sdp_media_profiles {
 typedef struct sdp_extmap {
     u16              id;
     sdp_direction_e  media_direction;
+    tinybool         media_direction_specified;
     char             uri[SDP_MAX_STRING_LEN+1];
     char             extension_attributes[SDP_MAX_STRING_LEN+1];
 } sdp_extmap_t;

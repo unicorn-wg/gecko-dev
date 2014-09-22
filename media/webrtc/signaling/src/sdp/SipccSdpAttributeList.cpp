@@ -63,6 +63,7 @@ SipccSdpAttributeList::GetAttribute(AttributeType type, bool sessionFallback) co
 void SipccSdpAttributeList::RemoveAttribute(AttributeType type) {
   if (HasAttribute(type, false)) {
     delete mAttributes[static_cast<size_t>(type)];
+    mAttributes[static_cast<size_t>(type)] = nullptr;
   }
 }
 
@@ -161,25 +162,36 @@ SipccSdpAttributeList::LoadFlags(sdp_t* sdp, uint16_t level) {
   }
 }
 
+static bool 
+ConvertDirection(sdp_direction_e sipcc_direction,
+                 SdpDirectionAttribute::Direction *dir_outparam) {
+  switch(sipcc_direction) {
+    case SDP_DIRECTION_SENDRECV:
+      *dir_outparam = SdpDirectionAttribute::kSendrecv; break;
+    case SDP_DIRECTION_SENDONLY:
+      *dir_outparam = SdpDirectionAttribute::kSendonly; break;
+    case SDP_DIRECTION_RECVONLY:
+      *dir_outparam = SdpDirectionAttribute::kRecvonly; break;
+    case SDP_DIRECTION_INACTIVE:
+      *dir_outparam = SdpDirectionAttribute::kInactive; break;
+    default:
+      return false;
+  }
+
+  return true;
+}
 
 bool
 SipccSdpAttributeList::LoadDirection(sdp_t* sdp, uint16_t level,
                                      SdpErrorHolder& errorHolder) {
   SdpDirectionAttribute::Direction dir;
-  switch(sdp_get_media_direction(sdp, level, 0)) {
-    case SDP_DIRECTION_SENDRECV:
-      dir = SdpDirectionAttribute::kSendrecv; break;
-    case SDP_DIRECTION_SENDONLY:
-      dir = SdpDirectionAttribute::kSendonly; break;
-    case SDP_DIRECTION_RECVONLY:
-      dir = SdpDirectionAttribute::kRecvonly; break;
-    case SDP_DIRECTION_INACTIVE:
-      dir = SdpDirectionAttribute::kInactive; break;
-    default:
+  if (!ConvertDirection(sdp_get_media_direction(sdp, level, 0),
+                        &dir)) {
       errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
                                 "Internal error determining media direction");
       return false;
   }
+
   SetAttribute(new SdpDirectionAttribute(dir));
   return true;
 }
@@ -494,6 +506,51 @@ SipccSdpAttributeList::LoadMsids(sdp_t* sdp, uint16_t level,
   }
 }
 
+void
+SipccSdpAttributeList::LoadExtmap(sdp_t* sdp,
+                                  uint16_t level,
+                                  SdpErrorHolder& errorHolder) {
+  auto *extmaps = new SdpExtmapAttributeList;
+  for (uint16_t i = 1; i < UINT16_MAX; ++i) {
+    sdp_attr_t *attr = sdp_find_attr(sdp, level, 0, SDP_ATTR_EXTMAP, i);
+
+    if (attr) {
+      sdp_extmap_t *extmap = &(attr->attr.extmap);
+
+      SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
+
+      if (extmap->media_direction_specified &&
+          !ConvertDirection(extmap->media_direction, &dir)) {
+        uint32_t lineNumber =
+          sdp_attr_line_number(sdp, SDP_ATTR_EXTMAP, level, 0, i);
+        errorHolder.AddParseError(lineNumber,
+            "Could not determine direction for extmap attribute.");
+        continue;
+      }
+
+      extmaps->PushEntry(extmap->id,
+                         dir,
+                         extmap->media_direction_specified,
+                         extmap->uri,
+                         extmap->extension_attributes);
+    } else {
+      break;
+    }
+  }
+
+  if (extmaps->mExtmaps.empty()) {
+    delete extmaps;
+  } else {
+    if (!AtSessionLevel() &&
+        mSessionLevel->HasAttribute(SdpAttribute::kExtmapAttribute)) {
+      uint32_t lineNumber =
+        sdp_attr_line_number(sdp, SDP_ATTR_EXTMAP, level, 0, 1);
+      errorHolder.AddParseError(lineNumber,
+          "extmap attributes in both session and media level");
+    }
+    SetAttribute(extmaps);
+  }
+}
 
 bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
@@ -532,6 +589,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
   LoadIceAttributes(sdp, level);
   LoadFingerprint(sdp, level);
   LoadSetup(sdp, level);
+  LoadExtmap(sdp, level, errorHolder);
 
   return true;
 }

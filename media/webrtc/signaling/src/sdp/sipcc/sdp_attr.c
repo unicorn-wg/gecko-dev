@@ -5226,6 +5226,7 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
 
     attr_p->attr.extmap.id = 0;
     attr_p->attr.extmap.media_direction = SDP_DIRECTION_SENDRECV;
+    attr_p->attr.extmap.media_direction_specified = FALSE;
     attr_p->attr.extmap.uri[0] = '\0';
     attr_p->attr.extmap.extension_attributes[0] = '\0';
 
@@ -5241,17 +5242,34 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
     }
 
     if (*ptr == '/') {
+        ++ptr; /* Skip over '/' */
         char direction[SDP_MAX_STRING_LEN+1];
-        /* Find the encoding name. */
         ptr = sdp_getnextstrtok(ptr, direction,
                                 sizeof(direction), " \t", &result);
         if (result != SDP_SUCCESS) {
             sdp_parse_error(sdp_p,
-                "%s Warning: No uri specified in %s attribute.",
+                "%s Warning: Invalid direction specified in %s attribute.",
                 sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
             sdp_p->conf_p->num_invalid_param++;
             return (SDP_INVALID_PARAMETER);
         }
+
+        if (!strcasecmp(direction, "sendrecv")) {
+          attr_p->attr.extmap.media_direction = SDP_DIRECTION_SENDRECV;
+        } else if (!strcasecmp(direction, "sendonly")) {
+          attr_p->attr.extmap.media_direction = SDP_DIRECTION_SENDONLY;
+        } else if (!strcasecmp(direction, "recvonly")) {
+          attr_p->attr.extmap.media_direction = SDP_DIRECTION_RECVONLY;
+        } else if (!strcasecmp(direction, "inactive")) {
+          attr_p->attr.extmap.media_direction = SDP_DIRECTION_INACTIVE;
+        } else {
+            sdp_parse_error(sdp_p,
+                "%s Warning: Invalid direction specified in %s attribute.",
+                sdp_p->debug_str, sdp_get_attr_name(attr_p->type));
+            sdp_p->conf_p->num_invalid_param++;
+            return (SDP_INVALID_PARAMETER);
+        }
+        attr_p->attr.extmap.media_direction_specified = TRUE;
     }
 
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.extmap.uri,
@@ -5264,6 +5282,11 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
         return (SDP_INVALID_PARAMETER);
     }
 
+    while (*ptr == ' ' || *ptr == '\t') {
+      ++ptr;
+    }
+
+    /* Grab everything that follows, even if it contains whitespace */
     ptr = sdp_getnextstrtok(ptr, attr_p->attr.extmap.extension_attributes,
                             sizeof(attr_p->attr.extmap.extension_attributes), "\r\n", &result);
 
