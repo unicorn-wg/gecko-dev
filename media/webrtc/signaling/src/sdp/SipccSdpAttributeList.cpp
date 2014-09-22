@@ -72,6 +72,8 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
   if (attr->GetType() == SdpAttribute::kOtherAttribute) {
     mOtherAttributes.push_back(attr);
   } else {
+    // TODO: Should we be willing to set attributes somewhere they are not
+    // allowed?
     RemoveAttribute(attr->GetType());
     mAttributes[attr->GetType()] = attr;
   }
@@ -596,10 +598,6 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
 
 const std::vector<std::string>&
 SipccSdpAttributeList::GetCandidate() const {
-  if (AtSessionLevel()) {
-    MOZ_CRASH("This is media-level only foo!");
-  }
-
   if (!HasAttribute(SdpAttribute::kCandidateAttribute)) {
     MOZ_CRASH();
   }
@@ -620,8 +618,6 @@ SipccSdpAttributeList::GetConnection() const {
 
 SdpDirectionAttribute::Direction
 SipccSdpAttributeList::GetDirection() const {
-  // Do we need to implement fallthrough/default, or does sipcc do that
-  // correctly for us?
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kDirectionAttribute);
   return static_cast<const SdpDirectionAttribute*>(attr)->mValue;
 }
@@ -647,10 +643,6 @@ SipccSdpAttributeList::GetFingerprint() const {
 
 const SdpFmtpAttributeList&
 SipccSdpAttributeList::GetFmtp() const {
-  if (AtSessionLevel()) {
-    MOZ_CRASH("This is media-level only foo!");
-  }
-
   if (!HasAttribute(SdpAttribute::kFmtpAttribute)) {
     MOZ_CRASH();
   }
@@ -661,10 +653,6 @@ SipccSdpAttributeList::GetFmtp() const {
 
 const SdpGroupAttributeList&
 SipccSdpAttributeList::GetGroup() const {
-  if (!AtSessionLevel()) {
-    MOZ_CRASH("This is session-level only foo!");
-  }
-
   if (!HasAttribute(SdpAttribute::kGroupAttribute)) {
     MOZ_CRASH();
   }
@@ -675,7 +663,7 @@ SipccSdpAttributeList::GetGroup() const {
 
 const SdpIceOptionsAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented.");
 }
 
 const std::string&
@@ -698,9 +686,6 @@ SipccSdpAttributeList::GetIceUfrag() const {
 
 const std::string&
 SipccSdpAttributeList::GetIdentity() const {
-  if (!AtSessionLevel()) {
-    MOZ_CRASH("This is session-level only foo!");
-  }
   if (!HasAttribute(SdpAttribute::kIdentityAttribute)) {
     return sEmptyString;
   }
@@ -710,14 +695,11 @@ SipccSdpAttributeList::GetIdentity() const {
 
 const SdpImageattrAttributeList&
 SipccSdpAttributeList::GetImageattr() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented.");
 }
 
 const std::string&
 SipccSdpAttributeList::GetLabel() const {
-  if (AtSessionLevel()) {
-    MOZ_CRASH("This is media-level only foo!");
-  }
   if (!HasAttribute(SdpAttribute::kLabelAttribute)) {
     return sEmptyString;
   }
@@ -736,9 +718,6 @@ SipccSdpAttributeList::GetMaxptime() const {
 
 const std::string&
 SipccSdpAttributeList::GetMid() const {
-  if (AtSessionLevel()) {
-    MOZ_CRASH("This is media-level only foo!");
-  }
   if (!HasAttribute(SdpAttribute::kMidAttribute)) {
     return sEmptyString;
   }
@@ -748,9 +727,6 @@ SipccSdpAttributeList::GetMid() const {
 
 const SdpMsidAttributeList&
 SipccSdpAttributeList::GetMsid() const {
-  if (AtSessionLevel()) {
-    MOZ_CRASH("This is media-level only foo!");
-  }
   if (!HasAttribute(SdpAttribute::kMsidAttribute)) {
     MOZ_CRASH();
   }
@@ -760,9 +736,6 @@ SipccSdpAttributeList::GetMsid() const {
 
 const std::string&
 SipccSdpAttributeList::GetMsidSemantic() const {
-  if (!AtSessionLevel()) {
-    MOZ_CRASH("This is session-level only foo!");
-  }
   if (!HasAttribute(SdpAttribute::kMsidSemanticAttribute)) {
     return sEmptyString;
   }
@@ -781,17 +754,17 @@ SipccSdpAttributeList::GetPtime() const {
 
 const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented");
 }
 
 const SdpRtcpFbAttributeList&
 SipccSdpAttributeList::GetRtcpFb() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented");
 }
 
 const SdpRemoteCandidatesAttribute&
 SipccSdpAttributeList::GetRemoteCandidates() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented");
 }
 
 const SdpRtpmapAttributeList&
@@ -802,7 +775,7 @@ SipccSdpAttributeList::GetRtpmap() const {
 
 const SdpSctpmapAttributeList&
 SipccSdpAttributeList::GetSctpmap() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented");
 }
 
 const SdpSetupAttribute&
@@ -816,12 +789,12 @@ SipccSdpAttributeList::GetSetup() const {
 
 const SdpSsrcAttributeList&
 SipccSdpAttributeList::GetSsrc() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented");
 }
 
 const SdpSsrcGroupAttributeList&
 SipccSdpAttributeList::GetSsrcGroup() const {
-  MOZ_CRASH();
+  MOZ_ASSERT(false, "Not yet implemented");
 }
 
 void
