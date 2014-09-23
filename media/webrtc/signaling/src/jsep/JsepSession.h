@@ -86,6 +86,9 @@ class JsepSession {
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) = 0;
 
+  // ICE controlling or controlled
+  virtual bool ice_controlling() const = 0;
+
   // Access transports.
   virtual size_t num_transports() const = 0;
   virtual nsresult transport(size_t index, RefPtr<JsepTransport>* transport)

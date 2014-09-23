@@ -94,6 +94,9 @@ using namespace mozilla;
 using namespace mozilla::dom;
 
 namespace test {
+
+class SignalingAgent;
+
 std::string indent(const std::string &s, int width = 4) {
   std::string prefix;
   std::string out;
@@ -223,6 +226,13 @@ enum mediaPipelineFlags
 };
 
 
+ typedef enum {
+   NO_TRICKLE = 0,
+   OFFERER_TRICKLES = 1,
+   ANSWERER_TRICKLES = 2,
+   BOTH_TRICKLE = OFFERER_TRICKLES | ANSWERER_TRICKLES
+ } TrickleType;
+
 class TestObserver : public AFakePCObserver
 {
 protected:
@@ -264,6 +274,8 @@ public:
   NS_IMETHODIMP OnAddIceCandidateSuccess(ER&);
   NS_IMETHODIMP OnAddIceCandidateError(uint32_t code, const char *msg, ER&);
   NS_IMETHODIMP OnIceCandidate(uint16_t level, const char *mid, const char *cand, ER&);
+
+  SignalingAgent* peerAgent;
 };
 
 NS_IMPL_ISUPPORTS(TestObserver, nsISupportsWeakReference)
@@ -468,23 +480,6 @@ TestObserver::OnReplaceTrackSuccess(ER&)
 NS_IMETHODIMP
 TestObserver::OnReplaceTrackError(uint32_t code, const char *message, ER&)
 {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-TestObserver::OnIceCandidate(uint16_t level,
-                             const char * mid,
-                             const char * candidate, ER&)
-{
-  std::cout << name << ": onIceCandidate [" << level << "/"
-            << mid << "] " << candidate << std::endl;
-
-  // Check for duplicates.
-  for (auto it = candidates.begin(); it != candidates.end(); ++it) {
-    EXPECT_NE(*it, candidate) << "Duplicate candidate";
-  }
-
-  candidates.push_back(candidate);
   return NS_OK;
 }
 
@@ -1220,73 +1215,16 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     CHROME_ENCODING
   } TrickleEncoding;
 
-  void ReceiveTrickleCandidates(
-      const std::multimap<int, std::string> &candidates,
-      TrickleEncoding encoding = NORMAL_ENCODING) {
-    int expectAddIce = 0;
-    pObserver->addIceSuccessCount = 0;
-    for (auto it = candidates.begin(); it != candidates.end(); ++it) {
-      if ((*it).first != 0) {
-        std::string candidate;
-        if (encoding == CHROME_ENCODING) {
-          candidate = "a=" + it->second + "\r\n";
-        } else {
-          candidate = it->second;
-        }
-
-        std::cerr << "Adding trickle ICE candidate " << candidate << std::endl;
-
-        ASSERT_TRUE(NS_SUCCEEDED(pc->AddIceCandidate(candidate.c_str(), "", (*it).first)));
-        expectAddIce++;
-      }
-    }
-    ASSERT_TRUE_WAIT(pObserver->addIceSuccessCount == expectAddIce,
-                     kDefaultTimeout);
-  }
-
-  void GetCandidatesByLevel_s(std::multimap<int, std::string> *candidates) {
-    nsRefPtr<sipcc::PeerConnectionMedia> pcm(pc->media());
-    for (size_t i = 0; i < pcm->num_ice_media_streams(); ++i) {
-      std::vector<std::string> candidates_for_level(
-          pcm->ice_media_stream(i)->GetCandidates());
-      for (auto c = candidates_for_level.begin();
-           c != candidates_for_level.end();
-           ++c) {
-        candidates->insert(std::make_pair(i + 1, *c));
-      }
-    }
-  }
-
-  void GetCandidatesByLevel(std::multimap<int, std::string> *candidates) {
-    mozilla::SyncRunnable::DispatchToThread(
-      test_utils->sts_target(),
-      WrapRunnable(this,
-                   &SignalingAgent::GetCandidatesByLevel_s,
-                   candidates));
-  }
-
-  void ReceiveTrickleCandidates(
-      SignalingAgent &trickler,
-      TrickleEncoding encoding = NORMAL_ENCODING) {
-    std::multimap<int, std::string> candidates;
-    trickler.GetCandidatesByLevel(&candidates);
-    ReceiveTrickleCandidates(candidates, encoding);
-  }
-
-  void IncorporateTrickleCandidatesInto(ParsedSDP &local_description) {
-    std::multimap<int, std::string> candidates;
-    GetCandidatesByLevel(&candidates);
-
-    for (auto it = candidates.begin(); it != candidates.end(); ++it) {
-      local_description.IncorporateCandidate(it->first, it->second);
-    }
-  }
-
   bool IceCompleted() {
     return pc->IceConnectionState() == PCImplIceConnectionState::Connected;
   }
 
-  void AddIceCandidate(const char* candidate, const char* mid, unsigned short level,
+  void AddIceCandidateStr(std::string candidate, std::string mid,
+                       unsigned short level) {
+    AddIceCandidate(candidate.c_str(), mid.c_str(), level, true);
+  }
+
+  void AddIceCandidate(const char *candidate, const char* mid, unsigned short level,
                        bool expectSuccess) {
     PCImplSignalingState endState = signaling_state();
     pObserver->state = TestObserver::stateNoResponse;
@@ -1405,6 +1343,10 @@ void CreateAnswer(uint32_t offerAnswerFlags,
                   video_conduit->UsingNackBasic());
         ASSERT_EQ(frameRequestMethod, video_conduit->FrameRequestMethod());
     }
+  }
+
+  void SetPeer(SignalingAgent* peer) {
+    pObserver->peerAgent = peer;
   }
 
 public:
@@ -1554,6 +1496,24 @@ private:
   }
 };
 
+NS_IMETHODIMP
+TestObserver::OnIceCandidate(uint16_t level,
+                             const char * mid,
+                             const char * candidate, ER&)
+{
+  if (strlen(candidate) != 0) {
+    std::cerr << name << ": got candidate: " << candidate << std::endl;
+    // Forward back to myself to unwind stack.
+    gMainThread->Dispatch(
+        WrapRunnable(
+            peerAgent,
+            &SignalingAgent::AddIceCandidateStr,
+            std::string(candidate), std::string(mid), level),
+        NS_DISPATCH_NORMAL);
+  }
+  return NS_OK;
+}
+
 class SignalingEnvironment : public ::testing::Environment {
  public:
   void TearDown() {
@@ -1635,9 +1595,11 @@ public:
 
     a1_ = new SignalingAgent(callerName, stun_addr_, stun_port_);
     a2_ = new SignalingAgent(calleeName, stun_addr_, stun_port_);
-
     a1_->Init();
     a2_->Init();
+
+    a1_->SetPeer(a2_.get());
+    a2_->SetPeer(a1_.get());
 
     if (wait_for_gather_) {
       WaitForGather();
@@ -1664,13 +1626,6 @@ public:
     a1_->SetLocal(TestObserver::OFFER, a1_->offer());
   }
 
-  typedef enum {
-    NO_TRICKLE = 0,
-    OFFERER_TRICKLES = 1,
-    ANSWERER_TRICKLES = 2,
-    BOTH_TRICKLE = OFFERER_TRICKLES | ANSWERER_TRICKLES
-  } TrickleType;
-
   void Offer(sipcc::OfferOptions& options,
              uint32_t offerAnswerFlags,
              uint32_t offerSdpCheck,
@@ -1678,18 +1633,7 @@ public:
     EnsureInit();
     a1_->CreateOffer(options, offerAnswerFlags, offerSdpCheck);
     a1_->SetLocal(TestObserver::OFFER, a1_->offer());
-
-    std::string passed_offer;
-
-    if (trickleType & OFFERER_TRICKLES) {
-      passed_offer = a1_->offer();
-    } else {
-      ParsedSDP parsed(a1_->offer());
-      a1_->IncorporateTrickleCandidatesInto(parsed);
-      passed_offer = parsed.getSdp();
-    }
-
-    a2_->SetRemote(TestObserver::OFFER, passed_offer);
+    a2_->SetRemote(TestObserver::OFFER, a1_->offer());
   }
 
   void Answer(sipcc::OfferOptions& options,
@@ -1698,29 +1642,8 @@ public:
               TrickleType trickleType = BOTH_TRICKLE) {
 
     a2_->CreateAnswer(offerAnswerFlags, answerSdpCheck);
-
-    std::string passed_answer;
-
-    if (trickleType & ANSWERER_TRICKLES) {
-      passed_answer = a2_->answer();
-    } else {
-      ParsedSDP parsed(a2_->answer());
-      a2_->IncorporateTrickleCandidatesInto(parsed);
-      passed_answer = parsed.getSdp();
-    }
-
     a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
-    a1_->SetRemote(TestObserver::ANSWER, passed_answer);
-  }
-
-  void Trickle(TrickleType trickleType = BOTH_TRICKLE) {
-    if (trickleType & OFFERER_TRICKLES) {
-      a2_->ReceiveTrickleCandidates(*a1_);
-    }
-
-    if (trickleType & ANSWERER_TRICKLES) {
-      a1_->ReceiveTrickleCandidates(*a2_);
-    }
+    a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
   }
 
   void WaitForCompleted() {
@@ -1736,11 +1659,8 @@ public:
                    TrickleType trickleType = BOTH_TRICKLE) {
     EnsureInit();
     Offer(options, offerAnswerFlags, offerSdpCheck, trickleType);
-    if(finishAfterAnswer) {
-      Answer(options, offerAnswerFlags, answerSdpCheck, trickleType);
-      Trickle(trickleType);
-      WaitForCompleted();
-    }
+    Answer(options, offerAnswerFlags, answerSdpCheck, trickleType);
+    WaitForCompleted();
   }
 
   void OfferAnswerTrickleChrome(sipcc::OfferOptions& options,
@@ -1750,8 +1670,10 @@ public:
     EnsureInit();
     Offer(options, offerAnswerFlags, offerSdpCheck);
     Answer(options, offerAnswerFlags, answerSdpCheck);
+#ifdef KEEP_SIPCC
     a2_->ReceiveTrickleCandidates(*a1_, SignalingAgent::CHROME_ENCODING);
     a1_->ReceiveTrickleCandidates(*a2_, SignalingAgent::CHROME_ENCODING);
+#endif
     WaitForCompleted();
   }
 
@@ -1846,7 +1768,6 @@ public:
     a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
     a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
 
-    Trickle();
     WaitForCompleted();
 
     a1_->CloseSendStreams();
@@ -2113,6 +2034,15 @@ TEST_F(SignalingTest, OfferAnswerBothTrickle)
               SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AV,
               BOTH_TRICKLE);
 }
+
+TEST_F(SignalingTest, OfferAnswerAudioBothTrickle)
+{
+  sipcc::OfferOptions options;
+  OfferAnswer(options, OFFER_AUDIO | ANSWER_AUDIO, true,
+              SHOULD_SENDRECV_AUDIO, SHOULD_SENDRECV_AUDIO,
+              BOTH_TRICKLE);
+}
+
 
 TEST_F(SignalingTest, OfferAnswerNothingDisabledFullCycle)
 {
@@ -2469,7 +2399,6 @@ TEST_F(SignalingTest, OfferAndAnswerWithExtraCodec)
 
   a1_->SetRemote(TestObserver::ANSWER, sdpWrapper.getSdp());
 
-  Trickle();
   WaitForCompleted();
 
   a1_->CloseSendStreams();
@@ -2498,7 +2427,7 @@ TEST_F(SignalingTest, FullCallTrickle)
 }
 
 // Offer answer with trickle but with chrome-style candidates
-TEST_F(SignalingTest, FullCallTrickleChrome)
+TEST_F(SignalingTest, DISABLED_FullCallTrickleChrome)
 {
   sipcc::OfferOptions options;
   OfferAnswerTrickleChrome(options,
@@ -3276,7 +3205,6 @@ TEST_F(SignalingTest, AudioOnlyCalleeNoRtcpMux)
   ASSERT_EQ(a2_->getLocalDescription().find("\r\na=rtcp-mux"),
             std::string::npos);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3320,7 +3248,6 @@ TEST_F(SignalingTest, AudioOnlyG722Only)
   ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 9\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3411,7 +3338,6 @@ TEST_F(SignalingTest, FullCallAudioNoMuxVideoMux)
   }
   ASSERT_EQ(match, std::string::npos);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3551,7 +3477,6 @@ TEST_F(SignalingTest, AudioCallForceDtlsRoles)
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3601,7 +3526,6 @@ TEST_F(SignalingTest, AudioCallReverseDtlsRoles)
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3651,7 +3575,6 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
   a2_->SetLocal(TestObserver::ANSWER, answer.c_str(), false);
   a1_->SetRemote(TestObserver::ANSWER, answer.c_str(), false);
 
-  Trickle();
   WaitForCompleted();
 
   // Not using ASSERT_TRUE_WAIT here because we expect failure
@@ -3701,7 +3624,6 @@ TEST_F(SignalingTest, AudioCallGarbageSetup)
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3749,7 +3671,6 @@ TEST_F(SignalingTest, AudioCallOfferNoSetupOrConnection)
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -3798,7 +3719,6 @@ TEST_F(SignalingTest, AudioCallAnswerNoSetupOrConnection)
   a2_->SetLocal(TestObserver::ANSWER, answer, false);
   a1_->SetRemote(TestObserver::ANSWER, answer, false);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written
@@ -4042,7 +3962,6 @@ TEST_F(SignalingTest, MaxFsFrCalleeCodec)
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
 
-  Trickle();
   WaitForCompleted();
 
   // Checking callee's video sending configuration does respect max-fs and
@@ -4094,7 +4013,6 @@ TEST_F(SignalingTest, MaxFsFrCallerCodec)
   a2_->SetLocal(TestObserver::ANSWER, sdpWrapper.getSdp());
   a1_->SetRemote(TestObserver::ANSWER, sdpWrapper.getSdp());
 
-  Trickle();
   WaitForCompleted();
 
   // Checking caller's video sending configuration does respect max-fs and
@@ -4339,7 +4257,6 @@ TEST_F(SignalingTest, AnswerWithoutVP8)
   ASSERT_EQ(a1_->pObserver->lastStatusCode,
             sipcc::PeerConnectionImpl::kNoError);
 
-  Trickle();
   WaitForCompleted();
 
   a1_->CloseSendStreams();
@@ -4387,7 +4304,6 @@ TEST_F(SignalingTest, UseNonPrefferedPayloadTypeOnAnswer)
   ASSERT_EQ(a1_->pObserver->lastStatusCode,
             sipcc::PeerConnectionImpl::kNoError);
 
-  Trickle();
   WaitForCompleted();
 
   // Wait for some data to get written

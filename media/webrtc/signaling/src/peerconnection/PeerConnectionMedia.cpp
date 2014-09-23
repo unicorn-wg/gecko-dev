@@ -165,7 +165,7 @@ void RemoteSourceStreamInfo::DetachMedia_m()
   // walk through all the MediaPipelines and call the shutdown
   // media functions. Must be on the main thread.
   for (std::map<int, mozilla::RefPtr<mozilla::MediaPipeline> >::iterator it =
-           mPipelines.begin(); it != mPipelines.end();
+         mPipelines.begin(); it != mPipelines.end();
        ++it) {
     it->second->ShutdownMedia_m();
   }
@@ -306,20 +306,40 @@ PeerConnectionMedia::UpdateTransports(
 
 }
 void
-PeerConnectionMedia::StartIceChecks() {
+PeerConnectionMedia::StartIceChecks(
+    const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+  RUN_ON_THREAD(GetSTSThread(),
+                WrapRunnable(
+                  RefPtr<PeerConnectionMedia>(this),
+                  &PeerConnectionMedia::StartIceChecks_s,
+                  session->ice_controlling()),
+                NS_DISPATCH_NORMAL);
+}
+
+void
+PeerConnectionMedia::StartIceChecks_s(bool controlling) {
   // Need to add candidates, etc.
+  CSFLogDebug(logTag, "Starting ICE Checking");
+  mIceCtx->SetControlling(controlling ?
+                          NrIceCtx::ICE_CONTROLLING :
+                          NrIceCtx::ICE_CONTROLLED);
+  mIceCtx->StartChecks();
 }
 
 void
 PeerConnectionMedia::AddIceCandidate(const std::string& candidate,
                                      const std::string& mid,
                                      uint32_t level) {
+  // TODO(ekr@rtfm.com): Handle end of candidates.
+  if (candidate.empty())
+    return;
+
   RUN_ON_THREAD(GetSTSThread(),
                 WrapRunnable(
                     RefPtr<PeerConnectionMedia>(this),
                     &PeerConnectionMedia::AddIceCandidate_s,
-                    candidate,
-                    mid,
+                    std::string(candidate), // Make copies.
+                    std::string(mid),
                     level),
                 NS_DISPATCH_NORMAL);
 }
@@ -367,6 +387,11 @@ PeerConnectionMedia::UpdateIceMediaStream(size_t index,
     stream = mIceCtx->CreateStream((mParent->GetName()+": unknown").c_str(),
                             components);
     MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check.
+    stream->SetLevel(index);
+    stream->SignalReady.connect(this, &PeerConnectionMedia::IceStreamReady);
+    stream->SignalCandidate.connect(this,
+                                    &PeerConnectionMedia::OnCandidateFound);
+
     mIceStreams.push_back(stream);
   } else {
     stream = mIceStreams[index];

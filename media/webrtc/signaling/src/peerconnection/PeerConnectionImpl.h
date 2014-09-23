@@ -559,16 +559,6 @@ public:
   // is called to start the list over.
   void ClearSdpParseErrorMessages();
 
-  void StartTrickle();
-
-  // Called by VcmSIPCCBinding::vcmRxAllocICE; this is how sipcc tells us about
-  // each m-line it has put in the sdp.
-  void OnNewMline(uint16_t level) {
-    if (level > mNumMlines) {
-      mNumMlines = level;
-    }
-  }
-
   void OnAddIceCandidateError() {
     ++mAddCandidateErrorCount;
   }
