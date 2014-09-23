@@ -315,7 +315,8 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   void UpdateTransports(const mozilla::UniquePtr<mozilla::jsep::JsepSession>&
                         session);
   // Start ICE checks.
-  void StartIceChecks();
+  void StartIceChecks(const mozilla::UniquePtr<mozilla::jsep::JsepSession>&
+                      session);
 
   // Process a trickle ICE candidate.
   void AddIceCandidate(const std::string& candidate, const std::string& mid,
@@ -431,9 +432,13 @@ public:
   void SelfDestruct_m();
 
   // Manage ICE transports.
-  void UpdateIceMediaStream(size_t index, size_t components);
+  void UpdateIceMediaStream(size_t index, size_t components,
+                            bool has_attrs,
+                            const std::string& ufrag,
+                            const std::string& password,
+                            const std::vector<std::string>& candidates);
   void EnsureIceGathering();
-  void StartIceChecks_m();
+  void StartIceChecks_s(bool controlling);
 
   // Process a trickle ICE candidate.
   void AddIceCandidate_s(const std::string& candidate, const std::string& mid,
