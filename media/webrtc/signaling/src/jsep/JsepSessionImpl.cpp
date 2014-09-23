@@ -370,7 +370,7 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 
   // TODO(ekr@rtfm.com): Validate that this is a plausible SDP
   // with ICE, DTLS, etc.
-  switch (type ) {
+  switch (type) {
     case kJsepSdpOffer:
       rv = SetRemoteDescriptionOffer(Move(parsed));
       break;
@@ -386,10 +386,13 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
                                                   const UniquePtr<Sdp>& remote,
                                                   bool is_offerer) {
+  mIceControlling = is_offerer;  // TODO(ekr@rtfm.com): ICE lite.
+
   if (local->GetMediaSectionCount() != remote->GetMediaSectionCount()) {
     MOZ_MTLOG(ML_ERROR, "Answer and offer have different number of m-lines");
     return NS_ERROR_FAILURE;
   }
+
 
   std::vector<JsepTrackPair*> track_pairs;
 
@@ -400,6 +403,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     const SdpMediaSection& rm = remote->GetMediaSection(i);
     const SdpMediaSection& offer = is_offerer ? lm : rm;
     const SdpMediaSection& answer = is_offerer ? rm : lm;
+
 
     if (lm.GetMediaType() != rm.GetMediaType()) {
       MOZ_MTLOG(ML_ERROR,
@@ -450,12 +454,10 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
         return rv;
     }
 
-
-    rv = SetupTransport(offer.GetAttributeList(),
+    rv = SetupTransport(rm.GetAttributeList(),
+                        offer.GetAttributeList(),
                         answer.GetAttributeList(),
-                        rm.GetAttributeList(),
-                        transport
-                        );
+                        transport);
     if (NS_FAILED(rv))
       return rv;
 
@@ -544,7 +546,6 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
   // TODO(ekr@rtfm.com): ICE lite, ICE trickle.
   ice->mUfrag = remote.GetIceUfrag();
   ice->mPwd = remote.GetIcePwd();
-
   if (remote.HasAttribute(SdpAttribute::kCandidateAttribute, true)) {
     ice->mCandidates = remote.GetCandidate();
   }

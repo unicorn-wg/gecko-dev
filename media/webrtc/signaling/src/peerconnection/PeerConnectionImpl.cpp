@@ -262,7 +262,6 @@ PeerConnectionImpl::PeerConnectionImpl(const GlobalObject* aGlobal)
   , mNumAudioStreams(0)
   , mNumVideoStreams(0)
   , mHaveDataStream(false)
-  , mNumMlines(0)
   , mAddCandidateErrorCount(0)
   , mTrickle(true) // TODO(ekr@rtfm.com): Use pref
 {
@@ -1112,7 +1111,6 @@ PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
   } else {
     mLocalSDP = mLocalRequestedSDP;
     pco->OnSetLocalDescriptionSuccess(rv);
-    StartTrickle();
   }
 
   UpdateSignalingState();
@@ -1284,27 +1282,9 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
   }
 #endif
 
-
-#ifdef KEEP_SIPCC
-  cc_int32_t error = mInternal->mCall->addICECandidate(aCandidate, aMid, aLevel, mTimeCard);
-
-  if (error) {
-    OnAddIceCandidateError();
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    CSFLogError(logTag, "%s: pc = %s, error = %s (note, this should not be "
-                        "a show-stopper, since whether we incorporate "
-                        "candidates into the SDP doesn't really matter since "
-                        "we're full trickle)",
-                __FUNCTION__, mHandle.c_str(), error_string.c_str());
-    pco->OnAddIceCandidateError(error, ObString(error_string.c_str()), rv);
-  } else {
-    pco->OnAddIceCandidateSuccess(rv);
-    mInternal->mCall->getRemoteSdp(&mRemoteSDP);
-  }
-#endif
   // TODO(ekr@rtfm.com): Do we check for not being closed?
   mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
+  pco->OnAddIceCandidateSuccess(rv);
 
   UpdateSignalingState();
   return NS_OK;
@@ -1987,7 +1967,7 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
 
   if (mSignalingState == PCImplSignalingState::SignalingStable) {
     mMedia->UpdateMediaPipelines(mJsepSession);
-    mMedia->StartIceChecks();
+    mMedia->StartIceChecks(mJsepSession);
   }
 
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
@@ -2107,32 +2087,10 @@ PeerConnectionImpl::CandidateReady(const std::string& candidate,
                                    uint16_t level) {
   PC_AUTO_ENTER_API_CALL_VOID_RETURN(false);
 
-  if (mLocalSDP.empty()) {
-    // It is not appropriate to trickle yet; buffer.
-    mCandidateBuffer.push_back(std::make_pair(candidate, level));
-  } else {
-    if (level <= mNumMlines) {
-      FoundIceCandidate(candidate, level);
-    }
-  }
-}
+  MOZ_ASSERT(!mLocalSDP.empty());
+  FoundIceCandidate(candidate, level);
 
-void
-PeerConnectionImpl::StartTrickle() {
-  for (auto it = mCandidateBuffer.begin(); it != mCandidateBuffer.end(); ++it) {
-    if (it->second <= mNumMlines) {
-      FoundIceCandidate(it->first, it->second);
-    }
-  }
-
-  // If the buffer was empty to begin with, we have already sent the
-  // end-of-candidates event in IceGatheringStateChange.
-  if (mIceGatheringState == PCImplIceGatheringState::Complete &&
-      !mCandidateBuffer.empty()) {
-    SendLocalIceCandidateToContent(0, "", "");
-  }
-
-  mCandidateBuffer.clear();
+  return NS_OK;
 }
 
 void PeerConnectionImpl::FoundIceCandidate(const std::string& candidate,
@@ -2141,27 +2099,12 @@ void PeerConnectionImpl::FoundIceCandidate(const std::string& candidate,
   // SIPCC choose for us? If the latter, we'll need to make it an outparam or
   // something.
   std::string mid;
-#ifdef KEEP_SIPCC
-  cc_int32_t error = mInternal->mCall->foundICECandidate(candidate,
-                                                         mid,
-                                                         level,
-                                                         nullptr);
 
-  if (error) {
-    std::string error_string;
-    mInternal->mCall->getErrorString(&error_string);
-    CSFLogError(logTag, "%s: pc = %s, error = %s (note, this should not be "
-                        "a show-stopper, since whether we incorporate "
-                        "candidates into the SDP doesn't really matter since "
-                        "we're full trickle)",
-                __FUNCTION__, mHandle.c_str(), error_string.c_str());
-  } else {
-    CSFLogDebug(logTag, "Passing local candidate to content: %s",
-                candidate.c_str());
-    mInternal->mCall->getLocalSdp(&mLocalSDP);
-    SendLocalIceCandidateToContent(level, mid, candidate);
-  }
-#endif
+  // TODO(ekr@rtfm.com): Tell JsepSession about this.
+  CSFLogDebug(logTag, "Passing local candidate to content: %s",
+              candidate.c_str());
+  SendLocalIceCandidateToContent(level, mid, candidate);
+
   UpdateSignalingState();
 }
 
