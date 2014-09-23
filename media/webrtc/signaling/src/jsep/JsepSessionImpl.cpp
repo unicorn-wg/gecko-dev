@@ -386,6 +386,8 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
                                                   const UniquePtr<Sdp>& remote,
                                                   bool is_offerer) {
+  mIceControlling = is_offerer;  // TODO(ekr@rtfm.com): ICE lite.
+
   if (local->GetMediaSectionCount() != remote->GetMediaSectionCount()) {
     MOZ_MTLOG(ML_ERROR, "Answer and offer have different number of m-lines");
     return NS_ERROR_FAILURE;

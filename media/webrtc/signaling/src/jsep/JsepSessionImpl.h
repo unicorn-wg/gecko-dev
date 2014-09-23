@@ -76,6 +76,10 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) MOZ_OVERRIDE;
 
+  virtual bool ice_controlling() const {
+    return mIceControlling;
+  }
+
   // Access transports.
   virtual size_t num_transports() const MOZ_OVERRIDE {
     return mTransports.size();
@@ -172,6 +176,7 @@ class JsepSessionImpl : public JsepSession {
   std::vector<RefPtr<JsepTransport>> mTransports;
   std::vector<JsepTrackPair*> mNegotiatedTrackPairs;  // TODO(ekr@rtfm.com): Add to dtor
 
+  bool mIceControlling;
   std::string mIceUfrag;
   std::string mIcePwd;
   std::vector<JsepDtlsFingerprint> mDtlsFingerprints;
