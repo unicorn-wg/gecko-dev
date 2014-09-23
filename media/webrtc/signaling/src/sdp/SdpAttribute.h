@@ -1083,9 +1083,7 @@ public:
   explicit SdpFlagAttribute(AttributeType type) :
     SdpAttribute(type) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mType << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 };
 
 // Used for any other kind of attribute not otherwise specialized

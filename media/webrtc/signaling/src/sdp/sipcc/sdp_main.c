@@ -785,7 +785,7 @@ const char *sdp_get_rtcp_unicast_mode_name (sdp_rtcp_unicast_mode_e type)
  * Parameters:	sdp_p    The SDP structure handle.
  * Returns:	TRUE or FALSE.
  */
-inline tinybool sdp_verify_sdp_ptr (sdp_t *sdp_p)
+tinybool sdp_verify_sdp_ptr (sdp_t *sdp_p)
 {
     if ((sdp_p != NULL) && (sdp_p->magic_num == SDP_MAGIC_NUM)) {
         return (TRUE);

@@ -4947,7 +4947,6 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
 {
     sdp_result_e     result = SDP_SUCCESS;
     sdp_fmtp_fb_t   *rtcp_fb_p = &(attr_p->attr.rtcp_fb);
-    char             tmp[SDP_MAX_STRING_LEN+1];
     int              i;
 
     /* Set up attribute fields */

@@ -66,7 +66,6 @@ void CSFLogV(CSFLogLevel priority, const char* sourceFile, int sourceLine, const
 
 #define MAX_MESSAGE_LENGTH 1024
   char message[MAX_MESSAGE_LENGTH];
-  char buffer[64] = "";
 
   const char *threadName = NULL;
 

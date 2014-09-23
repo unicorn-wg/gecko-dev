@@ -1045,6 +1045,7 @@ PeerConnectionImpl::CreateAnswer()
   return NS_OK;
 }
 
+#if 0
 static void appendSdpParseErrors(const std::vector<std::string>& aErrors,
                                  std::string* aErrorString,
                                  int32_t* aErrorCode) {
@@ -1055,6 +1056,7 @@ static void appendSdpParseErrors(const std::vector<std::string>& aErrors,
      *aErrorCode = PeerConnectionImpl::kInvalidSessionDescription;
    }
 }
+#endif
 
 NS_IMETHODIMP
 PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
