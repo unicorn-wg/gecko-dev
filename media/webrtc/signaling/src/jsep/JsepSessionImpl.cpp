@@ -113,6 +113,14 @@ nsresult JsepSessionImpl::remote_track(
 
 nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
                                       std::string* offer) {
+
+  switch (mState) {
+    case kJsepStateStable:
+      break;
+    default:
+      return NS_ERROR_FAILURE;
+  }
+
   UniquePtr<Sdp> sdp;
 
   // Make the basic SDP that is common to offer/answer.
@@ -215,6 +223,10 @@ void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
       GetAttributeList().GetRtpmap();
 
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
+    if (!rtpmap.HasEntry(*fmt)) {
+      continue;
+    }
+
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
     JsepCodecDescription* codec = FindMatchingCodec(
         remote_section.GetMediaType(), entry);
@@ -230,6 +242,14 @@ void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
 
 nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
                                        std::string* answer) {
+
+  switch (mState) {
+    case kJsepStateHaveRemoteOffer:
+      break;
+    default:
+      return NS_ERROR_FAILURE;
+  }
+
   // This is the heart of the negotiation code. Depressing that it's
   // so bad.
   //
@@ -295,7 +315,21 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
 nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
                                               const std::string& sdp) {
-  // TODO(ekr@rtfm.com): Check state.
+  switch (mState) {
+    case kJsepStateStable:
+      if (type != kJsepSdpOffer) {
+        return NS_ERROR_INVALID_ARG;
+      }
+      break;
+    case kJsepStateHaveRemoteOffer:
+      if (type != kJsepSdpAnswer && type != kJsepSdpPranswer) {
+        return NS_ERROR_INVALID_ARG;
+      }
+      break;
+    default:
+      return NS_ERROR_FAILURE;
+  }
+
   UniquePtr<Sdp> parsed;
   nsresult rv = ParseSdp(sdp, &parsed);
   if (NS_FAILED(rv))
@@ -360,6 +394,23 @@ nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
 
 nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
                                                const std::string& sdp) {
+
+  switch (mState) {
+    case kJsepStateStable:
+      if (type != kJsepSdpOffer) {
+        return NS_ERROR_INVALID_ARG;
+      }
+      break;
+    case kJsepStateHaveLocalOffer:
+    case kJsepStateHaveRemotePranswer:
+      if (type != kJsepSdpAnswer && type != kJsepSdpPranswer) {
+        return NS_ERROR_INVALID_ARG;
+      }
+      break;
+    default:
+      return NS_ERROR_FAILURE;
+  }
+
   // Parse.
   UniquePtr<Sdp> parsed;
   nsresult rv = ParseSdp(sdp, &parsed);
@@ -489,6 +540,10 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
        GetAttributeList().GetRtpmap();
 
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
+    if (!rtpmap.HasEntry(*fmt)) {
+      continue;
+    }
+
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
      JsepCodecDescription* codec = FindMatchingCodec(
          receive.GetMediaType(), entry);

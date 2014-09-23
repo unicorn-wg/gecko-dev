@@ -890,7 +890,7 @@ public:
     return false;
   }
 
-  const Rtpmap&GetEntry(const std::string& pt) const {
+  const Rtpmap& GetEntry(const std::string& pt) const {
     for (auto it = mRtpmaps.begin(); it != mRtpmaps.end(); ++it) {
       if (it->pt == pt) {
         return *it;
