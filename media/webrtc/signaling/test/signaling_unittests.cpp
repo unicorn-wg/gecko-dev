@@ -93,6 +93,13 @@ private:
 using namespace mozilla;
 using namespace mozilla::dom;
 
+// XXX Workaround for bug 998092 to maintain the existing broken semantics
+template<>
+struct nsISupportsWeakReference::COMTypeInfo<nsSupportsWeakReference, void> {
+  static const nsIID kIID;
+};
+//const nsIID nsISupportsWeakReference::COMTypeInfo<nsSupportsWeakReference, void>::kIID = NS_ISUPPORTSWEAKREFERENCE_IID;
+
 namespace test {
 
 class SignalingAgent;
@@ -974,6 +981,7 @@ class SignalingAgent {
     return true;
   }
 
+  // TODO: Remove all of this stuff.
   PCImplSipccState sipcc_state()
   {
     return pc->SipccState();
@@ -981,17 +989,29 @@ class SignalingAgent {
 
   PCImplIceConnectionState ice_connection_state()
   {
-    return pc->IceConnectionState();
+    if (pc) {
+      return pc->IceConnectionState();
+    } else {
+      return PCImplIceConnectionState::Disconnected;
+    }
   }
 
   PCImplIceGatheringState ice_gathering_state()
   {
-    return pc->IceGatheringState();
+    if (pc) {
+      return pc->IceGatheringState();
+    } else {
+      return PCImplIceGatheringState::Complete;
+    }
   }
 
   PCImplSignalingState signaling_state()
   {
-    return pc->SignalingState();
+    if (pc) {
+      return pc->SignalingState();
+    } else {
+      return PCImplSignalingState::SignalingClosed;
+    }
   }
 
   void Close()
@@ -1001,6 +1021,7 @@ class SignalingAgent {
 
       pc->Close();
       pc = nullptr;
+      pObserver = nullptr;
     }
 
     // Shutdown is synchronous evidently.
@@ -1496,6 +1517,26 @@ private:
   }
 };
 
+static void AddIceCandidateToPeer(nsWeakPtr weak_observer,
+                                  uint16_t level,
+                                  const std::string &mid,
+                                  const std::string &cand) {
+  nsCOMPtr<nsISupportsWeakReference> tmp = do_QueryReferent(weak_observer);
+  if (!tmp) {
+    return;
+  }
+
+  nsRefPtr<nsSupportsWeakReference> tmp2 = do_QueryObject(tmp);
+  nsRefPtr<TestObserver> observer = static_cast<TestObserver*>(&*tmp2);
+
+  if (!observer || !observer->peerAgent) {
+    return;
+  }
+
+  observer->peerAgent->AddIceCandidateStr(cand, mid, level);
+}
+
+
 NS_IMETHODIMP
 TestObserver::OnIceCandidate(uint16_t level,
                              const char * mid,
@@ -1504,11 +1545,14 @@ TestObserver::OnIceCandidate(uint16_t level,
   if (strlen(candidate) != 0) {
     std::cerr << name << ": got candidate: " << candidate << std::endl;
     // Forward back to myself to unwind stack.
+    nsWeakPtr weak_this = do_GetWeakReference(this);
     gMainThread->Dispatch(
-        WrapRunnable(
-            peerAgent,
-            &SignalingAgent::AddIceCandidateStr,
-            std::string(candidate), std::string(mid), level),
+        WrapRunnableNM(
+            &AddIceCandidateToPeer,
+            weak_this,
+            level,
+            std::string(mid),
+            std::string(candidate)),
         NS_DISPATCH_NORMAL);
   }
   return NS_OK;
@@ -1585,6 +1629,18 @@ public:
         stun_addr_(stun_addr),
         stun_port_(stun_port) {}
 
+  ~SignalingTest() {
+    if (init_) {
+      mozilla::SyncRunnable::DispatchToThread(gMainThread,
+        WrapRunnable(this, &SignalingTest::Teardown_m));
+    }
+  }
+
+  void Teardown_m() {
+    a1_->SetPeer(nullptr);
+    a2_->SetPeer(nullptr);
+  }
+
   static void SetUpTestCase() {
   }
 
@@ -1601,6 +1657,7 @@ public:
     a1_->SetPeer(a2_.get());
     a2_->SetPeer(a1_.get());
 
+    init_ = true;
     if (wait_for_gather_) {
       WaitForGather();
     }
@@ -4074,10 +4131,16 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
 
   // Remove VP8 from offer
   std::string offer = a1_->offer();
-  offer.replace(match = offer.find("RTP/SAVPF 120"),
-    strlen("RTP/SAVPF 120"), "RTP/SAVPF");
-  offer.replace(match = offer.find("profile-level-id"),
-    strlen("profile-level-id"), "max-foo=1234;profile-level-id");
+  match = offer.find("RTP/SAVPF 120");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match, strlen("RTP/SAVPF 120"), "RTP/SAVPF");
+
+  match = offer.find("profile-level-id");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("profile-level-id"),
+                "max-foo=1234;profile-level-id");
+
   ParsedSDP sdpWrapper(offer);
   sdpWrapper.DeleteLines("a=rtcp-fb:120");
   sdpWrapper.DeleteLine("a=rtpmap:120");
@@ -4120,17 +4183,30 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
   // Swap VP8 and P1 in offer
   std::string offer = a1_->offer();
 #ifdef H264_P0_SUPPORTED
-  offer.replace(match = offer.find("RTP/SAVPF 120 126 97"),
-    strlen("RTP/SAVPF 126 120 97"), "RTP/SAVPF 126 120 97");
+  match = offer.find("RTP/SAVPF 120 126 97");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("RTP/SAVPF 126 120 97"),
+                "RTP/SAVPF 126 120 97");
 #else
-  offer.replace(match = offer.find("RTP/SAVPF 120 126"),
-    strlen("RTP/SAVPF 126 120"), "RTP/SAVPF 126 120");
+  match = offer.find("RTP/SAVPF 120 126");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("RTP/SAVPF 126 120"),
+                "RTP/SAVPF 126 120");
 #endif
 
-  offer.replace(match = offer.find("a=rtpmap:126 H264/90000"),
-    strlen("a=rtpmap:120 VP8/90000"), "a=rtpmap:120 VP8/90000");
-  offer.replace(match = offer.find("a=rtpmap:120 VP8/90000"),
-    strlen("a=rtpmap:126 H264/90000"), "a=rtpmap:126 H264/90000");
+  match = offer.find("a=rtpmap:126 H264/90000");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("a=rtpmap:120 VP8/90000"),
+                "a=rtpmap:120 VP8/90000");
+
+  match = offer.find("a=rtpmap:120 VP8/90000");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("a=rtpmap:126 H264/90000"),
+                "a=rtpmap:126 H264/90000");
 
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
@@ -4174,8 +4250,12 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
 
   // Remove VP8 from offer
   std::string offer = a1_->offer();
-  offer.replace(match = offer.find("RTP/SAVPF 120 126"),
-    strlen("RTP/SAVPF 120 126"), "RTP/SAVPF");
+  match = offer.find("RTP/SAVPF 120 126");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("RTP/SAVPF 120 126"),
+                "RTP/SAVPF");
+
   ParsedSDP sdpWrapper(offer);
   sdpWrapper.DeleteLines("a=rtcp-fb:120");
   sdpWrapper.DeleteLine("a=rtpmap:120");
@@ -4235,16 +4315,37 @@ TEST_F(SignalingTest, AnswerWithoutVP8)
   // Replace VP8 with H.264 P1
   ParsedSDP sdpWrapper(a2_->answer());
   sdpWrapper.AddLine("a=fmtp:126 profile-level-id=42E00C;packetization-mode=1\r\n");
+  size_t match;
   answer = sdpWrapper.getSdp();
-  answer.replace(answer.find("RTP/SAVPF 120"), strlen("RTP/SAVPF 120"), "RTP/SAVPF 126");
-  answer.replace(answer.find("\r\na=rtpmap:120 VP8/90000"),
-    strlen("\r\na=rtpmap:126 H264/90000"), "\r\na=rtpmap:126 H264/90000");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack"),
-    strlen("\r\na=rtcp-fb:126 nack"), "\r\na=rtcp-fb:126 nack");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack pli"),
-    strlen("\r\na=rtcp-fb:126 nack pli"), "\r\na=rtcp-fb:126 nack pli");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 ccm fir"),
-    strlen("\r\na=rtcp-fb:126 ccm fir"), "\r\na=rtcp-fb:126 ccm fir");
+
+  match = answer.find("RTP/SAVPF 120");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match, strlen("RTP/SAVPF 120"), "RTP/SAVPF 126");
+
+  match = answer.find("\r\na=rtpmap:120 VP8/90000");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtpmap:126 H264/90000"),
+                 "\r\na=rtpmap:126 H264/90000");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:126 nack"),
+                 "\r\na=rtcp-fb:126 nack");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack pli");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:126 nack pli"),
+                 "\r\na=rtcp-fb:126 nack pli");
+
+  match = answer.find("\r\na=rtcp-fb:120 ccm fir");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:126 ccm fir"),
+                 "\r\na=rtcp-fb:126 ccm fir");
+
   std::cout << "Modified SDP " << std::endl << indent(answer) << std::endl;
 
   a2_->SetLocal(TestObserver::ANSWER, answer, false);
@@ -4280,16 +4381,34 @@ TEST_F(SignalingTest, UseNonPrefferedPayloadTypeOnAnswer)
   ASSERT_NE(answer.find("\r\na=rtpmap:120 VP8/90000"), std::string::npos);
 
   // Replace VP8 Payload Type with a non preferred value
-  answer.replace(answer.find("RTP/SAVPF 120"),
-    strlen("RTP/SAVPF 121"), "RTP/SAVPF 121");
-  answer.replace(answer.find("\r\na=rtpmap:120 VP8/90000"),
-    strlen("\r\na=rtpmap:121 VP8/90000"), "\r\na=rtpmap:121 VP8/90000");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack"),
-    strlen("\r\na=rtcp-fb:121 nack"), "\r\na=rtcp-fb:121 nack");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack pli"),
-    strlen("\r\na=rtcp-fb:121 nack pli"), "\r\na=rtcp-fb:121 nack pli");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 ccm fir"),
-    strlen("\r\na=rtcp-fb:121 ccm fir"), "\r\na=rtcp-fb:121 ccm fir");
+  size_t match;
+  match = answer.find("RTP/SAVPF 120");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match, strlen("RTP/SAVPF 121"), "RTP/SAVPF 121");
+
+  match = answer.find("\r\na=rtpmap:120 VP8/90000");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtpmap:121 VP8/90000"),
+                 "\r\na=rtpmap:121 VP8/90000");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:121 nack"),
+                 "\r\na=rtcp-fb:121 nack");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack pli");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:121 nack pli"),
+                 "\r\na=rtcp-fb:121 nack pli");
+
+  match = answer.find("\r\na=rtcp-fb:120 ccm fir");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:121 ccm fir"),
+                 "\r\na=rtcp-fb:121 ccm fir");
 
   std::cout << "Modified SDP " << std::endl
             << indent(answer) << std::endl;
