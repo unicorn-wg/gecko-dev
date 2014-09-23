@@ -163,7 +163,7 @@ public:
        << mSessionVersion << " "
        << netType << " "
        << mAddrType << " "
-       << mAddress << CRLF;
+       << mAddress << "\r\n";
   }
 
 private:
