@@ -504,7 +504,6 @@ void
 PeerConnectionMedia::SelfDestruct()
 {
   ASSERT_ON_THREAD(mMainThread);
-  mParentGone = true;
 
   CSFLogDebug(logTag, "%s: ", __FUNCTION__);
 
