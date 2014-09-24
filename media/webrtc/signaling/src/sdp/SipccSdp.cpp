@@ -8,6 +8,11 @@
 #include "mozilla/Assertions.h"
 #include "signaling/src/sdp/SdpErrorHolder.h"
 
+#ifdef CRLF
+#undef CRLF
+#endif
+#define CRLF "\r\n"
+
 namespace mozilla {
 
 SipccSdp::~SipccSdp() {

@@ -38,6 +38,11 @@ extern "C" {
 #include "signaling/src/sdp/sipcc/sdp_private.h"
 }
 
+#ifdef CRLF
+#undef CRLF
+#endif
+#define CRLF "\r\n"
+
 using namespace mozilla;
 
 namespace test {

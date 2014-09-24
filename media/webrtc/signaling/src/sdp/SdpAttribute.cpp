@@ -6,6 +6,11 @@
 
 #include "signaling/src/sdp/SdpAttribute.h"
 
+#ifdef CRLF
+#undef CRLF
+#endif
+#define CRLF "\r\n"
+
 namespace mozilla {
 
 void SdpConnectionAttribute::Serialize(std::ostream& os) const
@@ -180,6 +185,10 @@ void SdpMultiStringAttribute::Serialize(std::ostream& os) const {
   for (auto i = mValues.begin(); i != mValues.end(); ++i) {
     os << "a=" << mType << ":" << *i << CRLF;
   }
+}
+
+void SdpFlagAttribute::Serialize(std::ostream& os) const {
+  os << "a=" << mType << CRLF;
 }
 
 void SdpStringAttribute::Serialize(std::ostream& os) const {

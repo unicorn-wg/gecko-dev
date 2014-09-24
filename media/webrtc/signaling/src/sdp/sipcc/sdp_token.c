@@ -79,7 +79,6 @@ static sdp_result_e sdp_verify_unsigned(const char *ptr, uint64_t max_value)
 sdp_result_e sdp_parse_owner (sdp_t *sdp_p, u16 level, const char *ptr)
 {
     int          i;
-    char        *tmpptr;
     sdp_result_e result;
     char         tmp[SDP_MAX_STRING_LEN];
     /* The spec says this:

@@ -82,9 +82,14 @@ namespace sipcc {
 // We can't use webidl bindings here because it uses nsString,
 // so we pass options in using SipccOfferOptions instead
 
-  class OfferOptions : public mozilla::SipccOfferOptions {
+  class OfferOptions : public mozilla::jsep::JsepOfferOptions {
 public:
-  void setInt32Option(const char *namePtr, int32_t value) {
+  void setInt32Option(const char *namePtr, size_t value) {
+    if (!strcmp(namePtr, "OfferToReceiveAudio")) {
+      mOfferToReceiveAudio = mozilla::Some(value);
+    } else if (!strcmp(namePtr, "OfferToReceiveVideo")) {
+      mOfferToReceiveVideo = mozilla::Some(value);
+    }
   }
 private:
 };
@@ -92,6 +97,13 @@ private:
 
 using namespace mozilla;
 using namespace mozilla::dom;
+
+// XXX Workaround for bug 998092 to maintain the existing broken semantics
+template<>
+struct nsISupportsWeakReference::COMTypeInfo<nsSupportsWeakReference, void> {
+  static const nsIID kIID;
+};
+//const nsIID nsISupportsWeakReference::COMTypeInfo<nsSupportsWeakReference, void>::kIID = NS_ISUPPORTSWEAKREFERENCE_IID;
 
 namespace test {
 
@@ -702,7 +714,7 @@ class PCDispatchWrapper : public nsSupportsWeakReference
     return rv;
   }
 
-  NS_IMETHODIMP CreateOffer(const SipccOfferOptions& aOptions) {
+  NS_IMETHODIMP CreateOffer(const mozilla::jsep::JsepOfferOptions& aOptions) {
     nsresult rv;
 
     if (NS_IsMainThread()) {
@@ -974,6 +986,7 @@ class SignalingAgent {
     return true;
   }
 
+  // TODO: Remove all of this stuff.
   PCImplSipccState sipcc_state()
   {
     return pc->SipccState();
@@ -981,17 +994,29 @@ class SignalingAgent {
 
   PCImplIceConnectionState ice_connection_state()
   {
-    return pc->IceConnectionState();
+    if (pc) {
+      return pc->IceConnectionState();
+    } else {
+      return PCImplIceConnectionState::Disconnected;
+    }
   }
 
   PCImplIceGatheringState ice_gathering_state()
   {
-    return pc->IceGatheringState();
+    if (pc) {
+      return pc->IceGatheringState();
+    } else {
+      return PCImplIceGatheringState::Complete;
+    }
   }
 
   PCImplSignalingState signaling_state()
   {
-    return pc->SignalingState();
+    if (pc) {
+      return pc->SignalingState();
+    } else {
+      return PCImplSignalingState::SignalingClosed;
+    }
   }
 
   void Close()
@@ -1001,6 +1026,7 @@ class SignalingAgent {
 
       pc->Close();
       pc = nullptr;
+      pObserver = nullptr;
     }
 
     // Shutdown is synchronous evidently.
@@ -1496,6 +1522,26 @@ private:
   }
 };
 
+static void AddIceCandidateToPeer(nsWeakPtr weak_observer,
+                                  uint16_t level,
+                                  const std::string &mid,
+                                  const std::string &cand) {
+  nsCOMPtr<nsISupportsWeakReference> tmp = do_QueryReferent(weak_observer);
+  if (!tmp) {
+    return;
+  }
+
+  nsRefPtr<nsSupportsWeakReference> tmp2 = do_QueryObject(tmp);
+  nsRefPtr<TestObserver> observer = static_cast<TestObserver*>(&*tmp2);
+
+  if (!observer || !observer->peerAgent) {
+    return;
+  }
+
+  observer->peerAgent->AddIceCandidateStr(cand, mid, level);
+}
+
+
 NS_IMETHODIMP
 TestObserver::OnIceCandidate(uint16_t level,
                              const char * mid,
@@ -1504,11 +1550,14 @@ TestObserver::OnIceCandidate(uint16_t level,
   if (strlen(candidate) != 0) {
     std::cerr << name << ": got candidate: " << candidate << std::endl;
     // Forward back to myself to unwind stack.
+    nsWeakPtr weak_this = do_GetWeakReference(this);
     gMainThread->Dispatch(
-        WrapRunnable(
-            peerAgent,
-            &SignalingAgent::AddIceCandidateStr,
-            std::string(candidate), std::string(mid), level),
+        WrapRunnableNM(
+            &AddIceCandidateToPeer,
+            weak_this,
+            level,
+            std::string(mid),
+            std::string(candidate)),
         NS_DISPATCH_NORMAL);
   }
   return NS_OK;
@@ -1585,6 +1634,18 @@ public:
         stun_addr_(stun_addr),
         stun_port_(stun_port) {}
 
+  ~SignalingTest() {
+    if (init_) {
+      mozilla::SyncRunnable::DispatchToThread(gMainThread,
+        WrapRunnable(this, &SignalingTest::Teardown_m));
+    }
+  }
+
+  void Teardown_m() {
+    a1_->SetPeer(nullptr);
+    a2_->SetPeer(nullptr);
+  }
+
   static void SetUpTestCase() {
   }
 
@@ -1601,6 +1662,7 @@ public:
     a1_->SetPeer(a2_.get());
     a2_->SetPeer(a1_.get());
 
+    init_ = true;
     if (wait_for_gather_) {
       WaitForGather();
     }
@@ -1681,8 +1743,8 @@ public:
                                uint32_t hints, uint32_t sdpCheck) {
     EnsureInit();
     sipcc::OfferOptions aoptions;
-    aoptions.setInt32Option("OfferToReceiveAudio", true);
-    aoptions.setInt32Option("OfferToReceiveVideo", true);
+    aoptions.setInt32Option("OfferToReceiveAudio", 1);
+    aoptions.setInt32Option("OfferToReceiveVideo", 1);
     a1_->CreateOffer(aoptions, OFFER_AV, SHOULD_SENDRECV_AV );
     a1_->CreateOfferRemoveStream(options, hints, sdpCheck);
   }
@@ -1915,8 +1977,8 @@ TEST_F(SignalingTest, CreateOfferAudioVideoOptionUndefined)
 TEST_F(SignalingTest, CreateOfferNoVideoStreamRecvVideo)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   CreateOffer(options, OFFER_AUDIO,
               SHOULD_SENDRECV_AUDIO | SHOULD_RECV_VIDEO);
 }
@@ -1924,8 +1986,8 @@ TEST_F(SignalingTest, CreateOfferNoVideoStreamRecvVideo)
 TEST_F(SignalingTest, CreateOfferNoAudioStreamRecvAudio)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   CreateOffer(options, OFFER_VIDEO,
               SHOULD_RECV_AUDIO | SHOULD_SENDRECV_VIDEO);
 }
@@ -1933,7 +1995,7 @@ TEST_F(SignalingTest, CreateOfferNoAudioStreamRecvAudio)
 TEST_F(SignalingTest, CreateOfferNoVideoStream)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
   options.setInt32Option("OfferToReceiveVideo", false);
   CreateOffer(options, OFFER_AUDIO,
               SHOULD_SENDRECV_AUDIO | SHOULD_OMIT_VIDEO);
@@ -1943,7 +2005,7 @@ TEST_F(SignalingTest, CreateOfferNoAudioStream)
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   CreateOffer(options, OFFER_VIDEO,
               SHOULD_OMIT_AUDIO | SHOULD_SENDRECV_VIDEO);
 }
@@ -1952,7 +2014,7 @@ TEST_F(SignalingTest, CreateOfferDontReceiveAudio)
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   CreateOffer(options, OFFER_AV,
               SHOULD_SEND_AUDIO | SHOULD_SENDRECV_VIDEO);
 }
@@ -1960,7 +2022,7 @@ TEST_F(SignalingTest, CreateOfferDontReceiveAudio)
 TEST_F(SignalingTest, CreateOfferDontReceiveVideo)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
   options.setInt32Option("OfferToReceiveVideo", false);
   CreateOffer(options, OFFER_AV,
               SHOULD_SENDRECV_AUDIO | SHOULD_SEND_VIDEO);
@@ -1970,8 +2032,8 @@ TEST_F(SignalingTest, CreateOfferDontReceiveVideo)
 TEST_F(SignalingTest, DISABLED_CreateOfferRemoveAudioStream)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   CreateOfferRemoveStream(options, DOMMediaStream::HINT_CONTENTS_AUDIO,
               SHOULD_RECV_AUDIO | SHOULD_SENDRECV_VIDEO);
 }
@@ -1981,7 +2043,7 @@ TEST_F(SignalingTest, DISABLED_CreateOfferDontReceiveAudioRemoveAudioStream)
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   CreateOfferRemoveStream(options, DOMMediaStream::HINT_CONTENTS_AUDIO,
               SHOULD_SENDRECV_VIDEO);
 }
@@ -1990,7 +2052,7 @@ TEST_F(SignalingTest, DISABLED_CreateOfferDontReceiveAudioRemoveAudioStream)
 TEST_F(SignalingTest, DISABLED_CreateOfferDontReceiveVideoRemoveVideoStream)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
   options.setInt32Option("OfferToReceiveVideo", false);
   CreateOfferRemoveStream(options, DOMMediaStream::HINT_CONTENTS_VIDEO,
               SHOULD_SENDRECV_AUDIO);
@@ -2050,9 +2112,9 @@ TEST_F(SignalingTest, OfferAnswerNothingDisabledFullCycle)
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
               SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AV);
   // verify the default codec priorities
-  ASSERT_NE(a1_->getLocalDescription().find("RTP/SAVPF 109 9 0 8 101\r"), std::string::npos);
+  ASSERT_NE(a1_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 109 9 0 8\r"), std::string::npos);
   // verify that opus got selected
-  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 109 101\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 109\r"), std::string::npos);
 }
 
 // XXX reject streams has changed. Re-enable when we can stop() received stream
@@ -2060,7 +2122,7 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveAudioOnOffer)
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_AV,
               false, SHOULD_SEND_AUDIO | SHOULD_SENDRECV_VIDEO,
               SHOULD_RECV_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2070,7 +2132,7 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveAudioOnOffer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveVideoOnOffer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
   options.setInt32Option("OfferToReceiveVideo", false);
   OfferAnswer(options, OFFER_AV | ANSWER_AV,
               false, SHOULD_SENDRECV_AUDIO | SHOULD_SEND_VIDEO,
@@ -2081,8 +2143,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveVideoOnOffer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveAudioOnAnswer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_AV,
               false, SHOULD_SENDRECV_AV,
               SHOULD_SEND_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2092,8 +2154,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveAudioOnAnswer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveVideoOnAnswer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_AV,
               false, SHOULD_SENDRECV_AV,
               SHOULD_SENDRECV_AUDIO | SHOULD_SEND_VIDEO);
@@ -2103,8 +2165,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontReceiveVideoOnAnswer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnOfferRecvAudio)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_VIDEO | ANSWER_AV,
               false, SHOULD_RECV_AUDIO | SHOULD_SENDRECV_VIDEO,
               SHOULD_SEND_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2115,7 +2177,7 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnOffer)
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_VIDEO | ANSWER_AV,
               false, SHOULD_OMIT_AUDIO | SHOULD_SENDRECV_VIDEO,
               SHOULD_OMIT_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2125,8 +2187,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnOffer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddVideoStreamOnOfferRecvVideo)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AUDIO | ANSWER_AV,
               false, SHOULD_SENDRECV_AUDIO | SHOULD_RECV_VIDEO,
               SHOULD_SENDRECV_AUDIO | SHOULD_SEND_VIDEO);
@@ -2136,7 +2198,7 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddVideoStreamOnOfferRecvVideo)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddVideoStreamOnOffer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
   options.setInt32Option("OfferToReceiveVideo", false);
   OfferAnswer(options, OFFER_AUDIO | ANSWER_AV,
               false, SHOULD_SENDRECV_AUDIO | SHOULD_OMIT_VIDEO,
@@ -2147,8 +2209,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddVideoStreamOnOffer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnAnswer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_VIDEO,
               false, SHOULD_SENDRECV_AV,
               SHOULD_RECV_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2158,8 +2220,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnAnswer)
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddVideoStreamOnAnswer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_AUDIO,
               false, SHOULD_SENDRECV_AV,
               SHOULD_SENDRECV_AUDIO | SHOULD_RECV_VIDEO);
@@ -2170,8 +2232,8 @@ TEST_F(SignalingTest,
        DISABLED_OfferAnswerDontAddVideoStreamOnAnswerDontReceiveVideoOnAnswer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_AUDIO,
               false, SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AUDIO );
 }
@@ -2181,8 +2243,8 @@ TEST_F(SignalingTest,
        DISABLED_OfferAnswerDontAddAudioStreamOnAnswerDontReceiveAudioOnAnswer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_VIDEO,
               false, SHOULD_SENDRECV_AV,
               SHOULD_REJECT_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2194,7 +2256,7 @@ TEST_F(SignalingTest,
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_VIDEO | ANSWER_AV,
               false, SHOULD_SENDRECV_VIDEO, SHOULD_SENDRECV_VIDEO);
 }
@@ -2204,7 +2266,7 @@ TEST_F(SignalingTest,
        DISABLED_OfferAnswerDontAddVideoStreamOnOfferDontReceiveVideoOnOffer)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
   options.setInt32Option("OfferToReceiveVideo", false);
   OfferAnswer(options, OFFER_AUDIO | ANSWER_AV,
               false, SHOULD_SENDRECV_AUDIO | SHOULD_OMIT_VIDEO,
@@ -2217,7 +2279,7 @@ TEST_F(SignalingTest,
 {
   sipcc::OfferOptions options;
   options.setInt32Option("OfferToReceiveAudio", false);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_VIDEO | ANSWER_AV,
               false, SHOULD_SENDRECV_VIDEO, SHOULD_SEND_VIDEO);
 }
@@ -2242,11 +2304,11 @@ TEST_F(SignalingTest, AddIceCandidateEarly)
 TEST_F(SignalingTest, DISABLED_OfferAnswerReNegotiateOfferAnswerDontReceiveVideoNoVideoStream)
 {
   sipcc::OfferOptions aoptions;
-  aoptions.setInt32Option("OfferToReceiveAudio", true);
-  aoptions.setInt32Option("OfferToReceiveVideo", true);
+  aoptions.setInt32Option("OfferToReceiveAudio", 1);
+  aoptions.setInt32Option("OfferToReceiveVideo", 1);
 
   sipcc::OfferOptions boptions;
-  boptions.setInt32Option("OfferToReceiveAudio", true);
+  boptions.setInt32Option("OfferToReceiveAudio", 1);
   boptions.setInt32Option("OfferToReceiveVideo", false);
 
   OfferAnswer(aoptions, OFFER_AV | ANSWER_AV,
@@ -2259,8 +2321,8 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerReNegotiateOfferAnswerDontReceiveVideo
 TEST_F(SignalingTest, OfferAnswerDontAddAudioStreamOnAnswerNoOptions)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_VIDEO,
               false, SHOULD_SENDRECV_AV,
               SHOULD_RECV_AUDIO | SHOULD_SENDRECV_VIDEO);
@@ -2269,8 +2331,8 @@ TEST_F(SignalingTest, OfferAnswerDontAddAudioStreamOnAnswerNoOptions)
 TEST_F(SignalingTest, OfferAnswerDontAddVideoStreamOnAnswerNoOptions)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_AUDIO,
               false, SHOULD_SENDRECV_AV,
               SHOULD_SENDRECV_AUDIO | SHOULD_RECV_VIDEO);
@@ -2279,8 +2341,8 @@ TEST_F(SignalingTest, OfferAnswerDontAddVideoStreamOnAnswerNoOptions)
 TEST_F(SignalingTest, OfferAnswerDontAddAudioVideoStreamsOnAnswerNoOptions)
 {
   sipcc::OfferOptions options;
-  options.setInt32Option("OfferToReceiveAudio", true);
-  options.setInt32Option("OfferToReceiveVideo", true);
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
   OfferAnswer(options, OFFER_AV | ANSWER_NONE,
               false, SHOULD_SENDRECV_AV,
               SHOULD_RECV_AUDIO | SHOULD_RECV_VIDEO);
@@ -2392,7 +2454,7 @@ TEST_F(SignalingTest, OfferAndAnswerWithExtraCodec)
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO, SHOULD_SENDRECV_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
   ParsedSDP sdpWrapper(a2_->answer());
-  sdpWrapper.ReplaceLine("m=audio", "m=audio 65375 RTP/SAVPF 109 8 101\r\n");
+  sdpWrapper.ReplaceLine("m=audio", "m=audio 65375 UDP/TLS/RTP/SAVPF 109 8\r\n");
   sdpWrapper.AddLine("a=rtpmap:8 PCMA/8000\r\n");
   std::cout << "Modified SDP " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
@@ -3238,14 +3300,14 @@ TEST_F(SignalingTest, AudioOnlyG722Only)
   a1_->SetLocal(TestObserver::OFFER, a1_->offer(), false);
   ParsedSDP sdpWrapper(a1_->offer());
   sdpWrapper.ReplaceLine("m=audio",
-                         "m=audio 65375 RTP/SAVPF 9\r\n");
+                         "m=audio 65375 UDP/TLS/RTP/SAVPF 9\r\n");
   std::cout << "Modified SDP " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 9\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 9\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
 
   WaitForCompleted();
@@ -3271,14 +3333,14 @@ TEST_F(SignalingTest, AudioOnlyG722MostPreferred)
   a1_->SetLocal(TestObserver::OFFER, a1_->offer(), false);
   ParsedSDP sdpWrapper(a1_->offer());
   sdpWrapper.ReplaceLine("m=audio",
-                         "m=audio 65375 RTP/SAVPF 9 0 8 109 101\r\n");
+                         "m=audio 65375 UDP/TLS/RTP/SAVPF 9 0 8 109\r\n");
   std::cout << "Modified SDP " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 9 101\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 9\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
 
   a1_->CloseSendStreams();
@@ -3297,14 +3359,14 @@ TEST_F(SignalingTest, AudioOnlyG722Rejected)
   a1_->SetLocal(TestObserver::OFFER, a1_->offer(), false);
   ParsedSDP sdpWrapper(a1_->offer());
   sdpWrapper.ReplaceLine("m=audio",
-                         "m=audio 65375 RTP/SAVPF 0 8 101\r\n");
+                         "m=audio 65375 UDP/TLS/RTP/SAVPF 0 8\r\n");
   std::cout << "Modified SDP offer " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 0 101\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 0\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:0 PCMU/8000"), std::string::npos);
   ASSERT_EQ(a2_->getLocalDescription().find("a=rtpmap:109 opus/48000/2"), std::string::npos);
   ASSERT_EQ(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
@@ -4040,9 +4102,9 @@ TEST_F(SignalingTest, ValidateMultipleVideoCodecsInOffer)
   std::string offer = a1_->offer();
 
 #ifdef H264_P0_SUPPORTED
-  ASSERT_NE(offer.find("RTP/SAVPF 120 126 97"), std::string::npos);
+  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 120 126 97"), std::string::npos);
 #else
-  ASSERT_NE(offer.find("RTP/SAVPF 120 126"), std::string::npos);
+  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 120 126"), std::string::npos);
 #endif
   ASSERT_NE(offer.find("a=rtpmap:120 VP8/90000"), std::string::npos);
   ASSERT_NE(offer.find("a=rtpmap:126 H264/90000"), std::string::npos);
@@ -4074,10 +4136,16 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
 
   // Remove VP8 from offer
   std::string offer = a1_->offer();
-  offer.replace(match = offer.find("RTP/SAVPF 120"),
-    strlen("RTP/SAVPF 120"), "RTP/SAVPF");
-  offer.replace(match = offer.find("profile-level-id"),
-    strlen("profile-level-id"), "max-foo=1234;profile-level-id");
+  match = offer.find("UDP/TLS/RTP/SAVPF 120");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match, strlen("UDP/TLS/RTP/SAVPF 120"), "UDP/TLS/RTP/SAVPF");
+
+  match = offer.find("profile-level-id");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("profile-level-id"),
+                "max-foo=1234;profile-level-id");
+
   ParsedSDP sdpWrapper(offer);
   sdpWrapper.DeleteLines("a=rtcp-fb:120");
   sdpWrapper.DeleteLine("a=rtpmap:120");
@@ -4086,7 +4154,7 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
             << indent(sdpWrapper.getSdp()) << std::endl;
 
   // P1 should be offered first
-  ASSERT_NE(offer.find("RTP/SAVPF 126"), std::string::npos);
+  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 126"), std::string::npos);
 
   a1_->SetLocal(TestObserver::OFFER, sdpWrapper.getSdp());
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
@@ -4095,7 +4163,7 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
   std::string answer(a2_->answer());
 
   // Validate answer SDP
-  ASSERT_NE(answer.find("RTP/SAVPF 126"), std::string::npos);
+  ASSERT_NE(answer.find("UDP/TLS/RTP/SAVPF 126"), std::string::npos);
   ASSERT_NE(answer.find("a=rtpmap:126 H264/90000"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack pli"), std::string::npos);
@@ -4120,26 +4188,39 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
   // Swap VP8 and P1 in offer
   std::string offer = a1_->offer();
 #ifdef H264_P0_SUPPORTED
-  offer.replace(match = offer.find("RTP/SAVPF 120 126 97"),
-    strlen("RTP/SAVPF 126 120 97"), "RTP/SAVPF 126 120 97");
+  match = offer.find("UDP/TLS/RTP/SAVPF 120 126 97");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("UDP/TLS/RTP/SAVPF 126 120 97"),
+                "UDP/TLS/RTP/SAVPF 126 120 97");
 #else
-  offer.replace(match = offer.find("RTP/SAVPF 120 126"),
-    strlen("RTP/SAVPF 126 120"), "RTP/SAVPF 126 120");
+  match = offer.find("UDP/TLS/RTP/SAVPF 120 126");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("UDP/TLS/RTP/SAVPF 126 120"),
+                "UDP/TLS/RTP/SAVPF 126 120");
 #endif
 
-  offer.replace(match = offer.find("a=rtpmap:126 H264/90000"),
-    strlen("a=rtpmap:120 VP8/90000"), "a=rtpmap:120 VP8/90000");
-  offer.replace(match = offer.find("a=rtpmap:120 VP8/90000"),
-    strlen("a=rtpmap:126 H264/90000"), "a=rtpmap:126 H264/90000");
+  match = offer.find("a=rtpmap:126 H264/90000");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("a=rtpmap:120 VP8/90000"),
+                "a=rtpmap:120 VP8/90000");
+
+  match = offer.find("a=rtpmap:120 VP8/90000");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("a=rtpmap:126 H264/90000"),
+                "a=rtpmap:126 H264/90000");
 
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
   // P1 should be offered first
 #ifdef H264_P0_SUPPORTED
-  ASSERT_NE(offer.find("RTP/SAVPF 126 120 97"), std::string::npos);
+  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 126 120 97"), std::string::npos);
 #else
-  ASSERT_NE(offer.find("RTP/SAVPF 126 120"), std::string::npos);
+  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 126 120"), std::string::npos);
 #endif
 
   a1_->SetLocal(TestObserver::OFFER, offer);
@@ -4149,7 +4230,7 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
   std::string answer(a2_->answer());
 
   // Validate answer SDP
-  ASSERT_NE(answer.find("RTP/SAVPF 126"), std::string::npos);
+  ASSERT_NE(answer.find("UDP/TLS/RTP/SAVPF 126"), std::string::npos);
   ASSERT_NE(answer.find("a=rtpmap:126 H264/90000"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack pli"), std::string::npos);
@@ -4174,8 +4255,12 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
 
   // Remove VP8 from offer
   std::string offer = a1_->offer();
-  offer.replace(match = offer.find("RTP/SAVPF 120 126"),
-    strlen("RTP/SAVPF 120 126"), "RTP/SAVPF");
+  match = offer.find("UDP/TLS/RTP/SAVPF 120 126");
+  ASSERT_NE(std::string::npos, match);
+  offer.replace(match,
+                strlen("UDP/TLS/RTP/SAVPF 120 126"),
+                "UDP/TLS/RTP/SAVPF");
+
   ParsedSDP sdpWrapper(offer);
   sdpWrapper.DeleteLines("a=rtcp-fb:120");
   sdpWrapper.DeleteLine("a=rtpmap:120");
@@ -4192,7 +4277,7 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
   ASSERT_EQ(offer.find("a=rtpmap:120 VP8/90000"), std::string::npos);
 
   // P0 should be offered first
-  ASSERT_NE(offer.find("RTP/SAVPF 97"), std::string::npos);
+  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 97"), std::string::npos);
 
   a1_->SetLocal(TestObserver::OFFER, offer);
   a2_->SetRemote(TestObserver::OFFER, offer, false);
@@ -4201,7 +4286,7 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
   std::string answer(a2_->answer());
 
   // validate answer SDP
-  ASSERT_NE(answer.find("RTP/SAVPF 97"), std::string::npos);
+  ASSERT_NE(answer.find("UDP/TLS/RTP/SAVPF 97"), std::string::npos);
   ASSERT_NE(answer.find("a=rtpmap:97 H264/90000"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:97 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:97 nack pli"), std::string::npos);
@@ -4235,16 +4320,37 @@ TEST_F(SignalingTest, AnswerWithoutVP8)
   // Replace VP8 with H.264 P1
   ParsedSDP sdpWrapper(a2_->answer());
   sdpWrapper.AddLine("a=fmtp:126 profile-level-id=42E00C;packetization-mode=1\r\n");
+  size_t match;
   answer = sdpWrapper.getSdp();
-  answer.replace(answer.find("RTP/SAVPF 120"), strlen("RTP/SAVPF 120"), "RTP/SAVPF 126");
-  answer.replace(answer.find("\r\na=rtpmap:120 VP8/90000"),
-    strlen("\r\na=rtpmap:126 H264/90000"), "\r\na=rtpmap:126 H264/90000");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack"),
-    strlen("\r\na=rtcp-fb:126 nack"), "\r\na=rtcp-fb:126 nack");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack pli"),
-    strlen("\r\na=rtcp-fb:126 nack pli"), "\r\na=rtcp-fb:126 nack pli");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 ccm fir"),
-    strlen("\r\na=rtcp-fb:126 ccm fir"), "\r\na=rtcp-fb:126 ccm fir");
+
+  match = answer.find("UDP/TLS/RTP/SAVPF 120");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match, strlen("UDP/TLS/RTP/SAVPF 120"), "UDP/TLS/RTP/SAVPF 126");
+
+  match = answer.find("\r\na=rtpmap:120 VP8/90000");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtpmap:126 H264/90000"),
+                 "\r\na=rtpmap:126 H264/90000");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:126 nack"),
+                 "\r\na=rtcp-fb:126 nack");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack pli");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:126 nack pli"),
+                 "\r\na=rtcp-fb:126 nack pli");
+
+  match = answer.find("\r\na=rtcp-fb:120 ccm fir");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:126 ccm fir"),
+                 "\r\na=rtcp-fb:126 ccm fir");
+
   std::cout << "Modified SDP " << std::endl << indent(answer) << std::endl;
 
   a2_->SetLocal(TestObserver::ANSWER, answer, false);
@@ -4280,16 +4386,34 @@ TEST_F(SignalingTest, UseNonPrefferedPayloadTypeOnAnswer)
   ASSERT_NE(answer.find("\r\na=rtpmap:120 VP8/90000"), std::string::npos);
 
   // Replace VP8 Payload Type with a non preferred value
-  answer.replace(answer.find("RTP/SAVPF 120"),
-    strlen("RTP/SAVPF 121"), "RTP/SAVPF 121");
-  answer.replace(answer.find("\r\na=rtpmap:120 VP8/90000"),
-    strlen("\r\na=rtpmap:121 VP8/90000"), "\r\na=rtpmap:121 VP8/90000");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack"),
-    strlen("\r\na=rtcp-fb:121 nack"), "\r\na=rtcp-fb:121 nack");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 nack pli"),
-    strlen("\r\na=rtcp-fb:121 nack pli"), "\r\na=rtcp-fb:121 nack pli");
-  answer.replace(answer.find("\r\na=rtcp-fb:120 ccm fir"),
-    strlen("\r\na=rtcp-fb:121 ccm fir"), "\r\na=rtcp-fb:121 ccm fir");
+  size_t match;
+  match = answer.find("UDP/TLS/RTP/SAVPF 120");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match, strlen("UDP/TLS/RTP/SAVPF 121"), "UDP/TLS/RTP/SAVPF 121");
+
+  match = answer.find("\r\na=rtpmap:120 VP8/90000");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtpmap:121 VP8/90000"),
+                 "\r\na=rtpmap:121 VP8/90000");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:121 nack"),
+                 "\r\na=rtcp-fb:121 nack");
+
+  match = answer.find("\r\na=rtcp-fb:120 nack pli");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:121 nack pli"),
+                 "\r\na=rtcp-fb:121 nack pli");
+
+  match = answer.find("\r\na=rtcp-fb:120 ccm fir");
+  ASSERT_NE(std::string::npos, match);
+  answer.replace(match,
+                 strlen("\r\na=rtcp-fb:121 ccm fir"),
+                 "\r\na=rtcp-fb:121 ccm fir");
 
   std::cout << "Modified SDP " << std::endl
             << indent(answer) << std::endl;
