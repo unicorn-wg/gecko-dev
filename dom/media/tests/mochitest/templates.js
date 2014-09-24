@@ -99,7 +99,7 @@ var commandsPeerConnection = [
   [
     'PC_LOCAL_GUM',
     function (test) {
-      test.pcLocal.getAllUserMedia(function () {
+      test.pcLocal.getAllUserMedia(test.pcLocal.constraints, function () {
         test.next();
       });
     }
@@ -107,7 +107,7 @@ var commandsPeerConnection = [
   [
     'PC_REMOTE_GUM',
     function (test) {
-      test.pcRemote.getAllUserMedia(function () {
+      test.pcRemote.getAllUserMedia(test.pcRemote.constraints, function () {
         test.next();
       });
     }
@@ -754,7 +754,7 @@ var commandsDataChannel = [
   [
     'PC_LOCAL_GUM',
     function (test) {
-      test.pcLocal.getAllUserMedia(function () {
+      test.pcLocal.getAllUserMedia(test.pcLocal.constraints, function () {
         test.next();
       });
     }
@@ -778,7 +778,7 @@ var commandsDataChannel = [
   [
     'PC_REMOTE_GUM',
     function (test) {
-      test.pcRemote.getAllUserMedia(function () {
+      test.pcRemote.getAllUserMedia(test.pcRemote.constraints, function () {
       test.next();
       });
     }
