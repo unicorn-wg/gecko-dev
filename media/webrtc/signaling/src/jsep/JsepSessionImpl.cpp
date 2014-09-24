@@ -139,13 +139,13 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
     if (mediatype == SdpMediaSection::kAudio) {
       ++nAudio;
-      if (options.mOfferToReceiveAudio &&
+      if (options.mOfferToReceiveAudio.isSome() &&
           nAudio > *options.mOfferToReceiveAudio) {
         dir = SdpDirectionAttribute::kSendonly;
       }
     } else if (mediatype == SdpMediaSection::kVideo) {
       ++nVideo;
-      if (options.mOfferToReceiveVideo &&
+      if (options.mOfferToReceiveVideo.isSome() &&
           nVideo > *options.mOfferToReceiveVideo) {
         dir = SdpDirectionAttribute::kSendonly;
       }
@@ -162,7 +162,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     ++mline_index;
   }
 
-  while (options.mOfferToReceiveAudio && nAudio < *options.mOfferToReceiveAudio) {
+  while (options.mOfferToReceiveAudio.isSome() && nAudio < *options.mOfferToReceiveAudio) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kAudio, &msection);
@@ -171,7 +171,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
       return rv;
     ++nAudio;
   }
-  while (options.mOfferToReceiveVideo && nVideo < *options.mOfferToReceiveVideo) {
+  while (options.mOfferToReceiveVideo.isSome() && nVideo < *options.mOfferToReceiveVideo) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kVideo, &msection);
