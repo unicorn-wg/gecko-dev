@@ -586,10 +586,6 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   res = PeerConnectionCtx::InitializeGlobal(mThread, mSTSThread);
   NS_ENSURE_SUCCESS(res, res);
 
-  PeerConnectionCtx *pcctx = PeerConnectionCtx::GetInstance();
-  MOZ_ASSERT(pcctx);
-  STAMP_TIMECARD(mTimeCard, "Done Initializing PC Ctx");
-
   mJsepSession = MakeUnique<JsepSessionImpl>(mName);
 
   IceConfiguration converted;
