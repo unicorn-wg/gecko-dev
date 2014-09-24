@@ -333,7 +333,8 @@ public:
     rv = CreateAnswer();
   }
 
-  NS_IMETHODIMP CreateOffer(const mozilla::SipccOfferOptions& aConstraints);
+  NS_IMETHODIMP CreateOffer(
+      const mozilla::jsep::JsepOfferOptions& aConstraints);
 
   NS_IMETHODIMP SetLocalDescription (int32_t aAction, const char* aSDP);
 

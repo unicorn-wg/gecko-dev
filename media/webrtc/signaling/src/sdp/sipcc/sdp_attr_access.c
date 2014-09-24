@@ -1755,7 +1755,6 @@ int sdp_find_fmtp_inst (sdp_t *sdp_p, u16 level, u16 payload_num)
 {
     u16          attr_count=0;
     sdp_mca_t   *mca_p;
-    sdp_mca_t   *cap_p;
     sdp_attr_t  *attr_p;
 
     /* Attr is at a media level */

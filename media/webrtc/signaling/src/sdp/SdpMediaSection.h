@@ -208,7 +208,7 @@ public:
         os << "/" << mCount;
       }
     }
-    os << CRLF;
+    os << "\r\n";
   }
 private:
   sdp::AddrType mAddrType;

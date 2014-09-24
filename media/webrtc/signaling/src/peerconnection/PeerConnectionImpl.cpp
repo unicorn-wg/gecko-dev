@@ -958,7 +958,17 @@ NS_IMETHODIMP
 PeerConnectionImpl::CreateOffer(const RTCOfferOptions& aOptions)
 {
 #ifdef KEEP_SIPCC
-  return CreateOffer(SipccOfferOptions(aOptions));
+  JsepOfferOptions options;
+  if (aOptions.mOfferToReceiveAudio.WasPassed()) {
+    options.mOfferToReceiveAudio =
+      mozilla::Some(aOptions.mOfferToReceiveAudio.Value());
+  }
+
+  if (aOptions.mOfferToReceiveVideo.WasPassed()) {
+    options.mOfferToReceiveVideo =
+      mozilla::Some(aOptions.mOfferToReceiveVideo.Value());
+  }
+  return CreateOffer(options);
 #else
   MOZ_CRASH();
   return NS_OK;
@@ -966,7 +976,7 @@ PeerConnectionImpl::CreateOffer(const RTCOfferOptions& aOptions)
 }
 
 static void DeferredCreateOffer(const std::string& aPcHandle,
-                                const SipccOfferOptions& aOptions) {
+                                const JsepOfferOptions& aOptions) {
   PeerConnectionWrapper wrapper(aPcHandle);
 
   if (wrapper.impl()) {
@@ -980,7 +990,7 @@ static void DeferredCreateOffer(const std::string& aPcHandle,
 
 // Used by unit tests and the IDL CreateOffer.
 NS_IMETHODIMP
-PeerConnectionImpl::CreateOffer(const SipccOfferOptions& aOptions)
+PeerConnectionImpl::CreateOffer(const JsepOfferOptions& aOptions)
 {
   PC_AUTO_ENTER_API_CALL(true);
 
@@ -999,10 +1009,9 @@ PeerConnectionImpl::CreateOffer(const SipccOfferOptions& aOptions)
 
   STAMP_TIMECARD(mTimeCard, "Create Offer");
 
-  JsepOfferOptions options; // TODO(ekr@rtfm.com): actually set these
   std::string offer;
 
-  nsresult nrv = mJsepSession->CreateOffer(options, &offer);
+  nsresult nrv = mJsepSession->CreateOffer(aOptions, &offer);
   JSErrorResult rv;
   if (NS_FAILED(nrv)) {
     std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
@@ -1045,6 +1054,7 @@ PeerConnectionImpl::CreateAnswer()
   return NS_OK;
 }
 
+#if 0
 static void appendSdpParseErrors(const std::vector<std::string>& aErrors,
                                  std::string* aErrorString,
                                  int32_t* aErrorCode) {
@@ -1055,6 +1065,7 @@ static void appendSdpParseErrors(const std::vector<std::string>& aErrors,
      *aErrorCode = PeerConnectionImpl::kInvalidSessionDescription;
    }
 }
+#endif
 
 NS_IMETHODIMP
 PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
@@ -1960,6 +1971,7 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   mSignalingState = aSignalingState;
   if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer ||
       mSignalingState == PCImplSignalingState::SignalingStable) {
+    MOZ_ASSERT(!mLocalSDP.empty());
     mMedia->UpdateTransports(mJsepSession);
   }
 

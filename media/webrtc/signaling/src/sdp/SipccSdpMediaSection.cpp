@@ -9,6 +9,11 @@
 #include <ostream>
 #include "signaling/src/sdp/SdpErrorHolder.h"
 
+#ifdef CRLF
+#undef CRLF
+#endif
+#define CRLF "\r\n"
+
 namespace mozilla {
 
 unsigned int
@@ -285,4 +290,5 @@ SipccSdpMediaSection::Serialize(std::ostream& os) const {
   os << mAttributeList;
 }
 
-}
+} // namespace mozilla
+

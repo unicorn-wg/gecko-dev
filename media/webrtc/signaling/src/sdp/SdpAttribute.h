@@ -890,7 +890,7 @@ public:
     return false;
   }
 
-  const Rtpmap&GetEntry(const std::string& pt) const {
+  const Rtpmap& GetEntry(const std::string& pt) const {
     for (auto it = mRtpmaps.begin(); it != mRtpmaps.end(); ++it) {
       if (it->pt == pt) {
         return *it;
@@ -1083,9 +1083,7 @@ public:
   explicit SdpFlagAttribute(AttributeType type) :
     SdpAttribute(type) {}
 
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE {
-    os << "a=" << mType << CRLF;
-  }
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 };
 
 // Used for any other kind of attribute not otherwise specialized
