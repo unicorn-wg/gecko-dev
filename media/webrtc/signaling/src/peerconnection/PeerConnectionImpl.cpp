@@ -1010,8 +1010,13 @@ PeerConnectionImpl::CreateOffer(const JsepOfferOptions& aOptions)
   nsresult nrv = mJsepSession->CreateOffer(aOptions, &offer);
   JSErrorResult rv;
   if (NS_FAILED(nrv)) {
-    std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
-    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    Error error;
+    switch (nrv) {
+      case NS_ERROR_UNEXPECTED: error = kInvalidState; break;
+      default: error = kInternalError;
+    }
+    std::string error_string = mJsepSession->last_error();
+
     pco->OnCreateOfferError(error, ObString(error_string.c_str()), rv);
   } else {
     pco->OnCreateOfferSuccess(ObString(offer.c_str()), rv);
@@ -1038,8 +1043,13 @@ PeerConnectionImpl::CreateAnswer()
   nsresult nrv = mJsepSession->CreateAnswer(options, &answer);
   JSErrorResult rv;
   if (NS_FAILED(nrv)) {
-    std::string error_string = "Error"; // TODO(ekr@rtfm.com): Set this.
-    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    Error error;
+    switch (nrv) {
+      case NS_ERROR_UNEXPECTED: error = kInvalidState; break;
+      default: error = kInternalError;
+    }
+    std::string error_string = mJsepSession->last_error();
+
     pco->OnCreateAnswerError(error, ObString(error_string.c_str()), rv);
   } else {
     pco->OnCreateAnswerSuccess(ObString(answer.c_str()), rv);
@@ -1049,19 +1059,6 @@ PeerConnectionImpl::CreateAnswer()
 
   return NS_OK;
 }
-
-#if 0
-static void appendSdpParseErrors(const std::vector<std::string>& aErrors,
-                                 std::string* aErrorString,
-                                 int32_t* aErrorCode) {
-   for (auto i = aErrors.begin(); i != aErrors.end(); ++i) {
-     *aErrorString += " | SDP Parsing Error: " + *i;
-   }
-   if (aErrors.size()) {
-     *aErrorCode = PeerConnectionImpl::kInvalidSessionDescription;
-   }
-}
-#endif
 
 NS_IMETHODIMP
 PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
@@ -1107,8 +1104,16 @@ PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
   nsresult nrv = mJsepSession->SetLocalDescription(sdpType,
                                                    mLocalRequestedSDP);
   if (NS_FAILED(nrv)) {
-    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    Error error;
+    // TODO: Is nsresult going to be enough here? Or do we need to move the
+    // Error enum somewhere JsepSession can use it?
+    switch (nrv) {
+      case NS_ERROR_INVALID_ARG: error = kInvalidSessionDescription; break;
+      case NS_ERROR_UNEXPECTED: error = kInvalidState; break;
+      default: error = kInternalError;
+    }
     std::string error_string = mJsepSession->last_error();
+
     // appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
     CSFLogError(logTag, "%s: pc = %s, error = %s",
                 __FUNCTION__, mHandle.c_str(), error_string.c_str());
@@ -1186,7 +1191,13 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
   nsresult nrv = mJsepSession->SetRemoteDescription(sdpType,
                                                    mRemoteRequestedSDP);
   if (NS_FAILED(nrv)) {
-    int32_t error = 9;  // TODO(ekr@rtfm.com): Need to refactor errors. This is INTERNAL_ERROR
+    Error error;
+    switch (nrv) {
+      case NS_ERROR_INVALID_ARG: error = kInvalidSessionDescription; break;
+      case NS_ERROR_UNEXPECTED: error = kInvalidState; break;
+      default: error = kInternalError;
+    }
+
     std::string error_string = mJsepSession->last_error();
     // appendSdpParseErrors(mSDPParseErrorMessages, &error_string, &error);
     CSFLogError(logTag, "%s: pc = %s, error = %s",
@@ -1287,9 +1298,22 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
   }
 #endif
 
-  // TODO(ekr@rtfm.com): Do we check for not being closed?
-  mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
-  pco->OnAddIceCandidateSuccess(rv);
+  nsresult res = mJsepSession->AddIceCandidate(aCandidate, aMid, aLevel);
+
+  if (NS_SUCCEEDED(res)) {
+    mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
+    pco->OnAddIceCandidateSuccess(rv);
+  } else {
+    Error error;
+    switch (res) {
+      case NS_ERROR_UNEXPECTED: error = kInvalidState; break;
+      case NS_ERROR_INVALID_ARG: error = kInvalidCandidateType; break;
+      default: error = kInternalError;
+    }
+
+    std::string error_string = mJsepSession->last_error();
+    pco->OnAddIceCandidateError(error, ObString(error_string.c_str()), rv);
+  }
 
   UpdateSignalingState();
   return NS_OK;
