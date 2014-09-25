@@ -736,7 +736,7 @@ nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection,
   if (type == kJsepSdpOffer) {
     msection->GetAttributeList().SetAttribute(
         new SdpSetupAttribute(SdpSetupAttribute::kActpass));
-  } else { 
+  } else {
     msection->GetAttributeList().SetAttribute(
         new SdpSetupAttribute(SdpSetupAttribute::kActive));
   }
