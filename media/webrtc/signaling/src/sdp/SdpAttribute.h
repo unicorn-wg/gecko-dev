@@ -496,33 +496,6 @@ inline std::ostream& operator <<(std::ostream& os,
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// a=fmtp, RFC4566, RFC5576
-//-------------------------------------------------------------------------
-//       a=fmtp:<format> <format specific parameters>
-//
-// TODO - Specialize according to codec type, to aid in parsing
-// format-specific parameters
-class SdpFmtpAttributeList : public SdpAttribute
-{
-public:
-  SdpFmtpAttributeList() :
-    SdpAttribute(kFmtpAttribute) {}
-
-  struct Fmtp {
-    std::string format;
-    std::string parameters;
-  };
-
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
-
-  void PushEntry(const std::string& format, const std::string& parameters) {
-    mFmtps.push_back({ format, parameters });
-  }
-
-  std::vector<Fmtp> mFmtps;
-};
-
-///////////////////////////////////////////////////////////////////////////
 // a=group, RFC5888
 //-------------------------------------------------------------------------
 //         group-attribute     = "a=group:" semantics
@@ -863,6 +836,17 @@ public:
   SdpRtpmapAttributeList() :
     SdpAttribute(kRtpmapAttribute) {}
 
+  // Minimal set to get going
+  enum CodecType {
+    kOpus,
+    kG722,
+    kPCMU,
+    kPCMA,
+    kVP8,
+    kH264,
+    kOtherCodec
+  };
+
   struct Rtpmap {
     std::string pt;
     std::string name;
@@ -900,6 +884,113 @@ public:
   }
 
   std::vector<Rtpmap> mRtpmaps;
+};
+
+inline std::ostream& operator <<(std::ostream& os, SdpRtpmapAttributeList::CodecType c)
+{
+  switch (c) {
+    case SdpRtpmapAttributeList::kOpus: os << "opus"; break;
+    case SdpRtpmapAttributeList::kG722: os << "G722"; break;
+    case SdpRtpmapAttributeList::kPCMU: os << "PCMU"; break;
+    case SdpRtpmapAttributeList::kPCMA: os << "PCMA"; break;
+    case SdpRtpmapAttributeList::kVP8: os << "VP8"; break;
+    case SdpRtpmapAttributeList::kH264: os << "H264"; break;
+    default: MOZ_ASSERT(false); os << "?";
+  }
+  return os;
+}
+
+///////////////////////////////////////////////////////////////////////////
+// a=fmtp, RFC4566, RFC5576
+//-------------------------------------------------------------------------
+//       a=fmtp:<format> <format specific parameters>
+//
+// TODO - Specialize according to codec type, to aid in parsing
+// format-specific parameters
+class SdpFmtpAttributeList : public SdpAttribute
+{
+public:
+  SdpFmtpAttributeList() :
+    SdpAttribute(kFmtpAttribute) {}
+
+  // Base class for format parameters
+  class Parameters {
+    public:
+      explicit Parameters(SdpRtpmapAttributeList::CodecType aCodec) :
+        codec_type(aCodec) {
+      }
+
+      virtual ~Parameters() {}
+      virtual Parameters* clone() const = 0;
+      virtual void Serialize(std::ostream& os) const = 0;
+
+      SdpRtpmapAttributeList::CodecType codec_type;
+  };
+
+  class H264Parameters : public Parameters {
+    public:
+      H264Parameters() :
+        Parameters(SdpRtpmapAttributeList::kH264)
+      {}
+
+      virtual Parameters* clone() const MOZ_OVERRIDE {
+        return new H264Parameters(*this);
+      }
+
+      virtual void Serialize(std::ostream& os) const {
+        MOZ_ASSERT(false, "TODO");
+      }
+  };
+
+  class Fmtp {
+    public:
+      Fmtp(const std::string& aFormat,
+           const std::string& aParametersString,
+           UniquePtr<Parameters> aParameters) :
+        format(aFormat),
+        parameters_string(aParametersString),
+        parameters(Move(aParameters))
+      {}
+
+      // TODO: Rip all of this out when we have move semantics in the stl.
+      Fmtp(const Fmtp &orig) {
+        *this = orig;
+      }
+
+      Fmtp& operator=(const Fmtp &rhs) {
+        if (this != &rhs) {
+          format = rhs.format;
+          parameters_string = rhs.parameters_string;
+          parameters.reset(rhs.parameters ? rhs.parameters->clone() : nullptr);
+        }
+        return *this;
+      }
+
+      // The contract around these is as follows:
+      // * |format| and |parameters_string| are always set
+      // * |parameters| is only set if we recognized the media type and had
+      //   a subclass of Parameters to represent that type of parameters
+      // * |parameters| is a best-effort representation; it might be missing
+      //   stuff
+      // * if |parameters| is set, it determines the serialized form,
+      //   otherwise |parameters_string| is used
+      // * Parameters::codec_type tells you the concrete class, eg
+      //   kH264 -> H264Parameters
+      std::string format;
+      std::string parameters_string;
+      UniquePtr<Parameters> parameters;
+  };
+
+  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
+
+  void PushEntry(const std::string& format,
+                 const std::string& parameters_string,
+                 UniquePtr<Parameters> parameters) {
+    mFmtps.push_back(
+        Fmtp(format, parameters_string, Move(parameters)));
+  }
+
+  std::vector<Fmtp> mFmtps;
 };
 
 ///////////////////////////////////////////////////////////////////////////

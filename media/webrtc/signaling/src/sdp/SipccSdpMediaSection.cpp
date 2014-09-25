@@ -250,7 +250,8 @@ SipccSdpMediaSection::AddCodec(const std::string& pt, const std::string& name,
         fmtps->mFmtps.push_back(*it);
       }
     }
-    fmtps->PushEntry(pt, fmtp);
+
+    fmtps->PushEntry(pt, fmtp, nullptr);
     mAttributeList.SetAttribute(fmtps);
   }
 }
