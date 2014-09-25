@@ -33,7 +33,7 @@ class JsepSessionImpl : public JsepSession {
     Init();
   }
 
-  virtual ~JsepSessionImpl() {}
+  virtual ~JsepSessionImpl();
 
   // Implement JsepSession methods.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track)
@@ -75,6 +75,11 @@ class JsepSessionImpl : public JsepSession {
 
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) MOZ_OVERRIDE;
+  virtual nsresult AddIceCandidate(const std::string& candidate,
+                                   const std::string& mid,
+                                   uint16_t level) MOZ_OVERRIDE;
+
+  virtual const std::string last_error() const MOZ_OVERRIDE;
 
   virtual bool ice_controlling() const {
     return mIceControlling;
@@ -151,7 +156,8 @@ class JsepSessionImpl : public JsepSession {
                                     SdpDirectionAttribute::Direction answer,
                                     bool is_offerer,
                                     bool* sending, bool* receiving);
-  nsresult AddTransportAttributes(SdpMediaSection* msection);
+  nsresult AddTransportAttributes(SdpMediaSection* msection,
+                                  JsepSdpType type);
   nsresult CreateTrack(const SdpMediaSection& receive,
                        const SdpMediaSection& send,
                        UniquePtr<JsepTrack>* track);
@@ -174,7 +180,7 @@ class JsepSessionImpl : public JsepSession {
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;
   std::vector<RefPtr<JsepTransport>> mTransports;
-  std::vector<JsepTrackPair*> mNegotiatedTrackPairs;  // TODO(ekr@rtfm.com): Add to dtor
+  std::vector<JsepTrackPair*> mNegotiatedTrackPairs;
 
   bool mIceControlling;
   std::string mIceUfrag;
@@ -188,6 +194,7 @@ class JsepSessionImpl : public JsepSession {
   UniquePtr<Sdp> mPendingLocalDescription;
   UniquePtr<Sdp> mPendingRemoteDescription;
   std::vector<JsepCodecDescription> mCodecs;
+  std::string mLastError;
   SipccSdpParser mParser;
 };
 
