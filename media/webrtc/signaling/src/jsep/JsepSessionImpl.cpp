@@ -48,6 +48,15 @@ class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
 
 // TODO(ekr@rtfm.com): Add state checks.
 
+JsepSessionImpl::~JsepSessionImpl() {
+  for (auto i = mNegotiatedTrackPairs.begin();
+       i != mNegotiatedTrackPairs.end();
+       ++i) {
+    delete *i;
+  }
+  mNegotiatedTrackPairs.clear();
+}
+
 void JsepSessionImpl::Init() {
   SECStatus rv = PK11_GenerateRandom(
       reinterpret_cast<unsigned char *>(&mSessionId), sizeof(mSessionId));
@@ -118,7 +127,8 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     case kJsepStateStable:
       break;
     default:
-      return NS_ERROR_FAILURE;
+      mLastError = "Cannot create offer in current state";
+      return NS_ERROR_UNEXPECTED;
   }
 
   UniquePtr<Sdp> sdp;
@@ -152,7 +162,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     }
 
     SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
-    rv = AddTransportAttributes(&msection);
+    rv = AddTransportAttributes(&msection, kJsepSdpOffer);
     if (NS_FAILED(rv))
       return rv;
 
@@ -166,7 +176,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kAudio, &msection);
-    rv = AddTransportAttributes(&msection);
+    rv = AddTransportAttributes(&msection, kJsepSdpOffer);
     if (NS_FAILED(rv))
       return rv;
     ++nAudio;
@@ -175,7 +185,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kVideo, &msection);
-    rv = AddTransportAttributes(&msection);
+    rv = AddTransportAttributes(&msection, kJsepSdpOffer);
     if (NS_FAILED(rv))
       return rv;
     ++nVideo;
@@ -247,7 +257,8 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
     case kJsepStateHaveRemoteOffer:
       break;
     default:
-      return NS_ERROR_FAILURE;
+      mLastError = "Cannot create answer in current state";
+      return NS_ERROR_UNEXPECTED;
   }
 
   // This is the heart of the negotiation code. Depressing that it's
@@ -276,7 +287,7 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
     // TODO(ekr@rtfm.com): Reflect protocol value.
     SdpMediaSection& msection =
       sdp->AddMediaSection(remote_msection.GetMediaType());
-    rv = AddTransportAttributes(&msection);
+    rv = AddTransportAttributes(&msection, kJsepSdpAnswer);
     if (NS_FAILED(rv))
       return rv;
 
@@ -302,6 +313,12 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
                                 SdpDirectionAttribute::kSendrecv :
                                 SdpDirectionAttribute::kRecvonly));
 
+    if (remote_msection.GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpMuxAttribute)) {
+      msection.GetAttributeList().SetAttribute(
+          new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
+    }
+
     // Now add the codecs.
     // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive.
     AddCommonCodecs(remote_msection, &msection);
@@ -313,27 +330,42 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
   return NS_OK;
 }
 
+static void appendSdpParseErrors(
+    const std::vector<std::pair<size_t, std::string> >& aErrors,
+    std::string* aErrorString) {
+  std::ostringstream os;
+  for (auto i = aErrors.begin(); i != aErrors.end(); ++i) {
+    // Use endls here?
+    os << " | SDP Parsing Error at line " << i->first << ": " + i->second;
+  }
+  *aErrorString += os.str();
+}
+
 nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
                                               const std::string& sdp) {
   switch (mState) {
     case kJsepStateStable:
       if (type != kJsepSdpOffer) {
-        return NS_ERROR_INVALID_ARG;
+        mLastError = "Cannot set local answer in current state";
+        return NS_ERROR_UNEXPECTED;
       }
       break;
     case kJsepStateHaveRemoteOffer:
       if (type != kJsepSdpAnswer && type != kJsepSdpPranswer) {
-        return NS_ERROR_INVALID_ARG;
+        mLastError = "Cannot set local offer in current state";
+        return NS_ERROR_UNEXPECTED;
       }
       break;
     default:
-      return NS_ERROR_FAILURE;
+      mLastError = "Cannot set local offer or answer in current state";
+      return NS_ERROR_UNEXPECTED;
   }
 
   UniquePtr<Sdp> parsed;
   nsresult rv = ParseSdp(sdp, &parsed);
-  if (NS_FAILED(rv))
+  if (NS_FAILED(rv)) {
     return rv;
+  }
 
   rv = NS_ERROR_FAILURE;
 
@@ -346,8 +378,10 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
     // TODO(ekr@rtfm.com): Deal with bundle-only and the like.
     RefPtr<JsepTransport> transport;
     nsresult rv = CreateTransport(parsed->GetMediaSection(t), &transport);
-    if (NS_FAILED(rv))
+    if (NS_FAILED(rv)) {
+      mLastError = "Failed to create transport";
       return rv;
+    }
 
     mTransports.push_back(transport);
   }
@@ -398,29 +432,33 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
   switch (mState) {
     case kJsepStateStable:
       if (type != kJsepSdpOffer) {
-        return NS_ERROR_INVALID_ARG;
+        mLastError = "Cannot set remote answer in current state";
+        return NS_ERROR_UNEXPECTED;
       }
       break;
     case kJsepStateHaveLocalOffer:
     case kJsepStateHaveRemotePranswer:
       if (type != kJsepSdpAnswer && type != kJsepSdpPranswer) {
-        return NS_ERROR_INVALID_ARG;
+        mLastError = "Cannot set remote offer in current state";
+        return NS_ERROR_UNEXPECTED;
       }
       break;
     default:
-      return NS_ERROR_FAILURE;
+      mLastError = "Cannot set remote offer or answer in current state";
+      return NS_ERROR_UNEXPECTED;
   }
 
   // Parse.
   UniquePtr<Sdp> parsed;
   nsresult rv = ParseSdp(sdp, &parsed);
-  if (NS_FAILED(rv))
+  if (NS_FAILED(rv)) {
     return rv;
+  }
 
   rv = NS_ERROR_FAILURE;
 
-  // TODO(ekr@rtfm.com): Validate that this is a plausible SDP
-  // with ICE, DTLS, etc.
+  // TODO: What additional validation should we do here?
+
   switch (type) {
     case kJsepSdpOffer:
       rv = SetRemoteDescriptionOffer(Move(parsed));
@@ -437,11 +475,15 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
                                                   const UniquePtr<Sdp>& remote,
                                                   bool is_offerer) {
-  mIceControlling = is_offerer;  // TODO(ekr@rtfm.com): ICE lite.
+  bool remote_ice_lite = remote->GetAttributeList().HasAttribute(
+      SdpAttribute::kIceLiteAttribute);
+
+  mIceControlling = remote_ice_lite || is_offerer;
 
   if (local->GetMediaSectionCount() != remote->GetMediaSectionCount()) {
     MOZ_MTLOG(ML_ERROR, "Answer and offer have different number of m-lines");
-    return NS_ERROR_FAILURE;
+    mLastError = "Answer and offer have different number of m-lines";
+    return NS_ERROR_INVALID_ARG;
   }
 
 
@@ -460,7 +502,8 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
       MOZ_MTLOG(ML_ERROR,
                 "Answer and offer have different number of types at m-line "
                 << i);
-      return NS_ERROR_FAILURE;
+      mLastError = "Answer and offer have different types at m-line";
+      return NS_ERROR_INVALID_ARG;
     }
 
     RefPtr<JsepTransport> transport;
@@ -468,8 +511,10 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
     // Transports are created in SetLocal.
     MOZ_ASSERT(mTransports.size() > i);
-    if (mTransports.size() < i)
+    if (mTransports.size() < i) {
+      mLastError = "Fewer transports set up than m-lines";
       return NS_ERROR_FAILURE;
+    }
     transport = mTransports[i];
 
     // If the answer says it's inactive we're not doing anything with it.
@@ -590,15 +635,9 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
                                          const RefPtr<JsepTransport>&
                                          transport) {
   UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
-  if (!remote.HasAttribute(SdpAttribute::kIceUfragAttribute, true)) {
-    MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE ufrag");
-    return NS_ERROR_FAILURE;
-  }
-  if (!remote.HasAttribute(SdpAttribute::kIcePwdAttribute, true)) {
-    MOZ_MTLOG(ML_ERROR, "Peer does not have an ICE pwd");
-    return NS_ERROR_FAILURE;
-  }
+
   // TODO(ekr@rtfm.com): ICE lite, ICE trickle.
+  // We do sanity-checking for these in ParseSdp
   ice->mUfrag = remote.GetIceUfrag();
   ice->mPwd = remote.GetIcePwd();
   if (remote.HasAttribute(SdpAttribute::kCandidateAttribute, true)) {
@@ -606,10 +645,6 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
   }
 
   UniquePtr<JsepDtlsTransportImpl> dtls = MakeUnique<JsepDtlsTransportImpl>();
-  if (!remote.HasAttribute(SdpAttribute::kFingerprintAttribute, true)) {
-     MOZ_MTLOG(ML_ERROR, "Peer does not have a fingeprrint");
-    return NS_ERROR_FAILURE;
-  }
   dtls->mFingerprints = remote.GetFingerprint();
 
   transport->mIce = Move(ice);
@@ -628,7 +663,8 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
     if (offer != SdpDirectionAttribute::kSendrecv) {
       MOZ_MTLOG(ML_ERROR,
                 "Answer tried to change m-line to sendrecv");
-      return NS_ERROR_FAILURE;
+      mLastError = "Answer tried to change m-line to sendrecv";
+      return NS_ERROR_INVALID_ARG;
     }
 
     *sending = true;
@@ -639,7 +675,8 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
         (offer != SdpDirectionAttribute::kSendonly)) {
       MOZ_MTLOG(ML_ERROR,
                 "Answer tried to change m-line to recvonly");
-      return NS_ERROR_FAILURE;
+      mLastError = "Answer tried to change m-line to recvonly";
+      return NS_ERROR_INVALID_ARG;
     }
     if (is_offerer) {
       *sending = true; *receiving = false;
@@ -652,7 +689,8 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
         (offer != SdpDirectionAttribute::kRecvonly)) {
       MOZ_MTLOG(ML_ERROR,
                 "Answer tried to change m-line to sendonly");
-      return NS_ERROR_FAILURE;
+      mLastError = "Answer tried to change m-line to sendonly";
+      return NS_ERROR_INVALID_ARG;
     }
     if (is_offerer) {
       *sending = false; *receiving = true;
@@ -667,14 +705,17 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
   return NS_OK;
 }
 
-nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection) {
+nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection,
+                                                 JsepSdpType type) {
   if (mIceUfrag.empty() || mIcePwd.empty()) {
-    MOZ_MTLOG(ML_ERROR, "Missing ICE ufrag and password");
+    MOZ_MTLOG(ML_ERROR, "Missing ICE ufrag or password");
+    mLastError = "Missing ICE ufrag or password";
     return NS_ERROR_FAILURE;
   }
 
   if (mDtlsFingerprints.empty()) {
     MOZ_MTLOG(ML_ERROR, "Missing DTLS fingerprint");
+    mLastError = "Missing DTLS fingerprint";
     return NS_ERROR_FAILURE;
   }
 
@@ -692,6 +733,14 @@ nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection) {
   }
   msection->GetAttributeList().SetAttribute(fpl.release());
 
+  if (type == kJsepSdpOffer) {
+    msection->GetAttributeList().SetAttribute(
+        new SdpSetupAttribute(SdpSetupAttribute::kActpass));
+  } else {
+    msection->GetAttributeList().SetAttribute(
+        new SdpSetupAttribute(SdpSetupAttribute::kActive));
+  }
+
   return NS_OK;
 }
 
@@ -708,7 +757,33 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
                 << ": "
                 << err->second);
     }
-    return NS_ERROR_FAILURE;
+    mLastError = "Failed to parse SDP: ";
+    appendSdpParseErrors(mParser.GetParseErrors(), &mLastError);
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  for (size_t i = 0; i < parsed->GetMediaSectionCount(); ++i) {
+    if (parsed->GetMediaSection(i).GetAttributeList().GetIceUfrag().empty()) {
+      mLastError = "Invalid description, no ice-ufrag attribute";
+      return NS_ERROR_INVALID_ARG;
+    }
+
+    if (parsed->GetMediaSection(i).GetAttributeList().GetIcePwd().empty()) {
+      mLastError = "Invalid description, no ice-pwd attribute";
+      return NS_ERROR_INVALID_ARG;
+    }
+
+    if (!parsed->GetMediaSection(i).GetAttributeList().HasAttribute(
+          SdpAttribute::kSetupAttribute)) {
+      mLastError = "Invalid description, no setup attribute";
+      return NS_ERROR_INVALID_ARG;
+    }
+
+    if (!parsed->GetMediaSection(i).GetAttributeList().HasAttribute(
+          SdpAttribute::kFingerprintAttribute)) {
+      mLastError = "Invalid description, no fingerprint attribute";
+      return NS_ERROR_INVALID_ARG;
+    }
   }
 
   *parsedp = Move(parsed);
@@ -818,7 +893,7 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       SdpMediaSection::kVideo,
       120,
       "VP8",
-      9000,
+      90000,
       0  // This means default 1
                       ));
 }
@@ -830,6 +905,38 @@ void JsepSessionImpl::SetState(JsepSignalingState state) {
   MOZ_MTLOG(ML_NOTICE, "[" << mName << "]: " <<
             state_str(mState) << " -> " << state_str(state));
   mState = state;
+}
+
+nsresult JsepSessionImpl::AddIceCandidate(const std::string& candidate,
+                                          const std::string& mid,
+                                          uint16_t level) {
+  if (!mCurrentRemoteDescription) {
+    mLastError = "Cannot add ICE candidate in current state";
+    return NS_ERROR_UNEXPECTED;
+  }
+
+  SdpAttributeList& attr_list =
+    mCurrentRemoteDescription->GetMediaSection(level).GetAttributeList();
+
+  SdpMultiStringAttribute *candidates = nullptr;
+  if (!attr_list.HasAttribute(SdpAttribute::kCandidateAttribute)) {
+    candidates =
+      new SdpMultiStringAttribute(SdpAttribute::kCandidateAttribute);
+  } else {
+    // Copy existing
+    candidates = new SdpMultiStringAttribute(
+        *static_cast<const SdpMultiStringAttribute*>(
+          attr_list.GetAttribute(SdpAttribute::kCandidateAttribute)));
+  }
+  candidates->PushEntry(candidate);
+  attr_list.SetAttribute(candidates);
+
+  return NS_OK;
+}
+
+const std::string
+JsepSessionImpl::last_error() const {
+  return mLastError;
 }
 
 }  // namespace jsep

@@ -456,10 +456,13 @@ SipccSdpAttributeList::LoadFmtp(sdp_t* sdp, uint16_t level) {
       os << fmtp->payload_num;
 
       // Very lame, but we need direct access so we can get the serialized form
+      // TODO: Try to construct a Parameters object
       sdp_result_e sdpres = sdp_build_attr_fmtp_params(sdp, fmtp, &fs);
 
       if (sdpres == SDP_SUCCESS) {
-        fmtps->mFmtps.push_back({os.str(), std::string(fs.buffer)});
+        fmtps->PushEntry(os.str(),
+                         std::string(fs.buffer),
+                         nullptr);
       }
 
       flex_string_free(&fs);

@@ -1248,7 +1248,7 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
       mSdp->GetMediaSection(0).GetAttributeList().GetFmtp().mFmtps;
   ASSERT_EQ(1U, audio_format_params.size());
   ASSERT_EQ("101", audio_format_params[0].format);
-  ASSERT_EQ("0-15", audio_format_params[0].parameters);
+  ASSERT_EQ("0-15", audio_format_params[0].parameters_string);
 
   ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
       SdpAttribute::kFmtpAttribute));
@@ -1256,7 +1256,7 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
       mSdp->GetMediaSection(1).GetAttributeList().GetFmtp().mFmtps;
   ASSERT_EQ(1U, video_format_params.size());
   ASSERT_EQ("120", video_format_params[0].format);
-  ASSERT_EQ("PROFILE=0;LEVEL=0;profile-level-id=42A01E;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0", video_format_params[0].parameters);
+  ASSERT_EQ("PROFILE=0;LEVEL=0;profile-level-id=42A01E;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0", video_format_params[0].parameters_string);
 
   ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
       SdpAttribute::kFmtpAttribute));
