@@ -932,16 +932,73 @@ public:
   class H264Parameters : public Parameters {
     public:
       H264Parameters() :
-        Parameters(SdpRtpmapAttributeList::kH264)
-      {}
+        Parameters(SdpRtpmapAttributeList::kH264),
+        packetization_mode(-1),
+        profile_level_id(-1),
+        max_mbps(-1),
+        max_fs(-1),
+        max_cpb(-1),
+        max_dpb(-1),
+        max_br(-1) {
+        memset(sprop_parameter_sets, 0, sizeof(sprop_parameter_sets));
+      }
 
       virtual Parameters* clone() const MOZ_OVERRIDE {
         return new H264Parameters(*this);
       }
 
       virtual void Serialize(std::ostream& os) const {
-        MOZ_ASSERT(false, "TODO");
+        bool first = true;
+        if (strlen(sprop_parameter_sets)) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "sprop-parameter-sets=" << sprop_parameter_sets;
+        }
+
+        if (packetization_mode != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "packetization-mode=" << packetization_mode;
+        }
+
+        if (profile_level_id != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "profile-level-id=" << packetization_mode;
+        }
+
+        if (max_mbps != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "max-mbps=" << max_mbps;
+        }
+
+        if (max_fs != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "max-fs=" << max_fs;
+        }
+
+        if (max_cpb != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "max-cpb=" << max_cpb;
+        }
+
+        if (max_dpb != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "max-dpb=" << max_dpb;
+        }
+
+        if (max_br != -1) {
+          if (first) { first = false; } else { os << ";"; }
+          os << "max-br=" << max_br;
+        }
       }
+
+      static const size_t max_sprop_len = 128;
+      char       sprop_parameter_sets[max_sprop_len];
+      int        packetization_mode;
+      int        profile_level_id;
+      int        max_mbps;
+      int        max_fs;
+      int        max_cpb;
+      int        max_dpb;
+      int        max_br;
   };
 
   class Fmtp {
