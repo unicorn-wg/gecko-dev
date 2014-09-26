@@ -870,10 +870,13 @@ class NewSdpTest : public ::testing::Test,
       return output.str();
     }
 
-    void CheckRtpmap(const std::string&pt, const std::string&name,
+    void CheckRtpmap(const std::string& expected_pt, const std::string&name,
                      uint32_t clock, uint16_t channels,
-                     const SdpRtpmapAttributeList::Rtpmap& attr) {
-      ASSERT_EQ(pt, attr.pt);
+                     const std::string& search_pt,
+                     const SdpRtpmapAttributeList& rtpmaps) {
+      ASSERT_TRUE(rtpmaps.HasEntry(search_pt));
+      auto attr = rtpmaps.GetEntry(search_pt);
+      ASSERT_EQ(expected_pt, attr.pt);
       ASSERT_EQ(name, attr.name);
       ASSERT_EQ(clock, attr.clock);
       ASSERT_EQ(channels, attr.channels);
@@ -1227,16 +1230,15 @@ TEST_P(NewSdpTest, CheckRtpmap) {
     << "Wrong number of rtpmap attributes for audio";
 
   // Need to know name of type
-  CheckRtpmap("109", "opus",           48000, 2, rtpmap.GetEntry(audiosec.GetFormats()[0]));
-  CheckRtpmap("9",   "G722",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[1]));
-  CheckRtpmap("0",   "PCMU",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[2]));
-  CheckRtpmap("8",   "PCMA",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[3]));
-  CheckRtpmap("101", "telephone-event", 8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[4]));
+  CheckRtpmap("109", "opus",           48000, 2, audiosec.GetFormats()[0], rtpmap);
+  CheckRtpmap("9",   "G722",            8000, 1, audiosec.GetFormats()[1], rtpmap);
+  CheckRtpmap("0",   "PCMU",            8000, 1, audiosec.GetFormats()[2], rtpmap);
+  CheckRtpmap("8",   "PCMA",            8000, 1, audiosec.GetFormats()[3], rtpmap);
+  CheckRtpmap("101", "telephone-event", 8000, 1, audiosec.GetFormats()[4], rtpmap);
 
   const SdpMediaSection& videosec = mSdp->GetMediaSection(1);
   CheckRtpmap("120", "VP8",            90000, 1,
-              videosec.GetAttributeList().GetRtpmap().GetEntry(
-                  videosec.GetFormats()[0]));
+      videosec.GetFormats()[0],videosec.GetAttributeList().GetRtpmap());
 }
 
 TEST_P(NewSdpTest, CheckFormatParameters) {
