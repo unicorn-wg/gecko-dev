@@ -933,13 +933,14 @@ public:
     public:
       H264Parameters() :
         Parameters(SdpRtpmapAttributeList::kH264),
-        packetization_mode(-1),
-        profile_level_id(-1),
-        max_mbps(-1),
-        max_fs(-1),
-        max_cpb(-1),
-        max_dpb(-1),
-        max_br(-1) {
+        packetization_mode(0),
+        level_asymmetry_allowed(false),
+        profile_level_id(0),
+        max_mbps(0),
+        max_fs(0),
+        max_cpb(0),
+        max_dpb(0),
+        max_br(0) {
         memset(sprop_parameter_sets, 0, sizeof(sprop_parameter_sets));
       }
 
@@ -948,57 +949,59 @@ public:
       }
 
       virtual void Serialize(std::ostream& os) const {
-        bool first = true;
+        // Note: don't move this, since having an unconditional param up top
+        // lets us avoid a whole bunch of conditional streaming of ';' below
+        os << "level-asymmetry-allowed="
+           << (level_asymmetry_allowed ? 1 : 0);
+
         if (strlen(sprop_parameter_sets)) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "sprop-parameter-sets=" << sprop_parameter_sets;
+          os << ";sprop-parameter-sets=" << sprop_parameter_sets;
         }
 
-        if (packetization_mode != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "packetization-mode=" << packetization_mode;
+        if (packetization_mode != 0) {
+          os << ";packetization-mode=" << packetization_mode;
         }
 
-        if (profile_level_id != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "profile-level-id=" << packetization_mode;
+        if (packetization_mode != 0) {
+          os << ";packetization-mode=" << packetization_mode;
         }
 
-        if (max_mbps != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "max-mbps=" << max_mbps;
+        if (profile_level_id != 0) {
+          os << ";profile-level-id="
+             << std::hex << profile_level_id << std::dec;
         }
 
-        if (max_fs != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "max-fs=" << max_fs;
+        if (max_mbps != 0) {
+          os << ";max-mbps=" << max_mbps;
         }
 
-        if (max_cpb != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "max-cpb=" << max_cpb;
+        if (max_fs != 0) {
+          os << ";max-fs=" << max_fs;
         }
 
-        if (max_dpb != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "max-dpb=" << max_dpb;
+        if (max_cpb != 0) {
+          os << ";max-cpb=" << max_cpb;
         }
 
-        if (max_br != -1) {
-          if (first) { first = false; } else { os << ";"; }
-          os << "max-br=" << max_br;
+        if (max_dpb != 0) {
+          os << ";max-dpb=" << max_dpb;
+        }
+
+        if (max_br != 0) {
+          os << ";max-br=" << max_br;
         }
       }
 
       static const size_t max_sprop_len = 128;
-      char       sprop_parameter_sets[max_sprop_len];
-      int        packetization_mode;
-      int        profile_level_id;
-      int        max_mbps;
-      int        max_fs;
-      int        max_cpb;
-      int        max_dpb;
-      int        max_br;
+      char         sprop_parameter_sets[max_sprop_len];
+      unsigned int packetization_mode;
+      bool         level_asymmetry_allowed;
+      unsigned int profile_level_id;
+      unsigned int max_mbps;
+      unsigned int max_fs;
+      unsigned int max_cpb;
+      unsigned int max_dpb;
+      unsigned int max_br;
   };
 
   class Fmtp {

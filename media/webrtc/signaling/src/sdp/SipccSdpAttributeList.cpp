@@ -462,16 +462,60 @@ SipccSdpAttributeList::LoadFmtp(sdp_t* sdp, uint16_t level) {
       flex_string_init(&fs);
 
       std::stringstream os;
+      // payload_num is the number in the fmtp attribute, verbatim
       os << fmtp->payload_num;
 
+      rtp_ptype codec = sdp_get_known_payload_type(sdp,
+                                                   level,
+                                                   fmtp->payload_num);
+      UniquePtr<SdpFmtpAttributeList::Parameters> parameters;
+
+      switch (codec) {
+        case RTP_H264_P0:
+        case RTP_H264_P1:
+          {
+            SdpFmtpAttributeList::H264Parameters* h264_parameters(
+                new SdpFmtpAttributeList::H264Parameters);
+
+            strncpy(h264_parameters->sprop_parameter_sets,
+                    fmtp->parameter_sets,
+                    sizeof(h264_parameters->sprop_parameter_sets));
+
+            h264_parameters->level_asymmetry_allowed =
+              !!(fmtp->level_asymmetry_allowed);
+
+            h264_parameters->packetization_mode = fmtp->packetization_mode;
+            // Copied from VcmSIPCCBinding
+#ifdef _WIN32
+            sscanf_s(fmtp->profile_level_id,
+                     "%x",
+                     &h264_parameters->profile_level_id,
+                     sizeof(unsigned*));
+#else
+            sscanf(fmtp->profile_level_id,
+                   "%xu",
+                   &h264_parameters->profile_level_id);
+#endif
+            h264_parameters->max_mbps = fmtp->max_mbps;
+            h264_parameters->max_fs = fmtp->max_fs;
+            h264_parameters->max_cpb = fmtp->max_cpb;
+            h264_parameters->max_dpb = fmtp->max_dpb;
+            h264_parameters->max_br = fmtp->max_br;
+
+            parameters.reset(h264_parameters);
+          }
+          break;
+        default:
+          {}
+      }
+
       // Very lame, but we need direct access so we can get the serialized form
-      // TODO: Try to construct a Parameters object
       sdp_result_e sdpres = sdp_build_attr_fmtp_params(sdp, fmtp, &fs);
 
       if (sdpres == SDP_SUCCESS) {
         fmtps->PushEntry(os.str(),
                          std::string(fs.buffer),
-                         nullptr);
+                         Move(parameters));
       }
 
       flex_string_free(&fs);

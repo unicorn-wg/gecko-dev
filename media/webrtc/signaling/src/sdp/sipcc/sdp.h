@@ -1224,6 +1224,9 @@ extern sdp_transport_e sdp_get_media_profile(void *sdp_ptr, u16 level,
 extern u16 sdp_get_media_num_payload_types(void *sdp_ptr, u16 level);
 extern u16 sdp_get_media_profile_num_payload_types(void *sdp_ptr, u16 level,
                                                     u16 profile_num);
+extern rtp_ptype sdp_get_known_payload_type(void *sdp_ptr,
+                                            u16 level,
+                                            u16 payload_type_raw);
 extern u32 sdp_get_media_payload_type(void *sdp_ptr, u16 level,
                                 u16 payload_num, sdp_payload_ind_e *indicator);
 extern u32 sdp_get_media_profile_payload_type(void *sdp_ptr, u16 level,
@@ -1367,6 +1370,8 @@ extern sdp_result_e sdp_attr_set_subnet_addr(void *sdp_ptr, u16 level,
 extern sdp_result_e sdp_attr_set_subnet_prefix(void *sdp_ptr, u16 level,
                                                u8 cap_num, u16 inst_num,
                                                int32 prefix);
+extern rtp_ptype sdp_attr_get_rtpmap_known_codec(void *sdp_ptr, u16 level,
+                                                 u8 cap_num, u16 inst_num);
 extern tinybool sdp_attr_rtpmap_payload_valid(void *sdp_ptr, u16 level,
                                   u8 cap_num, u16 *inst_num, u16 payload_type);
 extern u16 sdp_attr_get_rtpmap_payload_type(void *sdp_ptr, u16 level,
