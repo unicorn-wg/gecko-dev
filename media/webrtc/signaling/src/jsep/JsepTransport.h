@@ -29,7 +29,7 @@ class JsepIceTransport {
    //  virtual const SdpIceOptionsAttribute& options() const = 0;
  };
 
- class JsepTransport {
+class JsepTransport {
   public:
    JsepTransport(const std::string& id, size_t components) :
        mTransportId(id),

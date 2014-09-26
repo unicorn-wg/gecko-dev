@@ -85,6 +85,9 @@ class JsepSession {
                                        const std::string& sdp) = 0;
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) = 0;
+  virtual nsresult AddIceCandidate(const std::string& candidate,
+                                   const std::string& mid,
+                                   uint16_t level) = 0;
 
   // ICE controlling or controlled
   virtual bool ice_controlling() const = 0;

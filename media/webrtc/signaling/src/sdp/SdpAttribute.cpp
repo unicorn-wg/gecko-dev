@@ -48,8 +48,13 @@ void SdpFingerprintAttributeList::Serialize(std::ostream& os) const
 void SdpFmtpAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mFmtps.begin(); i != mFmtps.end(); ++i) {
-    os << "a=" << mType << ":" << i->format
-      << " " << i->parameters << CRLF;
+    os << "a=" << mType << ":" << i->format << " ";
+    if (i->parameters) {
+      i->parameters->Serialize(os);
+    } else {
+      os << i->parameters_string;
+    }
+    os << CRLF;
   }
 }
 

@@ -174,6 +174,7 @@ static const std::string strG711SdpOffer =
     "a=candidate:0 2 udp 2130706432 148.147.200.251 9005 typ host\r\n"
     "a=ice-ufrag:cYuakxkEKH+RApYE\r\n"
     "a=ice-pwd:bwtpzLZD+3jbu8vQHvEa6Xuq\r\n"
+    "a=setup:active\r\n"
     "a=sendrecv\r\n";
 
 
@@ -1213,6 +1214,16 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     if (!ignoreError) {
       ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
     }
+
+    for (auto i = deferredCandidates_.begin();
+         i != deferredCandidates_.end();
+         ++i) {
+      AddIceCandidate(i->candidate.c_str(),
+                      i->mid.c_str(),
+                      i->level,
+                      i->expectSuccess);
+    }
+    deferredCandidates_.clear();
   }
 
   void SetLocal(TestObserver::Action action, std::string local,
@@ -1247,7 +1258,13 @@ void CreateAnswer(uint32_t offerAnswerFlags,
 
   void AddIceCandidateStr(std::string candidate, std::string mid,
                        unsigned short level) {
-    AddIceCandidate(candidate.c_str(), mid.c_str(), level, true);
+    if (getRemoteDescription().empty()) {
+      // Not time to add this, because the unit-test code hasn't set the
+      // description yet.
+      deferredCandidates_.push_back({candidate, mid, level, true});
+    } else {
+      AddIceCandidate(candidate.c_str(), mid.c_str(), level, true);
+    }
   }
 
   void AddIceCandidate(const char *candidate, const char* mid, unsigned short level,
@@ -1383,6 +1400,15 @@ public:
   nsRefPtr<DOMMediaStream> domMediaStream_;
   sipcc::IceConfiguration cfg_;
   const std::string name;
+
+  typedef struct {
+    std::string candidate;
+    std::string mid;
+    uint16_t level;
+    bool expectSuccess;
+  } DeferredCandidate;
+
+  std::list<DeferredCandidate> deferredCandidates_;
 
 private:
   void SDPSanityCheck(std::string sdp, uint32_t flags, bool offer)
@@ -1586,17 +1612,11 @@ class SignalingAgentTest : public ::testing::Test {
     return CreateAgent(g_stun_server_address, g_stun_server_port);
   }
 
-  bool CreateAgent(const std::string stun_addr, uint16_t stun_port,
-                   bool wait_for_gather = true) {
+  bool CreateAgent(const std::string stun_addr, uint16_t stun_port) {
     ScopedDeletePtr<SignalingAgent> agent(
         new SignalingAgent("agent", stun_addr, stun_port));
 
     agent->Init();
-
-    if (wait_for_gather) {
-      if (!agent->WaitForGatherAllowFail())
-        return false;
-    }
 
     agents_.push_back(agent.forget());
 
@@ -1623,14 +1643,12 @@ public:
       : init_(false),
         a1_(nullptr),
         a2_(nullptr),
-        wait_for_gather_(false),
         stun_addr_(g_stun_server_address),
         stun_port_(g_stun_server_port) {}
 
   SignalingTest(const std::string& stun_addr, uint16_t stun_port)
       : a1_(nullptr),
         a2_(nullptr),
-        wait_for_gather_(false),
         stun_addr_(stun_addr),
         stun_port_(stun_port) {}
 
@@ -1663,9 +1681,6 @@ public:
     a2_->SetPeer(a1_.get());
 
     init_ = true;
-    if (wait_for_gather_) {
-      WaitForGather();
-    }
   }
 
   void WaitForGather() {
@@ -1903,7 +1918,6 @@ public:
   bool init_;
   ScopedDeletePtr<SignalingAgent> a1_;  // Canonically "caller"
   ScopedDeletePtr<SignalingAgent> a2_;  // Canonically "callee"
-  bool wait_for_gather_;
   std::string stun_addr_;
   uint16_t stun_port_;
 };
@@ -2534,6 +2548,8 @@ TEST_F(SignalingTest, AudioOnlyG711Call)
 
   // We should answer with PCMU and telephone-event
   ASSERT_NE(answer.find(" PCMU/8000"), std::string::npos);
+  // TODO: Do we _actually_ support telephone-event, or is this something that
+  // sipcc was hard-coded to support?
   ASSERT_NE(answer.find(" telephone-event/8000"), std::string::npos);
 
   // Double-check the directionality
@@ -2594,6 +2610,7 @@ TEST_F(SignalingTest, ChromeOfferAnswer)
     "m=audio 1 RTP/SAVPF 103 104 111 0 8 107 106 105 13 126\r\n"
     "a=fingerprint:sha-1 4A:AD:B9:B1:3F:82:18:3B:54:02:12:DF:3E:"
       "5D:49:6B:19:E5:7C:AB\r\n"
+    "a=setup:active\r\n"
     "c=IN IP4 0.0.0.0\r\n"
     "a=rtcp:1 IN IP4 0.0.0.0\r\n"
     "a=ice-ufrag:lBrbdDfrVBH1cldN\r\n"
@@ -2627,6 +2644,7 @@ TEST_F(SignalingTest, ChromeOfferAnswer)
     "m=video 1 RTP/SAVPF 100 101 102\r\n"
     "a=fingerprint:sha-1 4A:AD:B9:B1:3F:82:18:3B:54:02:12:DF:3E:5D:49:"
       "6B:19:E5:7C:AB\r\n"
+    "a=setup:active\r\n"
     "c=IN IP4 0.0.0.0\r\n"
     "a=rtcp:1 IN IP4 0.0.0.0\r\n"
     "a=ice-ufrag:lBrbdDfrVBH1cldN\r\n"
@@ -2676,6 +2694,7 @@ TEST_F(SignalingTest, FullChromeHandshake)
       "a=ice-options:google-ice\r\n"
       "a=fingerprint:sha-256 A8:76:8C:4C:FA:2E:67:D7:F8:1D:28:4E:90:24:04:"
         "12:EB:B4:A6:69:3D:05:92:E4:91:C3:EA:F9:B7:54:D3:09\r\n"
+      "a=setup:active\r\n"
       "a=sendrecv\r\n"
       "a=mid:audio\r\n"
       "a=rtcp-mux\r\n"
@@ -2703,6 +2722,7 @@ TEST_F(SignalingTest, FullChromeHandshake)
       "a=ice-options:google-ice\r\n"
       "a=fingerprint:sha-256 A8:76:8C:4C:FA:2E:67:D7:F8:1D:28:4E:90:24:04:"
         "12:EB:B4:A6:69:3D:05:92:E4:91:C3:EA:F9:B7:54:D3:09\r\n"
+      "a=setup:active\r\n"
       "a=sendrecv\r\n"
       "a=mid:video\r\n"
       "a=rtcp-mux\r\n"
@@ -2862,6 +2882,7 @@ TEST_F(SignalingTest, ipAddrAnyOffer)
     "a=rtpmap:99 opus/48000/2\r\n"
     "a=ice-ufrag:cYuakxkEKH+RApYE\r\n"
     "a=ice-pwd:bwtpzLZD+3jbu8vQHvEa6Xuq\r\n"
+    "a=setup:active\r\n"
     "a=sendrecv\r\n";
 
     a2_->SetRemote(TestObserver::OFFER, offer);
@@ -2890,6 +2911,7 @@ static void CreateSDPForBigOTests(std::string& offer, const char *number) {
     "a=rtpmap:99 opus/48000/2\r\n"
     "a=ice-ufrag:cYuakxkEKH+RApYE\r\n"
     "a=ice-pwd:bwtpzLZD+3jbu8vQHvEa6Xuq\r\n"
+    "a=setup:active\r\n"
     "a=sendrecv\r\n";
 }
 
@@ -3058,7 +3080,8 @@ TEST_F(SignalingTest, AddCandidateInHaveLocalOffer) {
 }
 
 TEST_F(SignalingAgentTest, CreateOffer) {
-  CreateAgent();
+  CreateAgent(TestStunServer::GetInstance()->addr(),
+              TestStunServer::GetInstance()->port());
   sipcc::OfferOptions options;
   agent(0)->CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
   PR_Sleep(20000);
@@ -3071,8 +3094,7 @@ TEST_F(SignalingAgentTest, CreateOfferTrickleTestServer) {
 
   CreateAgent(
       TestStunServer::GetInstance()->addr(),
-      TestStunServer::GetInstance()->port(),
-      false);
+      TestStunServer::GetInstance()->port());
 
   sipcc::OfferOptions options;
   agent(0)->CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
@@ -3100,8 +3122,7 @@ TEST_F(SignalingAgentTest, CreateOfferSetLocalTrickleTestServer) {
 
   CreateAgent(
       TestStunServer::GetInstance()->addr(),
-      TestStunServer::GetInstance()->port(),
-      false);
+      TestStunServer::GetInstance()->port());
 
   sipcc::OfferOptions options;
   agent(0)->CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
@@ -3136,8 +3157,7 @@ TEST_F(SignalingAgentTest, CreateAnswerSetLocalTrickleTestServer) {
 
   CreateAgent(
       TestStunServer::GetInstance()->addr(),
-      TestStunServer::GetInstance()->port(),
-      false);
+      TestStunServer::GetInstance()->port());
 
   std::string offer(strG711SdpOffer);
   agent(0)->SetRemote(TestObserver::OFFER, offer, true,
@@ -3239,7 +3259,7 @@ TEST_F(SignalingTest, missingUfrag)
   // Need to create an offer, since that's currently required by our
   // FSM. This may change in the future.
   a1_->CreateOffer(options, OFFER_AV, SHOULD_SENDRECV_AV);
-  a1_->SetLocal(TestObserver::OFFER, offer, true);
+  a1_->SetLocal(TestObserver::OFFER, a1_->offer(), true);
   // We now detect the missing ICE parameters at SetRemoteDescription
   a2_->SetRemote(TestObserver::OFFER, offer, true,
                  PCImplSignalingState::SignalingStable);
@@ -3265,7 +3285,7 @@ TEST_F(SignalingTest, AudioOnlyCalleeNoRtcpMux)
 
   // Answer should not have a=rtcp-mux
   ASSERT_EQ(a2_->getLocalDescription().find("\r\na=rtcp-mux"),
-            std::string::npos);
+            std::string::npos) << "SDP was: " << a2_->getLocalDescription();
 
   WaitForCompleted();
 
@@ -3797,8 +3817,6 @@ TEST_F(SignalingTest, AudioCallAnswerNoSetupOrConnection)
 
 TEST_F(SignalingTest, FullCallRealTrickle)
 {
-  wait_for_gather_ = false;
-
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV,
               true, SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AV);
@@ -3815,7 +3833,6 @@ TEST_F(SignalingTest, FullCallRealTrickle)
 
 TEST_F(SignalingTest, FullCallRealTrickleTestServer)
 {
-  wait_for_gather_ = false;
   SetTestStunServer();
 
   sipcc::OfferOptions options;
@@ -3869,6 +3886,7 @@ TEST_F(SignalingTest, hugeSdp)
     "a=ice-pwd:ZUiRmjS2GDhG140p73dAsSVP\r\n"
     "a=ice-options:google-ice\r\n"
     "a=fingerprint:sha-256 59:4A:8B:73:A7:73:53:71:88:D7:4D:58:28:0C:79:72:31:29:9B:05:37:DD:58:43:C2:D4:85:A2:B3:66:38:7A\r\n"
+    "a=setup:active\r\n"
     "a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\n"
     "a=sendrecv\r\n"
     "a=mid:audio\r\n"
@@ -3913,6 +3931,7 @@ TEST_F(SignalingTest, hugeSdp)
     "a=ice-pwd:ZUiRmjS2GDhG140p73dAsSVP\r\n"
     "a=ice-options:google-ice\r\n"
     "a=fingerprint:sha-256 59:4A:8B:73:A7:73:53:71:88:D7:4D:58:28:0C:79:72:31:29:9B:05:37:DD:58:43:C2:D4:85:A2:B3:66:38:7A\r\n"
+    "a=setup:active\r\n"
     "a=extmap:2 urn:ietf:params:rtp-hdrext:toffset\r\n"
     "a=extmap:3 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\n"
     "a=sendrecv\r\n"
