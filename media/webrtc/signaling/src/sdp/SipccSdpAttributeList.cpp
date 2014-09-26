@@ -311,9 +311,10 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
   if (count > 0) {
     uint16_t num = sdp_get_media_sctp_port(sdp, level);
 
-    char * writable = new char[SDP_MAX_STRING_LEN + 1];
+    char writable[SDP_MAX_STRING_LEN + 1];
     memset(writable, '\0', SDP_MAX_STRING_LEN + 1);
-    sdp_result_e result = sdp_attr_get_sctpmap_protocol(sdp, level, 0, 1, writable);
+    sdp_result_e result = sdp_attr_get_sctpmap_protocol(sdp, level, 0, 1,
+      &writable[0]);
     if (result != SDP_SUCCESS) {
       return false;
     }
