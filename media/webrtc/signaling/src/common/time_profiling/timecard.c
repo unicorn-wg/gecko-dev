@@ -5,7 +5,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdio.h>
-#include <inttypes.h>
 #include "timecard.h"
 #include "mozilla/mozalloc.h"
 
@@ -89,8 +88,9 @@ print_timecard(Timecard *tc)
     }
   }
 
-  printf("\nTimecard created %4"PRId64".%6.6"PRId64"\n\n",
-          tc->start_time / PR_USEC_PER_SEC, tc->start_time % PR_USEC_PER_SEC);
+  printf("\nTimecard created %4ld.%6.6ld\n\n",
+          (long)(tc->start_time / PR_USEC_PER_SEC),
+          (long)(tc->start_time % PR_USEC_PER_SEC));
 
   line_width = 1 + 11 + 11 + event_width + file_width + 6 +
                    function_width + (4 * 3);
@@ -114,9 +114,9 @@ print_timecard(Timecard *tc)
     } else {
       delta = entry->timestamp - tc->start_time;
     }
-    printf(" %4"PRId64".%6.6"PRId64" | %4"PRId64".%6.6"PRId64" | %-*s | %*s:%-5d | %-*s\n",
-           offset / PR_USEC_PER_SEC, offset % PR_USEC_PER_SEC,
-           delta / PR_USEC_PER_SEC, delta % PR_USEC_PER_SEC,
+    printf(" %4ld.%6.6ld | %4ld.%6.6ld | %-*s | %*s:%-5d | %-*s\n",
+           (long)(offset / PR_USEC_PER_SEC), (long)(offset % PR_USEC_PER_SEC),
+           (long)(delta / PR_USEC_PER_SEC), (long)(delta % PR_USEC_PER_SEC),
            (int)event_width, entry->event,
            (int)file_width, entry->file, entry->line,
            (int)function_width, entry->function);
