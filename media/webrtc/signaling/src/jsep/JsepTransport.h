@@ -16,7 +16,14 @@ class JsepDtlsTransport {
  public:
   virtual ~JsepDtlsTransport() {}
 
+  enum Role {
+    kJsepDtlsClient,
+    kJsepDtlsServer,
+    kJsepDtlsInvalidRole
+  };
+
   virtual const SdpFingerprintAttributeList& fingerprints() const = 0;
+  virtual Role role() const = 0;
 };
 
 class JsepIceTransport {
@@ -26,6 +33,7 @@ class JsepIceTransport {
   virtual const std::string& ufrag() const = 0;
   virtual const std::string& password() const = 0;
   virtual const std::vector<std::string>& candidates() const = 0;
+
    //  virtual const SdpIceOptionsAttribute& options() const = 0;
  };
 
