@@ -13,7 +13,8 @@ namespace mozilla {
 namespace jsep {
 
 #define JSEP_CODEC_CLONE(T) \
-  virtual JsepCodecDescription* clone() { return new T(*this); }
+  virtual JsepCodecDescription* Clone() const MOZ_OVERRIDE { \
+return new T(*this); }
 
 // A single entry in our list of known codecs.
 struct JsepCodecDescription {
@@ -31,7 +32,7 @@ struct JsepCodecDescription {
       mEnabled(enabled) {}
   virtual ~JsepCodecDescription() {}
 
-  virtual JsepCodecDescription* clone() = 0;
+  virtual JsepCodecDescription* Clone() const = 0;
 
   mozilla::SdpMediaSection::MediaType mType;
   uint8_t mDefaultPt;
@@ -68,7 +69,8 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
                             uint32_t clock,
                             bool enabled = true) :
       JsepCodecDescription(mozilla::SdpMediaSection::kVideo,
-                           default_pt, name, clock, 0, enabled) {}
+                           default_pt, name, clock, 0, enabled),
+      mFbTypes(0), mMaxFs(0), mMaxFr(0) {}
 
   JSEP_CODEC_CLONE(JsepVideoCodecDescription)
 

@@ -31,6 +31,18 @@ namespace mozilla {
 
 MOZ_MTLOG_MODULE("MediaPipelineFactory")
 
+// Trivial wrapper class around a vector of ptrs.
+template <class T> class PtrVector {
+ public:
+  ~PtrVector() {
+    for (auto it = values.begin(); it != values.end(); ++it) {
+      delete *it;
+    }
+  }
+
+  std::vector<T*> values;
+};
+
 static nsresult JsepCodecDescToCodecConfig(const
                                            jsep::JsepCodecDescription& d,
                                            AudioCodecConfig** config) {
@@ -86,78 +98,78 @@ nsresult MediaPipelineFactory::CreateOrGetTransportFlow(
   mozilla::RefPtr<TransportFlow> flow;
 
   flow = mPCMedia->GetTransportFlow(level, rtcp);
-  if (!flow) {
-    char id[32];
-    PR_snprintf(id, sizeof(id), "%s:%d,%s",
-                mPC->GetHandle().c_str(),
-                level, rtcp ? "rtcp" : "rtp");
-    flow = new TransportFlow(id);
-
-    // The media streams are made on STS so we need to defer setup.
-    mozilla::UniquePtr<mozilla::TransportLayerIce> ice(
-        new TransportLayerIce(mPC->GetHandle()));
-
-    mozilla::UniquePtr<TransportLayerDtls> dtls(new TransportLayerDtls());
-
-    dtls->SetRole(transport->mDtls->role() ==
-        mozilla::jsep::JsepDtlsTransport::kJsepDtlsClient ?
-        TransportLayerDtls::CLIENT : TransportLayerDtls::SERVER);
-
-    mozilla::RefPtr<DtlsIdentity> pcid = mPC->GetIdentity();
-    if (!pcid) {
-      return NS_ERROR_FAILURE;
-    }
-    dtls->SetIdentity(pcid);
-
-    const SdpFingerprintAttributeList& fingerprints =
-        transport->mDtls->fingerprints();
-    for (auto fp = fingerprints.mFingerprints.begin();
-         fp != fingerprints.mFingerprints.end(); ++fp) {
-      std::ostringstream ss;
-      ss << fp->hashFunc;
-
-      unsigned char remote_digest[TransportLayerDtls::kMaxDigestLength];
-      size_t digest_len;
-      rv = DtlsIdentity::ParseFingerprint(fp->fingerprint,
-                                          remote_digest,
-                                          sizeof(remote_digest),
-                                          &digest_len);
-      if (NS_FAILED(rv)) {
-        MOZ_MTLOG(ML_ERROR, "Could not convert fingerprint");
-        return rv;
-      }
-
-      rv = dtls->SetVerificationDigest(ss.str(), remote_digest, digest_len);
-      if (NS_FAILED(rv)) {
-        MOZ_MTLOG(ML_ERROR, "Could not set fingerprint");
-        return rv;
-      }
-    }
-
-    std::vector<uint16_t> srtp_ciphers;
-    srtp_ciphers.push_back(SRTP_AES128_CM_HMAC_SHA1_80);
-    srtp_ciphers.push_back(SRTP_AES128_CM_HMAC_SHA1_32);
-
-    rv = dtls->SetSrtpCiphers(srtp_ciphers);
-    if (NS_FAILED(rv)) {
-      MOZ_MTLOG(ML_ERROR, "Couldn't set SRTP ciphers");
-      return rv;
-    }
-
-    nsAutoPtr<std::queue<TransportLayer *> > layers(new std::queue<TransportLayer *>);
-    layers->push(ice.release());
-    layers->push(dtls.release());
-
-    rv = mPCMedia->GetSTSThread()->Dispatch(
-        WrapRunnableNM(&MediaPipelineFactory::FinalizeTransportFlow_s,
-                       mPCMedia, flow, level, rtcp, layers),
-        NS_DISPATCH_NORMAL);
-    if (NS_FAILED(rv)) {
-      return rv;
-    }
-
-    mPCMedia->AddTransportFlow(level, rtcp, flow);
+  if (flow) {
+    *out = flow;
+    return NS_OK;
   }
+
+  char id[32];
+  PR_snprintf(id, sizeof(id), "%s:%d,%s",
+              mPC->GetHandle().c_str(),
+              level, rtcp ? "rtcp" : "rtp");
+  flow = new TransportFlow(id);
+
+  // The media streams are made on STS so we need to defer setup.
+  auto ice = MakeUnique<mozilla::TransportLayerIce>(mPC->GetHandle());
+  auto dtls = MakeUnique<mozilla::TransportLayerDtls>();
+  dtls->SetRole(transport->mDtls->role() ==
+                mozilla::jsep::JsepDtlsTransport::kJsepDtlsClient ?
+                TransportLayerDtls::CLIENT : TransportLayerDtls::SERVER);
+
+  mozilla::RefPtr<DtlsIdentity> pcid = mPC->GetIdentity();
+  if (!pcid) {
+    return NS_ERROR_FAILURE;
+  }
+  dtls->SetIdentity(pcid);
+
+  const SdpFingerprintAttributeList& fingerprints =
+    transport->mDtls->fingerprints();
+  for (auto fp = fingerprints.mFingerprints.begin();
+       fp != fingerprints.mFingerprints.end(); ++fp) {
+    std::ostringstream ss;
+    ss << fp->hashFunc;
+
+    unsigned char remote_digest[TransportLayerDtls::kMaxDigestLength];
+    size_t digest_len;
+    rv = DtlsIdentity::ParseFingerprint(fp->fingerprint,
+                                        remote_digest,
+                                        sizeof(remote_digest),
+                                        &digest_len);
+    if (NS_FAILED(rv)) {
+      MOZ_MTLOG(ML_ERROR, "Could not convert fingerprint");
+      return rv;
+    }
+
+    rv = dtls->SetVerificationDigest(ss.str(), remote_digest, digest_len);
+    if (NS_FAILED(rv)) {
+      MOZ_MTLOG(ML_ERROR, "Could not set fingerprint");
+      return rv;
+    }
+  }
+
+  std::vector<uint16_t> srtp_ciphers;
+  srtp_ciphers.push_back(SRTP_AES128_CM_HMAC_SHA1_80);
+  srtp_ciphers.push_back(SRTP_AES128_CM_HMAC_SHA1_32);
+
+  rv = dtls->SetSrtpCiphers(srtp_ciphers);
+  if (NS_FAILED(rv)) {
+    MOZ_MTLOG(ML_ERROR, "Couldn't set SRTP ciphers");
+    return rv;
+  }
+
+  nsAutoPtr<std::queue<TransportLayer *> > layers(new std::queue<TransportLayer *>);
+  layers->push(ice.release());
+  layers->push(dtls.release());
+
+  rv = mPCMedia->GetSTSThread()->Dispatch(
+    WrapRunnableNM(&MediaPipelineFactory::FinalizeTransportFlow_s,
+                   mPCMedia, flow, level, rtcp, layers),
+    NS_DISPATCH_NORMAL);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+  mPCMedia->AddTransportFlow(level, rtcp, flow);
 
   *out = flow;
 
@@ -362,7 +374,8 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
     return rv;
   }
 
-#if 0 // TODO(ekr@rtfm.com): Copied from vcmSIPCCBinding. Need to port in.
+ // TODO(ekr@rtfm.com): Copied from vcmSIPCCBinding. Need to unifdef and port in.
+#if 0
   // This tells the receive MediaPipeline (if there is one) whether we are
   // doing bundle, and if so, updates the filter. Once the filter is finalized,
   // it is then copied to the transmit pipeline so it can filter RTCP.
@@ -383,6 +396,7 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
 
   return NS_OK;
 }
+
 
 nsresult MediaPipelineFactory::CreateAudioConduit(
     const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session,
@@ -412,7 +426,8 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
   }
 
   if (receiving) {
-    std::vector<mozilla::AudioCodecConfig *> configs;
+    PtrVector<mozilla::AudioCodecConfig> configs;
+
     for(size_t i=0; i <num_codecs; i++) {
       const jsep::JsepCodecDescription* cdesc;
       nsresult rv = track->get_codec(i, &cdesc);
@@ -425,16 +440,10 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
       if (NS_FAILED(rv))
         return rv;
 
-      configs.push_back(config_raw);
+      configs.values.push_back(config_raw);
     }
 
-    auto error = conduit->ConfigureRecvMediaCodecs(configs);
-
-    // Would be nice to use a smart container, but we'd need to change
-    // a lot of code.
-    for (auto it = configs.begin(); it != configs.end(); ++it) {
-      delete *it;
-    }
+    auto error = conduit->ConfigureRecvMediaCodecs(configs.values);
 
     if (error) {
       return NS_ERROR_FAILURE;
@@ -499,7 +508,7 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
   }
 
   if (receiving) {
-    std::vector<mozilla::VideoCodecConfig *> configs;
+    PtrVector<mozilla::VideoCodecConfig> configs;
 
     for(size_t i=0; i <num_codecs ; i++) {
       const jsep::JsepCodecDescription* cdesc;
@@ -519,22 +528,17 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
         continue;
       }
 
-      configs.push_back(config_raw);
+      configs.values.push_back(config_raw);
     }
 
-    auto error = conduit->ConfigureRecvMediaCodecs(configs);
-
-    // Would be nice to use a smart container, but we'd need to change
-    // a lot of code.
-    for (auto it = configs.begin(); it != configs.end(); ++it) {
-      delete *it;
-    }
+    auto error = conduit->ConfigureRecvMediaCodecs(configs.values);
 
     if (error) {
       return NS_ERROR_FAILURE;
     }
   } else {
-#if 0 // Copied from VcmSIPCCBinding.
+ // TODO(ekr@rtfm.com): Copied from vcmSIPCCBinding. Need to unifdef and port in.
+#if 0
     struct VideoCodecConfigH264 *negotiated = nullptr;
 
     if (attrs->video.opaque &&
@@ -574,13 +578,13 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
 /*
  * Add external H.264 video codec.
  */
-int MediaPipelineFactory::EnsureExternalCodec(
+MediaConduitErrorCode MediaPipelineFactory::EnsureExternalCodec(
     const mozilla::RefPtr<mozilla::VideoSessionConduit>& conduit,
     mozilla::VideoCodecConfig* config,
     bool send)
 {
   if (config->mName == "VP8") {
-    return 0;
+    return kMediaConduitNoError;
   } else if (config->mName == "H264_P0" || config->mName == "H264_P1") {
     // Register H.264 codec.
     if (send) {
@@ -614,7 +618,7 @@ int MediaPipelineFactory::EnsureExternalCodec(
     return send ? kMediaConduitInvalidSendCodec : kMediaConduitInvalidReceiveCodec;
   }
 
-  return 0;
+  return kMediaConduitNoError;
 }
 
 }  // namespace mozillz

@@ -19,7 +19,7 @@ namespace mozilla {
 
 class MediaPipelineFactory {
  public:
-  MediaPipelineFactory(sipcc::PeerConnectionMedia* pcmedia) :
+  explicit MediaPipelineFactory(sipcc::PeerConnectionMedia* pcmedia) :
       mPCMedia(pcmedia),
       mPC(pcmedia->GetPC()) {}
 
@@ -65,7 +65,7 @@ class MediaPipelineFactory {
       size_t level, bool rtcp,
       nsAutoPtr<std::queue<TransportLayer *> > layers);
 
-  int EnsureExternalCodec(
+  MediaConduitErrorCode EnsureExternalCodec(
       const mozilla::RefPtr<mozilla::VideoSessionConduit>& conduit,
       mozilla::VideoCodecConfig* config,
       bool send);

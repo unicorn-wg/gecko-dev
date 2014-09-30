@@ -54,10 +54,6 @@ class JsepTransport {
    // Unique identifier for this transport within this call. Group?
    std::string mTransportId;
 
-   // The m-line index.
-   size_t mLevel;
-   size_t mBundleLevel;
-
    // State.
    State mState;
 

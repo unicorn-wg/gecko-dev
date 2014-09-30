@@ -208,12 +208,13 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
 void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
                                 SdpMediaSection* msection) {
-  for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
-    if ((*codec)->mEnabled && ((*codec)->mType == mediatype)) {
-      msection->AddCodec((*codec)->mDefaultPt,
-                         (*codec)->mName,
-                         (*codec)->mClock,
-                         (*codec)->mChannels);
+  for (auto c = mCodecs.begin(); c != mCodecs.end(); ++c) {
+    auto codec = *c;
+    if (codec->mEnabled && (codec->mType == mediatype)) {
+      msection->AddCodec(codec->mDefaultPt,
+                         codec->mName,
+                         codec->mClock,
+                         codec->mChannels);
     }
   }
 }
@@ -221,13 +222,14 @@ void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
 JsepCodecDescription* JsepSessionImpl::FindMatchingCodec(
     SdpMediaSection::MediaType mediatype,
     const SdpRtpmapAttributeList::Rtpmap& entry) {
-  for (auto codec = mCodecs.begin(); codec != mCodecs.end(); ++codec) {
-    if ((*codec)->mEnabled
-        && ((*codec)->mType == mediatype)
-        && ((*codec)->mName == entry.name)
-        && ((*codec)->mClock == entry.clock)
-        && ((*codec)->mChannels = entry.channels)) {
-      return *codec;
+  for (auto c = mCodecs.begin(); c != mCodecs.end(); ++c) {
+    auto codec = *c;
+    if (codec->mEnabled
+        && (codec->mType == mediatype)
+        && (codec->mName == entry.name)
+        && (codec->mClock == entry.clock)
+        && (codec->mChannels = entry.channels)) {
+      return codec;
     }
   }
 
@@ -628,7 +630,7 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
      JsepCodecDescription* codec = FindMatchingCodec(
          receive.GetMediaType(), entry);
      if (codec) {
-       JsepCodecDescription* negotiated = codec->clone();
+       JsepCodecDescription* negotiated = codec->Clone();
        negotiated->mDefaultPt = 99;  // TODO(ekr@rtfm.com): Read the PT out of the SDP.
        track->mCodecs.push_back(negotiated);
      }
