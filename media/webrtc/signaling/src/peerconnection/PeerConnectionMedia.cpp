@@ -412,7 +412,7 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
                                             const std::string& password,
                                             const std::vector<std::string>&
                                             candidates) {
-  CSFLogDebug(logTag, "%s: Creating ICE media stream=%u components=%u",
+  CSFLogDebug(logTag, "%s: Creating ICE media stream=%zu components=%zu",
               mParentHandle.c_str(), index, components);
   // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE.
   RefPtr<NrIceMediaStream> stream;

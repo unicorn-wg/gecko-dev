@@ -5,8 +5,8 @@
 #define _MEDIAPIPELINEFACTORY_H_
 
 #include "MediaConduitInterface.h"
-#include "PeerconnectionMedia.h"
-#include "TransportFlow.h"
+#include "PeerConnectionMedia.h"
+#include "transportflow.h"
 
 #include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/jsep/JsepTrack.h"
