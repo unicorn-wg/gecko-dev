@@ -677,9 +677,8 @@ class PCDispatchWrapper : public nsSupportsWeakReference
   virtual ~PCDispatchWrapper() {}
 
  public:
-  explicit PCDispatchWrapper(sipcc::PeerConnectionImpl *peerConnection) {
-    pc_ = peerConnection;
-  }
+  explicit PCDispatchWrapper(const nsRefPtr<sipcc::PeerConnectionImpl>& peerConnection)
+    : pc_(peerConnection) {}
 
   NS_DECL_THREADSAFE_ISUPPORTS
 
@@ -696,6 +695,8 @@ class PCDispatchWrapper : public nsSupportsWeakReference
                       const sipcc::IceConfiguration& aConfiguration,
                       nsIThread* aThread) {
     nsresult rv;
+
+    observer_ = aObserver;
 
     if (NS_IsMainThread()) {
       rv = pc_->Initialize(*aObserver, aWindow, aConfiguration, aThread);
@@ -721,6 +722,13 @@ class PCDispatchWrapper : public nsSupportsWeakReference
 
     if (NS_IsMainThread()) {
       rv = pc_->CreateOffer(aOptions);
+      EXPECT_EQ(NS_OK, rv);
+      if (NS_FAILED(rv))
+        return rv;
+      EXPECT_EQ(TestObserver::stateSuccess, observer_->state);
+      if (observer_->state != TestObserver::stateSuccess) {
+        return NS_ERROR_FAILURE;
+      }
     } else {
       gMainThread->Dispatch(
         WrapRunnableRet(this, &PCDispatchWrapper::CreateOffer,
@@ -926,7 +934,8 @@ class PCDispatchWrapper : public nsSupportsWeakReference
   }
 
  private:
-  mozilla::RefPtr<sipcc::PeerConnectionImpl> pc_;
+  nsRefPtr<sipcc::PeerConnectionImpl> pc_;
+  nsRefPtr<TestObserver> observer_;
 };
 
 NS_IMPL_ISUPPORTS(PCDispatchWrapper, nsISupportsWeakReference)
@@ -3617,6 +3626,7 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
   std::string answer(a2_->answer());
   match = answer.find("\r\na=setup:active");
   ASSERT_NE(match, std::string::npos);
+  a2_->SetLocal(TestObserver::ANSWER, answer.c_str(), false);
 
   // Now replace the active with passive so that the offerer will
   // also do active.
@@ -3626,7 +3636,6 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
             << indent(answer) << std::endl;
 
   // This should setup the DTLS with both sides playing active
-  a2_->SetLocal(TestObserver::ANSWER, answer.c_str(), false);
   a1_->SetRemote(TestObserver::ANSWER, answer.c_str(), false);
 
   WaitForCompleted();

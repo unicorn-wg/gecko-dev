@@ -160,7 +160,9 @@ class JsepSessionImpl : public JsepSession {
                                     bool is_offerer,
                                     bool* sending, bool* receiving);
   nsresult AddTransportAttributes(SdpMediaSection* msection,
-                                  JsepSdpType type);
+                                  JsepSdpType type,
+                                  SdpSetupAttribute::Role dtls_role);
+
   nsresult CreateTrack(const SdpMediaSection& receive,
                        const SdpMediaSection& send,
                        JsepTrack::Direction,
