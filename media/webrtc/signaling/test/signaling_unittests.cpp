@@ -2558,9 +2558,6 @@ TEST_F(SignalingTest, AudioOnlyG711Call)
 
   // We should answer with PCMU and telephone-event
   ASSERT_NE(answer.find(" PCMU/8000"), std::string::npos);
-  // TODO: Do we _actually_ support telephone-event, or is this something that
-  // sipcc was hard-coded to support?
-  ASSERT_NE(answer.find(" telephone-event/8000"), std::string::npos);
 
   // Double-check the directionality
   ASSERT_NE(answer.find("\r\na=sendrecv"), std::string::npos);
