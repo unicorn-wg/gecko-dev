@@ -254,7 +254,8 @@ protected:
 public:
   TestObserver(sipcc::PeerConnectionImpl *peerConnection,
                const std::string &aName) :
-    AFakePCObserver(peerConnection, aName) {}
+    AFakePCObserver(peerConnection, aName),
+    peerAgent(nullptr) {}
 
   size_t MatchingCandidates(const std::string& cand) {
     size_t count = 0;
@@ -1563,7 +1564,13 @@ static void AddIceCandidateToPeer(nsWeakPtr weak_observer,
   nsRefPtr<nsSupportsWeakReference> tmp2 = do_QueryObject(tmp);
   nsRefPtr<TestObserver> observer = static_cast<TestObserver*>(&*tmp2);
 
-  if (!observer || !observer->peerAgent) {
+  if (!observer) {
+    return;
+  }
+
+  observer->candidates.push_back(cand);
+
+  if (!observer->peerAgent) {
     return;
   }
 
@@ -3090,34 +3097,6 @@ TEST_F(SignalingAgentTest, CreateOffer) {
   PR_Sleep(20000);
 }
 
-TEST_F(SignalingAgentTest, CreateOfferTrickleTestServer) {
-  TestStunServer::GetInstance()->SetActive(false);
-  TestStunServer::GetInstance()->SetResponseAddr(
-      kBogusSrflxAddress, kBogusSrflxPort);
-
-  CreateAgent(
-      TestStunServer::GetInstance()->addr(),
-      TestStunServer::GetInstance()->port());
-
-  sipcc::OfferOptions options;
-  agent(0)->CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
-
-  // Verify that the bogus addr is not there.
-  ASSERT_FALSE(agent(0)->OfferContains(kBogusSrflxAddress));
-
-  // Now enable the STUN server.
-  TestStunServer::GetInstance()->SetActive(true);
-  agent(0)->WaitForGather();
-
-  // There shouldn't be any candidates until SetLocal.
-  ASSERT_EQ(0U, agent(0)->MatchingCandidates(kBogusSrflxAddress));
-
-  // Verify that the candidates appear in the offer.
-  size_t match;
-  match = agent(0)->getLocalDescription().find(kBogusSrflxAddress);
-  ASSERT_LT(0U, match);
-}
-
 TEST_F(SignalingAgentTest, CreateOfferSetLocalTrickleTestServer) {
   TestStunServer::GetInstance()->SetActive(false);
   TestStunServer::GetInstance()->SetResponseAddr(
@@ -3135,13 +3114,10 @@ TEST_F(SignalingAgentTest, CreateOfferSetLocalTrickleTestServer) {
 
   // Now enable the STUN server.
   TestStunServer::GetInstance()->SetActive(true);
-  agent(0)->WaitForGather();
-
-  // There shouldn't be any candidates until SetLocal.
-  ASSERT_EQ(0U, agent(0)->MatchingCandidates(kBogusSrflxAddress));
 
   agent(0)->SetLocal(TestObserver::OFFER, agent(0)->offer());
   PR_Sleep(1000); // Give time for the message queues.
+  agent(0)->WaitForGather();
 
   // Verify that we got our candidates.
   ASSERT_LE(2U, agent(0)->MatchingCandidates(kBogusSrflxAddress));
@@ -3175,13 +3151,9 @@ TEST_F(SignalingAgentTest, CreateAnswerSetLocalTrickleTestServer) {
 
   // Now enable the STUN server.
   TestStunServer::GetInstance()->SetActive(true);
-  agent(0)->WaitForGather();
-
-  // There shouldn't be any candidates until SetLocal.
-  ASSERT_EQ(0U, agent(0)->MatchingCandidates(kBogusSrflxAddress));
 
   agent(0)->SetLocal(TestObserver::ANSWER, agent(0)->answer());
-  PR_Sleep(1000); // Give time for the message queues.
+  agent(0)->WaitForGather();
 
   // Verify that we got our candidates.
   ASSERT_LE(2U, agent(0)->MatchingCandidates(kBogusSrflxAddress));
@@ -3194,10 +3166,10 @@ TEST_F(SignalingAgentTest, CreateAnswerSetLocalTrickleTestServer) {
 
 
 
-TEST_F(SignalingAgentTest, CreateUntilFailThenWait) {
+TEST_F(SignalingAgentTest, CreateLotsAndWait) {
   int i;
 
-  for (i=0; ; i++) {
+  for (i=0; i < 100; i++) {
     if (!CreateAgent())
       break;
     std::cerr << "Created agent " << i << std::endl;

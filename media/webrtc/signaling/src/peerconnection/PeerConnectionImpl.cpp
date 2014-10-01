@@ -1931,7 +1931,9 @@ PeerConnectionImpl::CloseInt()
   RecordLongtermICEStatistics();
   CSFLogInfo(logTag, "%s: Closing PeerConnectionImpl %s; "
              "ending call", __FUNCTION__, mHandle.c_str());
-  mJsepSession->Close();
+  if (mJsepSession) {
+    mJsepSession->Close();
+  }
 #ifdef MOZILLA_INTERNAL_API
   if (mDataConnection) {
     CSFLogInfo(logTag, "%s: Destroying DataChannelConnection %p for %s",
