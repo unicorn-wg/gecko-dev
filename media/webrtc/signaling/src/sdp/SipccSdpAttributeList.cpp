@@ -667,7 +667,7 @@ SipccSdpAttributeList::GetGroup() const {
 
 const SdpIceOptionsAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
-  MOZ_ASSERT(false, "Not yet implemented.");
+  MOZ_CRASH("Not yet implemented.");
 }
 
 const std::string&
@@ -699,7 +699,7 @@ SipccSdpAttributeList::GetIdentity() const {
 
 const SdpImageattrAttributeList&
 SipccSdpAttributeList::GetImageattr() const {
-  MOZ_ASSERT(false, "Not yet implemented.");
+  MOZ_CRASH("Not yet implemented.");
 }
 
 const std::string&
@@ -758,17 +758,17 @@ SipccSdpAttributeList::GetPtime() const {
 
 const SdpRtcpAttribute&
 SipccSdpAttributeList::GetRtcp() const {
-  MOZ_ASSERT(false, "Not yet implemented");
+  MOZ_CRASH("Not yet implemented");
 }
 
 const SdpRtcpFbAttributeList&
 SipccSdpAttributeList::GetRtcpFb() const {
-  MOZ_ASSERT(false, "Not yet implemented");
+  MOZ_CRASH("Not yet implemented");
 }
 
 const SdpRemoteCandidatesAttribute&
 SipccSdpAttributeList::GetRemoteCandidates() const {
-  MOZ_ASSERT(false, "Not yet implemented");
+  MOZ_CRASH("Not yet implemented");
 }
 
 const SdpRtpmapAttributeList&
@@ -779,7 +779,7 @@ SipccSdpAttributeList::GetRtpmap() const {
 
 const SdpSctpmapAttributeList&
 SipccSdpAttributeList::GetSctpmap() const {
-  MOZ_ASSERT(false, "Not yet implemented");
+  MOZ_CRASH("Not yet implemented");
 }
 
 const SdpSetupAttribute&
@@ -793,12 +793,12 @@ SipccSdpAttributeList::GetSetup() const {
 
 const SdpSsrcAttributeList&
 SipccSdpAttributeList::GetSsrc() const {
-  MOZ_ASSERT(false, "Not yet implemented");
+  MOZ_CRASH("Not yet implemented");
 }
 
 const SdpSsrcGroupAttributeList&
 SipccSdpAttributeList::GetSsrcGroup() const {
-  MOZ_ASSERT(false, "Not yet implemented");
+  MOZ_CRASH("Not yet implemented");
 }
 
 void
