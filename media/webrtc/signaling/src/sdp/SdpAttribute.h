@@ -28,6 +28,7 @@ public:
     kCandidateAttribute,
     kConnectionAttribute,
     kDirectionAttribute,
+    kEndOfCandidatesAttribute,
     kExtmapAttribute,
     kFingerprintAttribute,
     kFmtpAttribute,
@@ -84,6 +85,7 @@ public:
       case kBundleOnlyAttribute: return "bundle-only";
       case kCandidateAttribute: return "candidate";
       case kConnectionAttribute: return "connection";
+      case kEndOfCandidatesAttribute: return "end-of-candidates";
       case kExtmapAttribute: return "extmap";
       case kFingerprintAttribute: return "fingerprint";
       case kFmtpAttribute: return "fmtp";
