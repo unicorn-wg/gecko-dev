@@ -4832,19 +4832,6 @@ sdp_result_e sdp_parse_attr_fingerprint_attr (sdp_t *sdp_p, sdp_attr_t *attr_p,
     }
 }
 
-sdp_result_e sdp_build_attr_rtcp_mux_attr (sdp_t *sdp_p, sdp_attr_t *attr_p,
-                                          flex_string *fs) {
-    flex_string_append(fs, "a=rtcp-mux\r\n");
-
-    return SDP_SUCCESS;
-}
-
-sdp_result_e sdp_parse_attr_rtcp_mux_attr (sdp_t *sdp_p, sdp_attr_t *attr_p, const char *ptr) {
-    attr_p->attr.boolean_val = TRUE;
-
-    return (SDP_SUCCESS);
-}
-
 sdp_result_e sdp_build_attr_rtcp_fb(sdp_t *sdp_p,
                                     sdp_attr_t *attr_p,
                                     flex_string *fs)

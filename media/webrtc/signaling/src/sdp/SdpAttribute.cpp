@@ -211,6 +211,7 @@ bool SdpAttribute::IsAllowedAtMediaLevel(AttributeType type) {
     case kCandidateAttribute: return true;
     case kConnectionAttribute: return true;
     case kDirectionAttribute: return true;
+    case kEndOfCandidatesAttribute: return true;
     case kExtmapAttribute: return true;
     case kFingerprintAttribute: return true;
     case kFmtpAttribute: return true;
@@ -251,6 +252,7 @@ bool SdpAttribute::IsAllowedAtSessionLevel(AttributeType type) {
     case kCandidateAttribute: return false;
     case kConnectionAttribute: return true;
     case kDirectionAttribute: return true;
+    case kEndOfCandidatesAttribute: return true;
     case kExtmapAttribute: return true;
     case kFingerprintAttribute: return true;
     case kFmtpAttribute: return false;

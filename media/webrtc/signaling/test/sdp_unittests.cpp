@@ -1094,6 +1094,7 @@ const std::string kBasicAudioVideoOffer =
 "a=candidate:2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428" CRLF
 "a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340" CRLF
 "a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host" CRLF
+"a=end-of-candidates" CRLF
 "m=video 9 RTP/SAVPF 120" CRLF
 "c=IN IP6 ::1" CRLF
 "a=mid:second" CRLF
@@ -1115,11 +1116,13 @@ const std::string kBasicAudioVideoOffer =
 "a=candidate:2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530" CRLF
 "a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935" CRLF
 "a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026" CRLF
+"a=end-of-candidates" CRLF
 "m=audio 9 RTP/SAVPF 0" CRLF
 "a=mid:third" CRLF
 "a=rtpmap:0 PCMU/8000" CRLF
 "a=ice-lite" CRLF
-"a=msid:noappdata" CRLF;
+"a=msid:noappdata" CRLF
+"a=bundle-only" CRLF;
 
 TEST_P(NewSdpTest, BasicAudioVideoSdpParse) {
   ParseSdp(kBasicAudioVideoOffer);
@@ -1282,6 +1285,18 @@ TEST_P(NewSdpTest, CheckFlags) {
       SdpAttribute::kRtcpMuxAttribute));
   ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
       SdpAttribute::kRtcpMuxAttribute));
+
+  ASSERT_FALSE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kBundleOnlyAttribute));
+  ASSERT_TRUE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kBundleOnlyAttribute));
+
+  ASSERT_TRUE(mSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+      SdpAttribute::kEndOfCandidatesAttribute));
+  ASSERT_TRUE(mSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+      SdpAttribute::kEndOfCandidatesAttribute));
+  ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+      SdpAttribute::kEndOfCandidatesAttribute));
 }
 
 TEST_P(NewSdpTest, CheckConnectionLines) {
