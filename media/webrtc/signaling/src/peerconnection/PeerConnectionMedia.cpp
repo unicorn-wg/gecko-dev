@@ -730,12 +730,55 @@ void
 PeerConnectionMedia::IceGatheringStateChange(NrIceCtx* ctx,
                                              NrIceCtx::GatheringState state)
 {
-  SignalIceGatheringStateChange(ctx, state);
+  // We will still be around because we have not started teardown yet
+  GetMainThread()->Dispatch(
+    WrapRunnable(this,
+                 &PeerConnectionMedia::IceGatheringStateChange_m,
+                 ctx,
+                 state),
+    NS_DISPATCH_NORMAL);
 }
 
 void
 PeerConnectionMedia::IceConnectionStateChange(NrIceCtx* ctx,
                                               NrIceCtx::ConnectionState state)
+{
+  // We will still be around because we have not started teardown yet
+  GetMainThread()->Dispatch(
+    WrapRunnable(this,
+                 &PeerConnectionMedia::IceConnectionStateChange_m,
+                 ctx,
+                 state),
+    NS_DISPATCH_NORMAL);
+}
+
+void
+PeerConnectionMedia::OnCandidateFound(NrIceMediaStream *aStream,
+                                      const std::string &candidate)
+{
+  MOZ_ASSERT(aStream);
+
+  CSFLogDebug(logTag, "%s: %s", __FUNCTION__, aStream->name().c_str());
+
+  // We will still be around because we have not started teardown yet
+  GetMainThread()->Dispatch(
+    WrapRunnable(this,
+                 &PeerConnectionMedia::OnCandidateFound_m,
+                 candidate,
+                 aStream->GetLevel()),
+    NS_DISPATCH_NORMAL);
+}
+
+void
+PeerConnectionMedia::IceGatheringStateChange_m(NrIceCtx* ctx,
+                                               NrIceCtx::GatheringState state)
+{
+  SignalIceGatheringStateChange(ctx, state);
+}
+
+void
+PeerConnectionMedia::IceConnectionStateChange_m(NrIceCtx* ctx,
+                                                NrIceCtx::ConnectionState state)
 {
   SignalIceConnectionStateChange(ctx, state);
 }
@@ -749,14 +792,10 @@ PeerConnectionMedia::IceStreamReady(NrIceMediaStream *aStream)
 }
 
 void
-PeerConnectionMedia::OnCandidateFound(NrIceMediaStream *aStream,
-                                      const std::string &candidate)
+PeerConnectionMedia::OnCandidateFound_m(const std::string &candidate,
+                                        uint16_t level)
 {
-  MOZ_ASSERT(aStream);
-
-  CSFLogDebug(logTag, "%s: %s", __FUNCTION__, aStream->name().c_str());
-
-  SignalCandidate(candidate, aStream->GetLevel());
+  SignalCandidate(candidate, level);
 }
 
 
