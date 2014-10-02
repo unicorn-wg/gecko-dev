@@ -77,7 +77,7 @@ public:
     kUnknownProtocol
   };
 
-  SdpMediaSection(size_t level) : mLevel(level) {}
+  explicit SdpMediaSection(size_t level) : mLevel(level) {}
 
   virtual MediaType GetMediaType() const = 0;
   virtual unsigned int GetPort() const = 0;

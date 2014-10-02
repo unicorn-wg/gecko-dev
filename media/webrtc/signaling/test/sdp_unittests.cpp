@@ -1339,7 +1339,7 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
   const SdpFmtpAttributeList::H264Parameters *h264_parameters(
       static_cast<SdpFmtpAttributeList::H264Parameters*>(
         video_format_params[0].parameters.get()));
-  ASSERT_EQ(0x0042a01e, h264_parameters->profile_level_id);
+  ASSERT_EQ((uint32_t)0x42a01e, h264_parameters->profile_level_id);
   ASSERT_EQ(0U, h264_parameters->packetization_mode);
   ASSERT_EQ(false, h264_parameters->level_asymmetry_allowed);
   ASSERT_EQ(0U, h264_parameters->max_mbps);
@@ -1355,7 +1355,7 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
   h264_parameters =
       static_cast<SdpFmtpAttributeList::H264Parameters*>(
         video_format_params[1].parameters.get());
-  ASSERT_EQ(0x0042a00d, h264_parameters->profile_level_id);
+  ASSERT_EQ((uint32_t)0x42a00d, h264_parameters->profile_level_id);
   ASSERT_EQ(1U, h264_parameters->packetization_mode);
   ASSERT_EQ(true, h264_parameters->level_asymmetry_allowed);
   ASSERT_EQ(42000U, h264_parameters->max_mbps);
