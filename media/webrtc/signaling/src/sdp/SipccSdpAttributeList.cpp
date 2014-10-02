@@ -162,9 +162,17 @@ SipccSdpAttributeList::LoadFlags(sdp_t* sdp, uint16_t level) {
   if (exists && AtSessionLevel()) {
     SetAttribute(new SdpFlagAttribute(SdpAttribute::kIceLiteAttribute));
   }
+  exists = sdp_attr_valid(sdp, SDP_ATTR_END_OF_CANDIDATES, level, 0, 1);
+  if (exists) {
+    SetAttribute(new SdpFlagAttribute(SdpAttribute::kEndOfCandidatesAttribute));
+  }
+  exists = sdp_attr_valid(sdp, SDP_ATTR_BUNDLE_ONLY, level, 0, 1);
+  if (exists && !AtSessionLevel()) {
+    SetAttribute(new SdpFlagAttribute(SdpAttribute::kBundleOnlyAttribute));
+  }
 }
 
-static bool 
+static bool
 ConvertDirection(sdp_direction_e sipcc_direction,
                  SdpDirectionAttribute::Direction *dir_outparam) {
   switch(sipcc_direction) {
