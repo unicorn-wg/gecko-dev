@@ -27,6 +27,8 @@
 #include "signaling/src/jsep/JsepTrack.h"
 #include "signaling/src/jsep/JsepTransport.h"
 
+#include <stdlib.h>
+
 namespace mozilla {
 
 MOZ_MTLOG_MODULE("MediaPipelineFactory")
@@ -53,9 +55,18 @@ static nsresult JsepCodecDescToCodecConfig(const
   const jsep::JsepAudioCodecDescription& desc =
       static_cast<const jsep::JsepAudioCodecDescription&>(d);
 
+  char* end;
+  long int pt = strtol(desc.mDefaultPt.c_str(), &end, 10);
+  size_t length = static_cast<size_t>(end - desc.mDefaultPt.c_str());
+  if ((pt < 0) ||
+      (pt > UINT16_MAX) ||
+      (length != desc.mDefaultPt.size())) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
   mozilla::AudioCodecConfig *config_raw;
   config_raw = new mozilla::AudioCodecConfig(
-      desc.mDefaultPt,
+      pt,
       desc.mName,
       desc.mClock,
       desc.mPacketSize,
@@ -76,14 +87,40 @@ static nsresult JsepCodecDescToCodecConfig(const
   const jsep::JsepVideoCodecDescription& desc =
       static_cast<const jsep::JsepVideoCodecDescription&>(d);
 
+  char* end;
+  long int pt = strtol(desc.mDefaultPt.c_str(), &end, 10);
+  size_t length = static_cast<size_t>(end - desc.mDefaultPt.c_str());
+  if ((pt < 0) ||
+      (pt > UINT16_MAX) ||
+      (length != desc.mDefaultPt.size())) {
+    return NS_ERROR_INVALID_ARG;
+  }
+
+  ScopedDeletePtr<VideoCodecConfigH264> h264_config;
+
+  if (desc.mName == "H264") {
+    h264_config = new VideoCodecConfigH264;
+    strncpy(h264_config->sprop_parameter_sets,
+            desc.mSpropParameterSets.c_str(),
+            sizeof(h264_config->sprop_parameter_sets)); 
+    h264_config->packetization_mode = desc.mPacketizationMode;
+    h264_config->profile_level_id = desc.mProfileLevelId;
+    h264_config->max_mbps = desc.mMaxMbps;
+    h264_config->max_fs = desc.mMaxFs;
+    h264_config->max_cpb = desc.mMaxCpb;
+    h264_config->max_dpb = desc.mMaxDpb;
+    h264_config->max_br = desc.mMaxBr;
+    h264_config->tias_bw = 0; // TODO
+  }
+
   mozilla::VideoCodecConfig *config_raw;
   config_raw = new mozilla::VideoCodecConfig(
-      desc.mDefaultPt,
+      pt,
       desc.mName,
       0, // TODO(ekr@rtfm.com): FB types
-      0, // TODO(ekr@rtfm.com): max fs
-      0, // TODO(ekr@rtfm.com): max fr
-      nullptr); // TODO(ekr@rtfm.com): H.264 codec specific
+      desc.mMaxFs,
+      desc.mMaxFr,
+      h264_config); // TODO(ekr@rtfm.com): H.264 codec specific
 
   *config = config_raw;
   return NS_OK;

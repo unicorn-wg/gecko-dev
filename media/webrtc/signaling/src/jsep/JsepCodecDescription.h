@@ -19,7 +19,7 @@ return new T(*this); }
 // A single entry in our list of known codecs.
 struct JsepCodecDescription {
   JsepCodecDescription(mozilla::SdpMediaSection::MediaType type,
-                       uint8_t default_pt,
+                       const std::string& default_pt,
                        const std::string& name,
                        uint32_t clock,
                        uint32_t channels,
@@ -33,9 +33,82 @@ struct JsepCodecDescription {
   virtual ~JsepCodecDescription() {}
 
   virtual JsepCodecDescription* Clone() const = 0;
+  virtual void AddFmtps(SdpFmtpAttributeList& fmtp) const = 0;
+  virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const = 0;
+  virtual bool LoadFmtps(
+      const SdpFmtpAttributeList::Parameters& params) = 0;
+
+  virtual JsepCodecDescription* MakeNegotiatedCodec(
+      const mozilla::SdpMediaSection& m_section,
+      const mozilla::SdpRtpmapAttributeList::Rtpmap& rtpmap) const {
+    JsepCodecDescription* negotiated = Clone();
+    negotiated->mDefaultPt = rtpmap.pt;
+
+    const SdpAttributeList& attrs = m_section.GetAttributeList();
+    if (attrs.HasAttribute(SdpAttribute::kFmtpAttribute)) {
+      const SdpFmtpAttributeList& fmtps = attrs.GetFmtp();
+      for (auto i = fmtps.mFmtps.begin(); i != fmtps.mFmtps.end(); ++i) {
+        if (i->format == negotiated->mDefaultPt) {
+          if (i->parameters) {
+            if (!negotiated->LoadFmtps(*i->parameters)) {
+              // Remote parameters were invalid
+              delete negotiated;
+              return nullptr;
+            }
+          } else {
+            // TODO: Fmtp that we don't understand. What should we do here?
+          }
+        }
+      }
+    }
+
+    // TODO: rtcp-fb
+
+    return negotiated;
+  }
+
+  virtual void AddToMediaSection(SdpMediaSection& m_section) const {
+    if (mEnabled && m_section.GetMediaType() == mType) {
+      m_section.AddCodec(mDefaultPt, mName, mClock, mChannels);
+      AddFmtps(m_section);
+      AddRtcpFbs(m_section);
+    }
+  }
+
+  virtual void AddFmtps(SdpMediaSection& m_section) const {
+    SdpAttributeList& attrs = m_section.GetAttributeList();
+
+    SdpFmtpAttributeList* fmtps;
+
+    if (attrs.HasAttribute(SdpAttribute::kFmtpAttribute)) {
+      fmtps = new SdpFmtpAttributeList(attrs.GetFmtp());
+    } else {
+      fmtps = new SdpFmtpAttributeList;
+    }
+
+    AddFmtps(*fmtps);
+
+    attrs.SetAttribute(fmtps);
+  }
+
+  virtual void AddRtcpFbs(SdpMediaSection& m_section) const {
+    SdpAttributeList& attrs = m_section.GetAttributeList();
+
+    SdpRtcpFbAttributeList* rtcpfbs;
+
+    if (attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute)) {
+      rtcpfbs = new SdpRtcpFbAttributeList(attrs.GetRtcpFb());
+    } else {
+      rtcpfbs = new SdpRtcpFbAttributeList;
+    }
+
+    AddRtcpFbs(*rtcpfbs);
+
+    attrs.SetAttribute(rtcpfbs);
+  }
 
   mozilla::SdpMediaSection::MediaType mType;
-  uint8_t mDefaultPt;
+  std::string mDefaultPt;
   std::string mName;
   uint32_t mClock;
   uint32_t mChannels;
@@ -44,7 +117,7 @@ struct JsepCodecDescription {
 
 
 struct JsepAudioCodecDescription : public JsepCodecDescription {
-  JsepAudioCodecDescription(uint8_t default_pt,
+  JsepAudioCodecDescription(const std::string& default_pt,
                             const std::string& name,
                             uint32_t clock,
                             uint32_t channels,
@@ -56,6 +129,20 @@ struct JsepAudioCodecDescription : public JsepCodecDescription {
       mPacketSize(packet_size),
       mBitrate(bit_rate) {}
 
+  virtual void AddFmtps(SdpFmtpAttributeList& fmtp) const MOZ_OVERRIDE {
+    // TODO
+  }
+
+  virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const MOZ_OVERRIDE {
+    // TODO
+  }
+
+  virtual bool LoadFmtps(
+      const SdpFmtpAttributeList::Parameters& params) MOZ_OVERRIDE {
+    // TODO
+    return true;
+  }
+
   JSEP_CODEC_CLONE(JsepAudioCodecDescription)
 
   uint32_t mPacketSize;
@@ -64,19 +151,95 @@ struct JsepAudioCodecDescription : public JsepCodecDescription {
 
 
 struct JsepVideoCodecDescription : public JsepCodecDescription {
-  JsepVideoCodecDescription(uint8_t default_pt,
+  JsepVideoCodecDescription(const std::string& default_pt,
                             const std::string& name,
                             uint32_t clock,
                             bool enabled = true) :
       JsepCodecDescription(mozilla::SdpMediaSection::kVideo,
                            default_pt, name, clock, 0, enabled),
-      mFbTypes(0), mMaxFs(0), mMaxFr(0) {}
+      mFbTypes(0),
+      mMaxFs(0),
+      mMaxFr(0),
+      mPacketizationMode(0),
+      mMaxMbps(0),
+      mMaxCpb(0),
+      mMaxDpb(0),
+      mMaxBr(0) {}
+
+  virtual void AddFmtps(SdpFmtpAttributeList& fmtp) const MOZ_OVERRIDE {
+    if (mName == "H264") {
+      UniquePtr<SdpFmtpAttributeList::H264Parameters> params =
+        MakeUnique<SdpFmtpAttributeList::H264Parameters>();
+
+      params->packetization_mode = mPacketizationMode;
+      // Hard-coded, may need to change someday?
+      params->level_asymmetry_allowed = true;
+      params->profile_level_id = mProfileLevelId;
+      params->max_mbps = mMaxMbps;
+      params->max_fs = mMaxFs;
+      params->max_cpb = mMaxCpb;
+      params->max_dpb = mMaxDpb;
+      params->max_br = mMaxBr;
+      strncpy(params->sprop_parameter_sets,
+              mSpropParameterSets.c_str(),
+              sizeof(params->sprop_parameter_sets));
+      fmtp.PushEntry(mDefaultPt, "", mozilla::Move(params));
+    } else if (mName == "VP8") {
+      // TODO
+    }
+  }
+
+  virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const MOZ_OVERRIDE {
+    // TODO
+  }
+
+  virtual bool LoadFmtps(
+      const SdpFmtpAttributeList::Parameters& params) MOZ_OVERRIDE {
+    switch (params.codec_type) {
+      case SdpRtpmapAttributeList::kH264:
+        LoadH264Parameters(params);
+        break;
+      case SdpRtpmapAttributeList::kVP8:
+        LoadVP8Parameters(params);
+        break;
+      default:
+        ;
+    }
+    return true;
+  }
+
+  void LoadH264Parameters(const SdpFmtpAttributeList::Parameters& params) {
+    const SdpFmtpAttributeList::H264Parameters& h264_params =
+      static_cast<const SdpFmtpAttributeList::H264Parameters&>(params);
+
+    mMaxFs = h264_params.max_fs;
+    mProfileLevelId = h264_params.profile_level_id;
+    mPacketizationMode = h264_params.packetization_mode;
+    mMaxMbps = h264_params.max_mbps;
+    mMaxCpb = h264_params.max_cpb;
+    mMaxDpb = h264_params.max_dpb;
+    mMaxBr = h264_params.max_br;
+    mSpropParameterSets = h264_params.sprop_parameter_sets;
+  }
+
+  void LoadVP8Parameters(const SdpFmtpAttributeList::Parameters& params) {
+    // TODO: Implement
+  }
 
   JSEP_CODEC_CLONE(JsepVideoCodecDescription)
 
   uint32_t mFbTypes;
   uint32_t mMaxFs;
-  uint32_t mMaxFr;  // TODO(ekr@rtfm.com): Update for H.264
+
+  // H264-specific stuff
+  uint32_t mProfileLevelId;
+  uint32_t mMaxFr;
+  uint32_t mPacketizationMode;
+  uint32_t mMaxMbps;
+  uint32_t mMaxCpb;
+  uint32_t mMaxDpb;
+  uint32_t mMaxBr;
+  std::string mSpropParameterSets;
 };
 
 }  // namespace jsep

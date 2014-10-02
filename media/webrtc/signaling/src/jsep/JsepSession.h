@@ -18,7 +18,8 @@
 namespace mozilla {
 namespace jsep {
 
-// Forward declarations tracks and track pairs
+// Forward declarations
+struct JsepCodecDescription;
 class JsepMediaStreamTrack;
 struct JsepTrackPair;
 
@@ -62,6 +63,8 @@ class JsepSession {
   // the negotiated candidate.
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::string& value) = 0;
+
+  virtual nsresult AddCodec(UniquePtr<JsepCodecDescription> codec) = 0;
 
   // Manage tracks. We take shared ownership of any track.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;

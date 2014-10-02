@@ -815,7 +815,11 @@ SipccSdpAttributeList::GetRtcp() const {
 
 const SdpRtcpFbAttributeList&
 SipccSdpAttributeList::GetRtcpFb() const {
-  MOZ_CRASH("Not yet implemented");
+  if (!HasAttribute(SdpAttribute::kRtcpFbAttribute)) {
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kRtcpFbAttribute);
+  return *static_cast<const SdpRtcpFbAttributeList*>(attr);
 }
 
 const SdpRemoteCandidatesAttribute&
