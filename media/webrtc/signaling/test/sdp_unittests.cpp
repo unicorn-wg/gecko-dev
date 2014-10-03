@@ -885,11 +885,11 @@ class NewSdpTest : public ::testing::Test,
     void CheckRtcpFb(const SdpRtcpFbAttributeList::Feedback& feedback,
                      const std::string& pt,
                      SdpRtcpFbAttributeList::Type type,
-                     const std::string& first_token,
+                     const std::string& first_parameter,
                      const std::string& extra = "") {
       ASSERT_EQ(pt, feedback.pt);
       ASSERT_EQ(type, feedback.type);
-      ASSERT_EQ(first_token, feedback.token);
+      ASSERT_EQ(first_parameter, feedback.parameter);
       ASSERT_EQ(extra, feedback.extra);
     }
 

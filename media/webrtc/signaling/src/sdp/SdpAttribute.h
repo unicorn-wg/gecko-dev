@@ -819,15 +819,15 @@ public:
   struct Feedback {
     std::string pt;
     Type type;
-    std::string token;
+    std::string parameter;
     std::string extra;
   };
 
   void PushEntry(const std::string& pt,
                  Type type,
-                 const std::string& token = "",
+                 const std::string& parameter = "",
                  const std::string& extra = "") {
-    mFeedbacks.push_back({ pt, type, token, extra });
+    mFeedbacks.push_back({ pt, type, parameter, extra });
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
