@@ -811,22 +811,43 @@ public:
     kTrrInt
   };
 
+  static const char *pli;
+  static const char *sli;
+  static const char *rpsi;
+  static const char *app;
+
   struct Feedback {
     std::string pt;
     Type type;
-    std::string parameters;
+    std::string token;
+    std::string extra;
   };
 
   void PushEntry(const std::string& pt,
                  Type type,
-                 const std::string& parameters) {
-    mFeedback.push_back({ pt, type, parameters });
+                 const std::string& token = "",
+                 const std::string& extra = "") {
+    mFeedbacks.push_back({ pt, type, token, extra });
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
 
-  std::vector<Feedback> mFeedback;
+  std::vector<Feedback> mFeedbacks;
 };
+
+inline std::ostream& operator <<(std::ostream& os,
+                                 SdpRtcpFbAttributeList::Type type)
+{
+  switch (type) {
+    case SdpRtcpFbAttributeList::kAck: os << "ack"; break;
+    case SdpRtcpFbAttributeList::kApp: os << "app"; break;
+    case SdpRtcpFbAttributeList::kCcm: os << "ccm"; break;
+    case SdpRtcpFbAttributeList::kNack: os << "nack"; break;
+    case SdpRtcpFbAttributeList::kTrrInt: os << "trr-int"; break;
+    default: MOZ_ASSERT(false); os << "?";
+  }
+  return os;
+}
 
 ///////////////////////////////////////////////////////////////////////////
 // a=rtpmap, RFC4566

@@ -882,6 +882,17 @@ class NewSdpTest : public ::testing::Test,
       ASSERT_EQ(channels, attr.channels);
     }
 
+    void CheckRtcpFb(const SdpRtcpFbAttributeList::Feedback& feedback,
+                     const std::string& pt,
+                     SdpRtcpFbAttributeList::Type type,
+                     const std::string& first_token,
+                     const std::string& extra = "") {
+      ASSERT_EQ(pt, feedback.pt);
+      ASSERT_EQ(type, feedback.type);
+      ASSERT_EQ(first_token, feedback.token);
+      ASSERT_EQ(extra, feedback.extra);
+    }
+
     void CheckSerialize(const std::string& expected,
                         const SdpAttribute& attr) {
       std::stringstream str;
@@ -1684,6 +1695,23 @@ TEST_P(NewSdpTest, CheckExtmap) {
       extmaps[2].extensionname);
   ASSERT_EQ("some_params some more params",
       extmaps[2].extensionattributes);
+}
+
+TEST_P(NewSdpTest, CheckRtcpFb) {
+  ParseSdp(kBasicAudioVideoDataOffer);
+  ASSERT_TRUE(mSdp);
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount()) << "Wrong number of media sections";
+
+  auto& video_attrs = mSdp->GetMediaSection(1).GetAttributeList();
+  ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute));
+  auto& rtcpfbs = video_attrs.GetRtcpFb().mFeedbacks;
+  ASSERT_EQ(6U, rtcpfbs.size());
+  CheckRtcpFb(rtcpfbs[0], "120", SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[1], "120", SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[2], "126", SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[3], "126", SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[4], "97",  SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[5], "97",  SdpRtcpFbAttributeList::kNack, "pli");
 }
 
 // TODO: Tests that parse above SDP, and check various things
