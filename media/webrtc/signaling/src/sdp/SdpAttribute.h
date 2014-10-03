@@ -1025,6 +1025,29 @@ public:
       unsigned int max_br;
   };
 
+  class VP8Parameters : public Parameters {
+    public:
+      VP8Parameters() :
+        Parameters(SdpRtpmapAttributeList::kVP8),
+        max_fs(0),
+        max_fr(0) {
+      }
+
+      virtual Parameters* clone() const MOZ_OVERRIDE {
+        return new VP8Parameters(*this);
+      }
+
+      virtual void Serialize(std::ostream& os) const {
+        // draft-ietf-payload-vp8-11 says these are mandatory, upper layer
+        // needs to ensure they're set properly.
+        os << "max-fs=" << max_fs;
+        os << ";max-fr=" << max_fr;
+      }
+
+      unsigned int max_fs;
+      unsigned int max_fr;
+  };
+
   class Fmtp {
     public:
       Fmtp(const std::string& aFormat,

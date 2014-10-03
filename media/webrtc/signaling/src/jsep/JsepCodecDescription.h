@@ -164,7 +164,14 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
       mMaxMbps(0),
       mMaxCpb(0),
       mMaxDpb(0),
-      mMaxBr(0) {}
+      mMaxBr(0) {
+      // draft-ietf-payload-vp8 says these are mandatory, so we need sensible
+      // defaults.
+      if (mName == "VP8") {
+        mMaxFr = 30;
+        mMaxFs = 3600;
+      }
+    }
 
   virtual void AddFmtps(SdpFmtpAttributeList& fmtp) const MOZ_OVERRIDE {
     if (mName == "H264") {
@@ -185,7 +192,12 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
               sizeof(params->sprop_parameter_sets));
       fmtp.PushEntry(mDefaultPt, "", mozilla::Move(params));
     } else if (mName == "VP8") {
-      // TODO
+      UniquePtr<SdpFmtpAttributeList::VP8Parameters> params =
+        MakeUnique<SdpFmtpAttributeList::VP8Parameters>();
+
+      params->max_fs = mMaxFs;
+      params->max_fr = mMaxFr;
+      fmtp.PushEntry(mDefaultPt, "", mozilla::Move(params));
     }
   }
 
@@ -223,7 +235,11 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
   }
 
   void LoadVP8Parameters(const SdpFmtpAttributeList::Parameters& params) {
-    // TODO: Implement
+    const SdpFmtpAttributeList::VP8Parameters& vp8_params =
+      static_cast<const SdpFmtpAttributeList::VP8Parameters&>(params);
+
+    mMaxFs = vp8_params.max_fs;
+    mMaxFr = vp8_params.max_fr;
   }
 
   JSEP_CODEC_CLONE(JsepVideoCodecDescription)

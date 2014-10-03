@@ -386,7 +386,7 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
             .GetAttributeList().GetDirection());
 }
 
-TEST_F(JsepSessionTest, CreateOfferH264) {
+TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
   UniquePtr<JsepVideoCodecDescription> h264 =
     MakeUnique<JsepVideoCodecDescription>("98", "H264", 90000);
 
@@ -436,77 +436,28 @@ TEST_F(JsepSessionTest, CreateOfferH264) {
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kFmtpAttribute));
   auto& fmtps = video_attrs.GetFmtp().mFmtps;
 
-  ASSERT_EQ(1U, fmtps.size());
-  ASSERT_EQ("98", fmtps[0].format);
+  ASSERT_EQ(2U, fmtps.size());
+
+  // VP8
+  ASSERT_EQ("120", fmtps[0].format);
   ASSERT_TRUE(fmtps[0].parameters);
-  ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[0].parameters->codec_type);
+  ASSERT_EQ(SdpRtpmapAttributeList::kVP8, fmtps[0].parameters->codec_type);
+
+  auto& parsed_vp8_params =
+    *static_cast<const SdpFmtpAttributeList::VP8Parameters*>(
+        fmtps[0].parameters.get());
+
+  ASSERT_EQ((uint32_t)3600, parsed_vp8_params.max_fs);
+  ASSERT_EQ((uint32_t)30, parsed_vp8_params.max_fr);
+
+  // H264
+  ASSERT_EQ("98", fmtps[1].format);
+  ASSERT_TRUE(fmtps[1].parameters);
+  ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[1].parameters->codec_type);
 
   auto& parsed_h264_params =
     *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
-        fmtps[0].parameters.get());
-
-  ASSERT_EQ((uint32_t)0x42a01e, parsed_h264_params.profile_level_id);
-  ASSERT_TRUE(parsed_h264_params.level_asymmetry_allowed);
-}
-
-TEST_F(JsepSessionTest, OfferAnswerH264) {
-  UniquePtr<JsepVideoCodecDescription> h264 =
-    MakeUnique<JsepVideoCodecDescription>("98", "H264", 90000);
-
-  h264->mProfileLevelId = 0x42a01e;
-
-  mSessionOff.AddCodec(mozilla::Move(h264));
-
-  RefPtr<JsepMediaStreamTrack> msta(new JsepMediaStreamTrackFake(
-      SdpMediaSection::kAudio));
-  mSessionOff.AddTrack(msta);
-  RefPtr<JsepMediaStreamTrack> mstv1(new JsepMediaStreamTrackFake(
-      SdpMediaSection::kVideo));
-  mSessionOff.AddTrack(mstv1);
-
-  JsepOfferOptions options;
-  options.mOfferToReceiveAudio = Some(static_cast<size_t>(0U));
-  options.mOfferToReceiveVideo = Some(static_cast<size_t>(1U));
-  std::string offer = CreateOffer(Some(options));
-
-  SipccSdpParser parser;
-  auto outputSdp = mozilla::Move(parser.Parse(offer));
-  ASSERT_TRUE(outputSdp) << "Should have valid SDP";
-
-  ASSERT_EQ(2U, outputSdp->GetMediaSectionCount());
-  auto& video_section = outputSdp->GetMediaSection(1);
-  ASSERT_EQ(SdpMediaSection::kVideo, video_section.GetMediaType());
-  auto& video_attrs = video_section.GetAttributeList();
-  ASSERT_EQ(SdpDirectionAttribute::kSendrecv, video_attrs.GetDirection());
-
-  ASSERT_EQ(2U, video_section.GetFormats().size());
-  ASSERT_EQ("120", video_section.GetFormats()[0]);
-  ASSERT_EQ("98", video_section.GetFormats()[1]);
-
-  // Validate rtpmap
-  ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kRtpmapAttribute));
-  auto& rtpmaps = video_attrs.GetRtpmap();
-  ASSERT_TRUE(rtpmaps.HasEntry("120"));
-  ASSERT_TRUE(rtpmaps.HasEntry("98"));
-
-  auto& vp8_entry = rtpmaps.GetEntry("120");
-  auto& h264_entry = rtpmaps.GetEntry("98");
-
-  ASSERT_EQ("VP8", vp8_entry.name);
-  ASSERT_EQ("H264", h264_entry.name);
-
-  // Validate fmtps
-  ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kFmtpAttribute));
-  auto& fmtps = video_attrs.GetFmtp().mFmtps;
-
-  ASSERT_EQ(1U, fmtps.size());
-  ASSERT_EQ("98", fmtps[0].format);
-  ASSERT_TRUE(fmtps[0].parameters);
-  ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[0].parameters->codec_type);
-
-  auto& parsed_h264_params =
-    *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
-        fmtps[0].parameters.get());
+        fmtps[1].parameters.get());
 
   ASSERT_EQ((uint32_t)0x42a01e, parsed_h264_params.profile_level_id);
   ASSERT_TRUE(parsed_h264_params.level_asymmetry_allowed);
