@@ -944,7 +944,7 @@ class SignalingAgent {
     sipcc::PeerConnectionImpl *pcImpl =
       sipcc::PeerConnectionImpl::CreatePeerConnection();
     EXPECT_TRUE(pcImpl);
-
+    pcImpl->SetAllowIceLoopback(true);
     pc = new PCDispatchWrapper(pcImpl);
   }
 
