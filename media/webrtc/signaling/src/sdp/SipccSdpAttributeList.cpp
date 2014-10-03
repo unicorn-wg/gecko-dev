@@ -622,12 +622,12 @@ SipccSdpAttributeList::LoadRtcpFb(sdp_t* sdp,
       break;
     }
 
-    sdp_fmtp_fb_t *rtcpfb  = &(attr->attr.rtcp_fb);
+    sdp_fmtp_fb_t *rtcpfb  = &attr->attr.rtcp_fb;
 
     std::stringstream os;
     os << rtcpfb->payload_num;
 
-    std::string pt = os.str();
+    std::string pt(os.str());
     SdpRtcpFbAttributeList::Type type;
     std::string parameter;
     std::string extra(rtcpfb->extra);
