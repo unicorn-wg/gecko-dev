@@ -264,6 +264,9 @@ public:
     return mMedia;
   }
 
+  // Configure the ability to use localhost.
+  void SetAllowIceLoopback(bool val) { mAllowIceLoopback = val; }
+
   // Handle system to allow weak references to be passed through C code
   virtual const std::string& GetHandle();
 
@@ -720,6 +723,7 @@ private:
   nsRefPtr<mozilla::DataChannelConnection> mDataConnection;
 #endif
 
+  bool mAllowIceLoopback;
   nsRefPtr<PeerConnectionMedia> mMedia;
 
   // The JSEP negotiation session.

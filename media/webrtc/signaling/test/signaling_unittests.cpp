@@ -72,6 +72,7 @@ static std::string calleeName = "callee";
 
 #define ARRAY_TO_SET(type, array) ARRAY_TO_STL(std::set, type, array)
 
+bool g_allow_loopback = false;
 std::string g_stun_server_address((char *)"23.21.150.121");
 uint16_t g_stun_server_port(3478);
 std::string kBogusSrflxAddress((char *)"192.0.2.1");
@@ -679,9 +680,8 @@ class PCDispatchWrapper : public nsSupportsWeakReference
   virtual ~PCDispatchWrapper() {}
 
  public:
-  explicit PCDispatchWrapper(sipcc::PeerConnectionImpl *peerConnection) {
-    pc_ = peerConnection;
-  }
+  explicit PCDispatchWrapper(const nsRefPtr<sipcc::PeerConnectionImpl>& peerConnection)
+    : pc_(peerConnection) {}
 
   NS_DECL_THREADSAFE_ISUPPORTS
 
@@ -698,6 +698,8 @@ class PCDispatchWrapper : public nsSupportsWeakReference
                       const sipcc::IceConfiguration& aConfiguration,
                       nsIThread* aThread) {
     nsresult rv;
+
+    observer_ = aObserver;
 
     if (NS_IsMainThread()) {
       rv = pc_->Initialize(*aObserver, aWindow, aConfiguration, aThread);
@@ -723,6 +725,13 @@ class PCDispatchWrapper : public nsSupportsWeakReference
 
     if (NS_IsMainThread()) {
       rv = pc_->CreateOffer(aOptions);
+      EXPECT_EQ(NS_OK, rv);
+      if (NS_FAILED(rv))
+        return rv;
+      EXPECT_EQ(TestObserver::stateSuccess, observer_->state);
+      if (observer_->state != TestObserver::stateSuccess) {
+        return NS_ERROR_FAILURE;
+      }
     } else {
       gMainThread->Dispatch(
         WrapRunnableRet(this, &PCDispatchWrapper::CreateOffer,
@@ -928,7 +937,8 @@ class PCDispatchWrapper : public nsSupportsWeakReference
   }
 
  private:
-  mozilla::RefPtr<sipcc::PeerConnectionImpl> pc_;
+  nsRefPtr<sipcc::PeerConnectionImpl> pc_;
+  nsRefPtr<TestObserver> observer_;
 };
 
 NS_IMPL_ISUPPORTS(PCDispatchWrapper, nsISupportsWeakReference)
@@ -944,6 +954,10 @@ class SignalingAgent {
     sipcc::PeerConnectionImpl *pcImpl =
       sipcc::PeerConnectionImpl::CreatePeerConnection();
     EXPECT_TRUE(pcImpl);
+
+    if (g_allow_loopback) {
+      pcImpl->SetAllowIceLoopback(true);
+    }
 
     pc = new PCDispatchWrapper(pcImpl);
   }
@@ -3619,6 +3633,7 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
   std::string answer(a2_->answer());
   match = answer.find("\r\na=setup:active");
   ASSERT_NE(match, std::string::npos);
+  a2_->SetLocal(TestObserver::ANSWER, answer.c_str(), false);
 
   // Now replace the active with passive so that the offerer will
   // also do active.
@@ -3628,7 +3643,6 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
             << indent(answer) << std::endl;
 
   // This should setup the DTLS with both sides playing active
-  a2_->SetLocal(TestObserver::ANSWER, answer.c_str(), false);
   a1_->SetRemote(TestObserver::ANSWER, answer.c_str(), false);
 
   WaitForCompleted();
@@ -3704,8 +3718,10 @@ TEST_F(SignalingTest, AudioCallOfferNoSetupOrConnection)
 
   a1_->CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
 
-  // By default the offer should give setup:actpass
   std::string offer(a1_->offer());
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+
+  // By default the offer should give setup:actpass
   match = offer.find("\r\na=setup:actpass");
   ASSERT_NE(match, std::string::npos);
   // Remove the a=setup line
@@ -3713,7 +3729,6 @@ TEST_F(SignalingTest, AudioCallOfferNoSetupOrConnection)
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
   a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
@@ -4518,6 +4533,10 @@ int main(int argc, char **argv) {
   tmp = get_environment("STUN_SERVER_PORT");
   if (tmp != "")
       g_stun_server_port = atoi(tmp.c_str());
+
+  tmp = get_environment("ALLOW_LOOPBACK");
+  if (tmp == "true")
+      g_allow_loopback = true;
 
   test_utils = new MtransportTestUtils();
   NSS_NoDB_Init(nullptr);
