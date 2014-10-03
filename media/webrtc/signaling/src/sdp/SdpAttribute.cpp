@@ -123,12 +123,20 @@ void SdpRtcpAttribute::Serialize(std::ostream& os) const
   os << CRLF;
 }
 
+const char *SdpRtcpFbAttributeList::pli = "pli";
+const char *SdpRtcpFbAttributeList::sli = "sli";
+const char *SdpRtcpFbAttributeList::rpsi = "rpsi";
+const char *SdpRtcpFbAttributeList::app = "app";
+
 void SdpRtcpFbAttributeList::Serialize(std::ostream& os) const
 {
-  for (auto i = mFeedback.begin(); i != mFeedback.end(); ++i) {
+  for (auto i = mFeedbacks.begin(); i != mFeedbacks.end(); ++i) {
     os << "a=" << mType << ":" << i->pt << " " << i->type;
-    if (i->parameters.length()) {
-      os << " " << i->parameters;
+    if (i->parameter.length()) {
+      os << " " << i->parameter;
+      if (i->extra.length()) {
+        os << " " << i->extra;
+      }
     }
     os << CRLF;
   }
