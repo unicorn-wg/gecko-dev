@@ -3711,8 +3711,10 @@ TEST_F(SignalingTest, AudioCallOfferNoSetupOrConnection)
 
   a1_->CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
 
-  // By default the offer should give setup:actpass
   std::string offer(a1_->offer());
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+
+  // By default the offer should give setup:actpass
   match = offer.find("\r\na=setup:actpass");
   ASSERT_NE(match, std::string::npos);
   // Remove the a=setup line
@@ -3720,7 +3722,6 @@ TEST_F(SignalingTest, AudioCallOfferNoSetupOrConnection)
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
   a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 

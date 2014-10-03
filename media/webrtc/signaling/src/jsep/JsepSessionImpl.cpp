@@ -885,11 +885,16 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
       return NS_ERROR_INVALID_ARG;
     }
 
+#if 0
+    // Removed by EKR because we aren't sure if there are clients
+    // which still omit setup (Chrome used to) and the rest of the
+    // code handles this.
     if (!parsed->GetMediaSection(i).GetAttributeList().HasAttribute(
           SdpAttribute::kSetupAttribute)) {
       mLastError = "Invalid description, no setup attribute";
       return NS_ERROR_INVALID_ARG;
     }
+#endif
 
     if (!parsed->GetMediaSection(i).GetAttributeList().HasAttribute(
           SdpAttribute::kFingerprintAttribute)) {
