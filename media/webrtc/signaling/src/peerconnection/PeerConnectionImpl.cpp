@@ -2133,8 +2133,6 @@ PeerConnectionImpl::CandidateReady(const std::string& candidate,
 
   MOZ_ASSERT(!mLocalSDP.empty());
   FoundIceCandidate(candidate, level);
-
-  return NS_OK;
 }
 
 void PeerConnectionImpl::FoundIceCandidate(const std::string& candidate,
