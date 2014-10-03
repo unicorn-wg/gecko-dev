@@ -100,6 +100,11 @@ nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::AddCodec(UniquePtr<JsepCodecDescription> codec) {
+  mCodecs.push_back(codec.release());
+  return NS_OK;
+}
+
 nsresult JsepSessionImpl::local_track(
     size_t index,
     RefPtr<JsepMediaStreamTrack>* track) const {
@@ -209,13 +214,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
                                 SdpMediaSection* msection) {
   for (auto c = mCodecs.begin(); c != mCodecs.end(); ++c) {
-    auto codec = *c;
-    if (codec->mEnabled && (codec->mType == mediatype)) {
-      msection->AddCodec(codec->mDefaultPt,
-                         codec->mName,
-                         codec->mClock,
-                         codec->mChannels);
-    }
+    (*c)->AddToMediaSection(*msection);
   }
 }
 
@@ -627,13 +626,26 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
     }
 
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
-     JsepCodecDescription* codec = FindMatchingCodec(
-         receive.GetMediaType(), entry);
-     if (codec) {
-       JsepCodecDescription* negotiated = codec->Clone();
-       negotiated->mDefaultPt = 99;  // TODO(ekr@rtfm.com): Read the PT out of the SDP.
-       track->mCodecs.push_back(negotiated);
-     }
+    JsepCodecDescription* codec = FindMatchingCodec(
+        receive.GetMediaType(), entry);
+    if (codec) {
+      JsepCodecDescription* negotiated;
+
+      if (direction == JsepTrack::kJsepTrackSending) {
+        // We need to take the remote side's parameters into account so we can
+        // configure our send media.
+        negotiated = codec->MakeNegotiatedCodec(receive, entry);
+      } else {
+        negotiated = codec->Clone();
+      }
+
+      if (!negotiated) {
+        // TODO: What should we do here?
+        continue;
+      }
+
+      track->mCodecs.push_back(negotiated);
+    }
   }
 
   *trackp = Move(track);
@@ -920,7 +932,7 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
 void JsepSessionImpl::SetupDefaultCodecs() {
   // Supported audio codecs.
   mCodecs.push_back(new JsepAudioCodecDescription(
-      109,
+      "109",
       "opus",
       48000,
       2,
@@ -928,21 +940,21 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       16000));
 
   mCodecs.push_back(new JsepAudioCodecDescription(
-      9,
+      "9",
       "G722",
       8000,
       0  // This means default 1
                       ));
 
   mCodecs.push_back(new JsepAudioCodecDescription(
-      0,
+      "0",
       "PCMU",
       8000,
       0  // This means default 1
                       ));
 
   mCodecs.push_back(new JsepAudioCodecDescription(
-      8,
+      "8",
       "PCMA",
       8000,
       0  // This means default 1
@@ -950,7 +962,7 @@ void JsepSessionImpl::SetupDefaultCodecs() {
 
   // Supported video codecs.
   mCodecs.push_back(new JsepVideoCodecDescription(
-      120,
+      "120",
       "VP8",
       90000
                       ));
