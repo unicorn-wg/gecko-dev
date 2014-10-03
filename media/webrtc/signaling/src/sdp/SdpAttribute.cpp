@@ -132,8 +132,8 @@ void SdpRtcpFbAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mFeedbacks.begin(); i != mFeedbacks.end(); ++i) {
     os << "a=" << mType << ":" << i->pt << " " << i->type;
-    if (i->token.length()) {
-      os << " " << i->token;
+    if (i->parameter.length()) {
+      os << " " << i->parameter;
       if (i->extra.length()) {
         os << " " << i->extra;
       }
