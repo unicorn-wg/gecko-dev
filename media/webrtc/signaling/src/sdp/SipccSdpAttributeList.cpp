@@ -680,6 +680,7 @@ SipccSdpAttributeList::LoadRtcpFb(sdp_t* sdp,
           rtcpfbs->PushEntry(pt, type, rtcpfb->extra);
           break;
         default:
+          // TODO: Tokenize and add
           continue;
       }
     } else {
@@ -726,13 +727,13 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
     LoadCandidate(sdp, level);
     LoadFmtp(sdp, level);
     LoadMsids(sdp, level, errorHolder);
+    LoadRtcpFb(sdp, level, errorHolder);
   }
 
   LoadIceAttributes(sdp, level);
   LoadFingerprint(sdp, level);
   LoadSetup(sdp, level);
   LoadExtmap(sdp, level, errorHolder);
-  LoadRtcpFb(sdp, level, errorHolder);
 
   return true;
 }
