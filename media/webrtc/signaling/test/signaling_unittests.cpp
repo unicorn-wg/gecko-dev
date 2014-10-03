@@ -72,6 +72,7 @@ static std::string calleeName = "callee";
 
 #define ARRAY_TO_SET(type, array) ARRAY_TO_STL(std::set, type, array)
 
+bool g_allow_loopback = false;
 std::string g_stun_server_address((char *)"23.21.150.121");
 uint16_t g_stun_server_port(3478);
 std::string kBogusSrflxAddress((char *)"192.0.2.1");
@@ -954,7 +955,9 @@ class SignalingAgent {
       sipcc::PeerConnectionImpl::CreatePeerConnection();
     EXPECT_TRUE(pcImpl);
 
-    pcImpl->SetAllowIceLoopback(true);
+    if (g_allow_loopback) {
+      pcImpl->SetAllowIceLoopback(true);
+    }
 
     pc = new PCDispatchWrapper(pcImpl);
   }
@@ -4562,6 +4565,10 @@ int main(int argc, char **argv) {
   tmp = get_environment("STUN_SERVER_PORT");
   if (tmp != "")
       g_stun_server_port = atoi(tmp.c_str());
+
+  tmp = get_environment("ALLOW_LOOPBACK");
+  if (tmp == "true")
+      g_allow_loopback = true;
 
   test_utils = new MtransportTestUtils();
   NSS_NoDB_Init(nullptr);
