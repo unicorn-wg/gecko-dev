@@ -870,10 +870,13 @@ class NewSdpTest : public ::testing::Test,
       return output.str();
     }
 
-    void CheckRtpmap(const std::string&pt, const std::string&name,
+    void CheckRtpmap(const std::string& expected_pt, const std::string&name,
                      uint32_t clock, uint16_t channels,
-                     const SdpRtpmapAttributeList::Rtpmap& attr) {
-      ASSERT_EQ(pt, attr.pt);
+                     const std::string& search_pt,
+                     const SdpRtpmapAttributeList& rtpmaps) {
+      ASSERT_TRUE(rtpmaps.HasEntry(search_pt));
+      auto attr = rtpmaps.GetEntry(search_pt);
+      ASSERT_EQ(expected_pt, attr.pt);
       ASSERT_EQ(name, attr.name);
       ASSERT_EQ(clock, attr.clock);
       ASSERT_EQ(channels, attr.channels);
@@ -1099,7 +1102,7 @@ const std::string kBasicAudioVideoOffer =
 "c=IN IP6 ::1" CRLF
 "a=mid:second" CRLF
 "a=rtpmap:120 VP8/90000" CRLF
-"a=fmtp:120 PROFILE=0;LEVEL=0;profile-level-id=42A01E;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0" CRLF
+"a=fmtp:120 PROFILE=0;LEVEL=0;profile-level-id=42a01e;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0" CRLF
 "a=recvonly" CRLF
 "a=rtcp-fb:120 nack" CRLF
 "a=rtcp-fb:120 nack pli" CRLF
@@ -1227,20 +1230,91 @@ TEST_P(NewSdpTest, CheckRtpmap) {
     << "Wrong number of rtpmap attributes for audio";
 
   // Need to know name of type
-  CheckRtpmap("109", "opus",           48000, 2, rtpmap.GetEntry(audiosec.GetFormats()[0]));
-  CheckRtpmap("9",   "G722",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[1]));
-  CheckRtpmap("0",   "PCMU",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[2]));
-  CheckRtpmap("8",   "PCMA",            8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[3]));
-  CheckRtpmap("101", "telephone-event", 8000, 1, rtpmap.GetEntry(audiosec.GetFormats()[4]));
+  CheckRtpmap("109", "opus",           48000, 2, audiosec.GetFormats()[0], rtpmap);
+  CheckRtpmap("9",   "G722",            8000, 1, audiosec.GetFormats()[1], rtpmap);
+  CheckRtpmap("0",   "PCMU",            8000, 1, audiosec.GetFormats()[2], rtpmap);
+  CheckRtpmap("8",   "PCMA",            8000, 1, audiosec.GetFormats()[3], rtpmap);
+  CheckRtpmap("101", "telephone-event", 8000, 1, audiosec.GetFormats()[4], rtpmap);
 
   const SdpMediaSection& videosec = mSdp->GetMediaSection(1);
   CheckRtpmap("120", "VP8",            90000, 1,
-              videosec.GetAttributeList().GetRtpmap().GetEntry(
-                  videosec.GetFormats()[0]));
+      videosec.GetFormats()[0], videosec.GetAttributeList().GetRtpmap());
 }
 
+const std::string kH264AudioVideoOffer =
+"v=0" CRLF
+"o=Mozilla-SIPUA-35.0a1 5184 0 IN IP4 0.0.0.0" CRLF
+"s=SIP Call" CRLF
+"c=IN IP4 224.0.0.1/100/12" CRLF
+"t=0 0" CRLF
+"a=ice-ufrag:4a799b2e" CRLF
+"a=ice-pwd:e4cc12a910f106a0a744719425510e17" CRLF
+"a=ice-lite" CRLF
+"a=msid-semantic:WMS plus" CRLF
+"a=fingerprint:sha-256 DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C" CRLF
+"a=group:BUNDLE first second" CRLF
+"a=group:BUNDLE third" CRLF
+"a=group:LS first third" CRLF
+"m=audio 9 RTP/SAVPF 109 9 0 8 101" CRLF
+"c=IN IP4 0.0.0.0" CRLF
+"a=mid:first" CRLF
+"a=rtpmap:109 opus/48000/2" CRLF
+"a=ptime:20" CRLF
+"a=maxptime:20" CRLF
+"a=rtpmap:9 G722/8000" CRLF
+"a=rtpmap:0 PCMU/8000" CRLF
+"a=rtpmap:8 PCMA/8000" CRLF
+"a=rtpmap:101 telephone-event/8000" CRLF
+"a=fmtp:101 0-15" CRLF
+"a=ice-ufrag:00000000" CRLF
+"a=ice-pwd:0000000000000000000000000000000" CRLF
+"a=sendonly" CRLF
+"a=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level" CRLF
+"a=setup:actpass" CRLF
+"a=rtcp-mux" CRLF
+"a=msid:track stream" CRLF
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 62453 typ host" CRLF
+"a=candidate:2 1 UDP 1694236671 24.6.134.204 62453 typ srflx raddr 10.0.0.36 rport 62453" CRLF
+"a=candidate:3 1 UDP 100401151 162.222.183.171 49761 typ relay raddr 162.222.183.171 rport 49761" CRLF
+"a=candidate:6 1 UDP 16515071 162.222.183.171 51858 typ relay raddr 162.222.183.171 rport 51858" CRLF
+"a=candidate:3 2 UDP 100401150 162.222.183.171 62454 typ relay raddr 162.222.183.171 rport 62454" CRLF
+"a=candidate:2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428" CRLF
+"a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340" CRLF
+"a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host" CRLF
+"m=video 9 RTP/SAVPF 97 98" CRLF
+"c=IN IP6 ::1" CRLF
+"a=mid:second" CRLF
+"a=rtpmap:97 H264/90000" CRLF
+// Note: sipcc assumes level asymmetry is allowed if the param is absent, which
+// breaks spec. It is supposed to assume it is not allowed. Does fixing this
+// present an interoperability concern? It should be an easy fix, just fix the
+// #define for SDP_DEFAULT_LEVEL_ASYMMETRY_ALLOWED_VALUE
+// We probably also want to make sure we explicitly indicate that we allow this
+// when generating SDP, unless we don't actually support it.
+"a=fmtp:97 profile-level-id=42a01e;level-asymmetry-allowed=0" CRLF
+"a=rtpmap:98 H264/90000" CRLF
+"a=fmtp:98 PROFILE=0;LEVEL=0;profile-level-id=42a00d;packetization-mode=1;level-asymmetry-allowed=1;max-mbps=42000;max-fs=1400;max-cpb=1000;max-dpb=1000;max-br=180000;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0" CRLF
+"a=recvonly" CRLF
+"a=setup:active" CRLF
+"a=rtcp-mux" CRLF
+"a=msid:tracka streama" CRLF
+"a=msid:trackb streamb" CRLF
+"a=candidate:0 1 UDP 2130379007 10.0.0.36 59530 typ host" CRLF
+"a=candidate:0 2 UDP 2130379006 10.0.0.36 64378 typ host" CRLF
+"a=candidate:2 2 UDP 1694236670 24.6.134.204 64378 typ srflx raddr 10.0.0.36 rport 64378" CRLF
+"a=candidate:6 2 UDP 16515070 162.222.183.171 64941 typ relay raddr 162.222.183.171 rport 64941" CRLF
+"a=candidate:6 1 UDP 16515071 162.222.183.171 64800 typ relay raddr 162.222.183.171 rport 64800" CRLF
+"a=candidate:2 1 UDP 1694236671 24.6.134.204 59530 typ srflx raddr 10.0.0.36 rport 59530" CRLF
+"a=candidate:3 1 UDP 100401151 162.222.183.171 62935 typ relay raddr 162.222.183.171 rport 62935" CRLF
+"a=candidate:3 2 UDP 100401150 162.222.183.171 61026 typ relay raddr 162.222.183.171 rport 61026" CRLF
+"m=audio 9 RTP/SAVPF 0" CRLF
+"a=mid:third" CRLF
+"a=rtpmap:0 PCMU/8000" CRLF
+"a=ice-lite" CRLF
+"a=msid:noappdata" CRLF;
+
 TEST_P(NewSdpTest, CheckFormatParameters) {
-  ParseSdp(kBasicAudioVideoOffer);
+  ParseSdp(kH264AudioVideoOffer);
   ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
   ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
     << "Wrong number of media sections";
@@ -1257,9 +1331,38 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
       SdpAttribute::kFmtpAttribute));
   auto video_format_params =
       mSdp->GetMediaSection(1).GetAttributeList().GetFmtp().mFmtps;
-  ASSERT_EQ(1U, video_format_params.size());
-  ASSERT_EQ("120", video_format_params[0].format);
-  ASSERT_EQ("PROFILE=0;LEVEL=0;profile-level-id=42A01E;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0", video_format_params[0].parameters_string);
+  ASSERT_EQ(2U, video_format_params.size());
+  ASSERT_EQ("97", video_format_params[0].format);
+  ASSERT_TRUE(video_format_params[0].parameters);
+  ASSERT_EQ(SdpRtpmapAttributeList::kH264,
+            video_format_params[0].parameters->codec_type);
+  const SdpFmtpAttributeList::H264Parameters *h264_parameters(
+      static_cast<SdpFmtpAttributeList::H264Parameters*>(
+        video_format_params[0].parameters.get()));
+  ASSERT_EQ((uint32_t)0x42a01e, h264_parameters->profile_level_id);
+  ASSERT_EQ(0U, h264_parameters->packetization_mode);
+  ASSERT_EQ(false, h264_parameters->level_asymmetry_allowed);
+  ASSERT_EQ(0U, h264_parameters->max_mbps);
+  ASSERT_EQ(0U, h264_parameters->max_fs);
+  ASSERT_EQ(0U, h264_parameters->max_cpb);
+  ASSERT_EQ(0U, h264_parameters->max_dpb);
+  ASSERT_EQ(0U, h264_parameters->max_br);
+
+  ASSERT_EQ("98", video_format_params[1].format);
+  ASSERT_TRUE(video_format_params[1].parameters);
+  ASSERT_EQ(SdpRtpmapAttributeList::kH264,
+            video_format_params[1].parameters->codec_type);
+  h264_parameters =
+      static_cast<SdpFmtpAttributeList::H264Parameters*>(
+        video_format_params[1].parameters.get());
+  ASSERT_EQ((uint32_t)0x42a00d, h264_parameters->profile_level_id);
+  ASSERT_EQ(1U, h264_parameters->packetization_mode);
+  ASSERT_EQ(true, h264_parameters->level_asymmetry_allowed);
+  ASSERT_EQ(42000U, h264_parameters->max_mbps);
+  ASSERT_EQ(1400U, h264_parameters->max_fs);
+  ASSERT_EQ(1000U, h264_parameters->max_cpb);
+  ASSERT_EQ(1000U, h264_parameters->max_dpb);
+  ASSERT_EQ(180000U, h264_parameters->max_br);
 
   ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
       SdpAttribute::kFmtpAttribute));

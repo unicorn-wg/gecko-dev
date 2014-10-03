@@ -45,6 +45,8 @@ class JsepSessionImpl : public JsepSession {
                                      const std::string& pwd) MOZ_OVERRIDE;
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::string& value) MOZ_OVERRIDE;
+  virtual nsresult AddCodec(
+      UniquePtr<JsepCodecDescription> codec) MOZ_OVERRIDE;
 
   virtual nsresult ReplaceTrack(
     size_t track_index,
