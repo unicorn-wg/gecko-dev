@@ -104,7 +104,11 @@ struct JsepCodecDescription {
 
     AddRtcpFbs(*rtcpfbs);
 
-    attrs.SetAttribute(rtcpfbs);
+    if (rtcpfbs->mFeedbacks.empty()) {
+      delete rtcpfbs;
+    } else {
+      attrs.SetAttribute(rtcpfbs);
+    }
   }
 
   mozilla::SdpMediaSection::MediaType mType;
@@ -202,8 +206,12 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
       case SdpRtpmapAttributeList::kVP8:
         LoadVP8Parameters(params);
         break;
-      default:
-        ;
+      case SdpRtpmapAttributeList::kOpus:
+      case SdpRtpmapAttributeList::kG722:
+      case SdpRtpmapAttributeList::kPCMU:
+      case SdpRtpmapAttributeList::kPCMA:
+      case SdpRtpmapAttributeList::kOtherCodec:
+        MOZ_ASSERT(false, "Invalid codec type for video");
     }
     return true;
   }
