@@ -649,8 +649,25 @@ SipccSdpAttributeList::LoadRtcpFb(sdp_t* sdp,
         }
         break;
       case SDP_RTCP_FB_CCM:
-        // We are unlikely to ever need this, ignore.
-        continue;
+        type = SdpRtcpFbAttributeList::kCcm;
+        switch (rtcpfb->param.ccm) {
+          case SDP_RTCP_FB_CCM_FIR:
+            parameter = SdpRtcpFbAttributeList::fir;
+            break;
+          case SDP_RTCP_FB_CCM_TMMBR:
+            parameter = SdpRtcpFbAttributeList::tmmbr;
+            break;
+          case SDP_RTCP_FB_CCM_TSTR:
+            parameter = SdpRtcpFbAttributeList::tstr;
+            break;
+          case SDP_RTCP_FB_CCM_VBCM:
+            parameter = SdpRtcpFbAttributeList::vbcm;
+            break;
+          default:
+            // Unknown type, ignore
+            continue;
+        }
+        break;
       case SDP_RTCP_FB_NACK:
         type = SdpRtcpFbAttributeList::kNack;
         switch (rtcpfb->param.nack) {

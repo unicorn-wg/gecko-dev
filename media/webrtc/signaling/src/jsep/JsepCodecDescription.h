@@ -37,6 +37,9 @@ struct JsepCodecDescription {
   virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const = 0;
   virtual bool LoadFmtps(
       const SdpFmtpAttributeList::Parameters& params) = 0;
+  virtual bool LoadRtcpFb(
+      const SdpRtcpFbAttributeList::Feedback& feedback) = 0;
+
 
   virtual JsepCodecDescription* MakeNegotiatedCodec(
       const mozilla::SdpMediaSection& m_section,
@@ -62,7 +65,18 @@ struct JsepCodecDescription {
       }
     }
 
-    // TODO: rtcp-fb
+    if (attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute)) {
+      auto& rtcpfbs = attrs.GetRtcpFb().mFeedbacks;
+      for (auto i = rtcpfbs.begin(); i != rtcpfbs.end(); ++i) {
+        if (i->pt == negotiated->mDefaultPt) {
+          if (!negotiated->LoadRtcpFb(*i)) {
+              // Remote parameters were invalid
+              delete negotiated;
+              return nullptr;
+          }
+        }
+      }
+    }
 
     return negotiated;
   }
@@ -88,7 +102,11 @@ struct JsepCodecDescription {
 
     AddFmtps(*fmtps);
 
-    attrs.SetAttribute(fmtps);
+    if (fmtps->mFmtps.empty()) {
+      delete fmtps;
+    } else {
+      attrs.SetAttribute(fmtps);
+    }
   }
 
   virtual void AddRtcpFbs(SdpMediaSection& m_section) const {
@@ -134,12 +152,18 @@ struct JsepAudioCodecDescription : public JsepCodecDescription {
   }
 
   virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const MOZ_OVERRIDE {
-    // TODO
+    // TODO: Do we want to add anything?
   }
 
   virtual bool LoadFmtps(
       const SdpFmtpAttributeList::Parameters& params) MOZ_OVERRIDE {
     // TODO
+    return true;
+  }
+
+  virtual bool LoadRtcpFb(
+      const SdpRtcpFbAttributeList::Feedback& feedback) MOZ_OVERRIDE {
+    // Nothing to do
     return true;
   }
 
@@ -157,7 +181,6 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
                             bool enabled = true) :
       JsepCodecDescription(mozilla::SdpMediaSection::kVideo,
                            default_pt, name, clock, 0, enabled),
-      mFbTypes(0),
       mMaxFs(0),
       mMaxFr(0),
       mPacketizationMode(0),
@@ -190,7 +213,15 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
   }
 
   virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const MOZ_OVERRIDE {
-    // TODO
+    // Just hard code for now
+    rtcpfb.PushEntry(mDefaultPt,
+                     SdpRtcpFbAttributeList::kNack);
+    rtcpfb.PushEntry(mDefaultPt,
+                     SdpRtcpFbAttributeList::kNack,
+                     SdpRtcpFbAttributeList::pli);
+    rtcpfb.PushEntry(mDefaultPt,
+                     SdpRtcpFbAttributeList::kCcm,
+                     SdpRtcpFbAttributeList::fir);
   }
 
   virtual bool LoadFmtps(
@@ -204,6 +235,26 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
         break;
       default:
         ;
+    }
+    return true;
+  }
+
+  virtual bool LoadRtcpFb(
+      const SdpRtcpFbAttributeList::Feedback& feedback) MOZ_OVERRIDE {
+    switch (feedback.type) {
+      case SdpRtcpFbAttributeList::kAck:
+        mAckFbTypes.push_back(feedback.parameter);
+        break;
+      case SdpRtcpFbAttributeList::kCcm:
+        mCcmFbTypes.push_back(feedback.parameter);
+        break;
+      case SdpRtcpFbAttributeList::kNack:
+        mNackFbTypes.push_back(feedback.parameter);
+        break;
+      case SdpRtcpFbAttributeList::kApp:
+      case SdpRtcpFbAttributeList::kTrrInt:
+        // We don't support these, ignore.
+        {}
     }
     return true;
   }
@@ -228,7 +279,10 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
 
   JSEP_CODEC_CLONE(JsepVideoCodecDescription)
 
-  uint32_t mFbTypes;
+  std::vector<std::string> mAckFbTypes;
+  std::vector<std::string> mNackFbTypes;
+  std::vector<std::string> mCcmFbTypes;
+
   uint32_t mMaxFs;
 
   // H264-specific stuff
