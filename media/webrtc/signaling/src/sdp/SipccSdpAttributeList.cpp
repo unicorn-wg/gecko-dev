@@ -676,8 +676,12 @@ SipccSdpAttributeList::LoadRtcpFb(sdp_t* sdp,
           }
           break;
         case SDP_RTCP_FB_TRR_INT:
-          type = SdpRtcpFbAttributeList::kTrrInt;
-          rtcpfbs->PushEntry(pt, type, rtcpfb->extra);
+          {
+            type = SdpRtcpFbAttributeList::kTrrInt;
+            std::ostringstream os;
+            os << rtcpfb->param.trr_int;
+            rtcpfbs->PushEntry(pt, type, os.str());
+          }
           break;
         default:
           // TODO: Tokenize and add
