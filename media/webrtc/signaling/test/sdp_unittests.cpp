@@ -1612,7 +1612,11 @@ const std::string kBasicAudioVideoDataOffer =
 "a=sendrecv" CRLF
 "a=rtcp-fb:120 nack" CRLF
 "a=rtcp-fb:120 nack pli" CRLF
+"a=rtcp-fb:120 nack sli" CRLF
+"a=rtcp-fb:120 nack rpsi" CRLF
+"a=rtcp-fb:120 ack rpsi" CRLF
 "a=rtcp-fb:120 ccm fir" CRLF
+"a=rtcp-fb:120 trr-int 10" CRLF
 "a=rtcp-fb:126 nack" CRLF
 "a=rtcp-fb:126 nack pli" CRLF
 "a=rtcp-fb:126 ccm fir" CRLF
@@ -1705,13 +1709,17 @@ TEST_P(NewSdpTest, CheckRtcpFb) {
   auto& video_attrs = mSdp->GetMediaSection(1).GetAttributeList();
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute));
   auto& rtcpfbs = video_attrs.GetRtcpFb().mFeedbacks;
-  ASSERT_EQ(6U, rtcpfbs.size());
+  ASSERT_EQ(10U, rtcpfbs.size());
   CheckRtcpFb(rtcpfbs[0], "120", SdpRtcpFbAttributeList::kNack, "");
   CheckRtcpFb(rtcpfbs[1], "120", SdpRtcpFbAttributeList::kNack, "pli");
-  CheckRtcpFb(rtcpfbs[2], "126", SdpRtcpFbAttributeList::kNack, "");
-  CheckRtcpFb(rtcpfbs[3], "126", SdpRtcpFbAttributeList::kNack, "pli");
-  CheckRtcpFb(rtcpfbs[4], "97",  SdpRtcpFbAttributeList::kNack, "");
-  CheckRtcpFb(rtcpfbs[5], "97",  SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[2], "120", SdpRtcpFbAttributeList::kNack, "sli");
+  CheckRtcpFb(rtcpfbs[3], "120", SdpRtcpFbAttributeList::kNack, "rpsi");
+  CheckRtcpFb(rtcpfbs[4], "120", SdpRtcpFbAttributeList::kAck, "rpsi");
+  CheckRtcpFb(rtcpfbs[5], "120", SdpRtcpFbAttributeList::kTrrInt, "10");
+  CheckRtcpFb(rtcpfbs[6], "126", SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[7], "126", SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[8], "97",  SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[9], "97",  SdpRtcpFbAttributeList::kNack, "pli");
 }
 
 // TODO: Tests that parse above SDP, and check various things
