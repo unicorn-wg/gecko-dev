@@ -610,6 +610,92 @@ SipccSdpAttributeList::LoadExtmap(sdp_t* sdp,
   }
 }
 
+void
+SipccSdpAttributeList::LoadRtcpFb(sdp_t* sdp,
+                                  uint16_t level,
+                                  SdpErrorHolder& errorHolder) {
+  auto *rtcpfbs = new SdpRtcpFbAttributeList;
+  for (uint16_t i = 1; i < UINT16_MAX; ++i) {
+    sdp_attr_t *attr = sdp_find_attr(sdp, level, 0, SDP_ATTR_RTCP_FB, i);
+
+    if (!attr) {
+      break;
+    }
+
+    sdp_fmtp_fb_t *rtcpfb  = &(attr->attr.rtcp_fb);
+
+    std::stringstream os;
+    os << rtcpfb->payload_num;
+
+    std::string pt = os.str();
+    SdpRtcpFbAttributeList::Type type;
+    std::string parameter;
+    std::string extra(rtcpfb->extra);
+
+    switch (rtcpfb->feedback_type) {
+      case SDP_RTCP_FB_ACK:
+        type = SdpRtcpFbAttributeList::kAck;
+        switch (rtcpfb->param.ack) {
+          // TODO: sipcc doesn't seem to support ack with no following token
+          case SDP_RTCP_FB_ACK_RPSI:
+            parameter = SdpRtcpFbAttributeList::rpsi;
+            break;
+          case SDP_RTCP_FB_ACK_APP:
+            parameter = SdpRtcpFbAttributeList::app;
+            break;
+          default:
+            // Unknown type, ignore.
+            continue;
+        }
+        break;
+      case SDP_RTCP_FB_CCM:
+        // We are unlikely to ever need this, ignore.
+        continue;
+      case SDP_RTCP_FB_NACK:
+        type = SdpRtcpFbAttributeList::kNack;
+        switch (rtcpfb->param.nack) {
+          case SDP_RTCP_FB_NACK_BASIC:
+            break;
+          case SDP_RTCP_FB_NACK_SLI:
+            parameter = SdpRtcpFbAttributeList::sli;
+            break;
+          case SDP_RTCP_FB_NACK_PLI:
+            parameter = SdpRtcpFbAttributeList::pli;
+            break;
+          case SDP_RTCP_FB_NACK_RPSI:
+            parameter = SdpRtcpFbAttributeList::rpsi;
+            break;
+          case SDP_RTCP_FB_NACK_APP:
+            parameter = SdpRtcpFbAttributeList::app;
+            break;
+          default:
+            // Unknown type, ignore
+            continue;
+        }
+        break;
+      case SDP_RTCP_FB_TRR_INT:
+        {
+          type = SdpRtcpFbAttributeList::kTrrInt;
+          std::ostringstream os;
+          os << rtcpfb->param.trr_int;
+          parameter = os.str();
+        }
+        break;
+      default:
+        // Unknown type, ignore
+        continue;
+    }
+
+    rtcpfbs->PushEntry(pt, type, parameter, extra);
+  }
+
+  if (rtcpfbs->mFeedbacks.empty()) {
+    delete rtcpfbs;
+  } else {
+    SetAttribute(rtcpfbs);
+  }
+}
+
 bool
 SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
                             SdpErrorHolder& errorHolder) {
@@ -642,6 +728,7 @@ SipccSdpAttributeList::Load(sdp_t* sdp, uint16_t level,
     LoadCandidate(sdp, level);
     LoadFmtp(sdp, level);
     LoadMsids(sdp, level, errorHolder);
+    LoadRtcpFb(sdp, level, errorHolder);
   }
 
   LoadIceAttributes(sdp, level);
