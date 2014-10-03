@@ -657,7 +657,7 @@ WebrtcVideoConduit::ConfigureSendMediaCodec(const VideoCodecConfig* codecConfig)
   mSendingWidth = 0;
   mSendingHeight = 0;
 
-  if(codecConfig->RtcpFbIsSet(SDP_RTCP_FB_NACK_BASIC)) {
+  if(codecConfig->RtcpFbNackIsSet("")) {
     CSFLogDebug(logTag, "Enabling NACK (send) for video stream\n");
     if (mPtrRTP->SetNACKStatus(mChannel, true) != 0)
     {
@@ -740,17 +740,17 @@ WebrtcVideoConduit::ConfigureRecvMediaCodecs(
 
     // Check for the keyframe request type: PLI is preferred
     // over FIR, and FIR is preferred over none.
-    if (codecConfigList[i]->RtcpFbIsSet(SDP_RTCP_FB_NACK_PLI))
+    if (codecConfigList[i]->RtcpFbNackIsSet("pli"))
     {
       kf_request = webrtc::kViEKeyFrameRequestPliRtcp;
     } else if(kf_request == webrtc::kViEKeyFrameRequestNone &&
-              codecConfigList[i]->RtcpFbIsSet(SDP_RTCP_FB_CCM_FIR))
+              codecConfigList[i]->RtcpFbNackIsSet("fir"))
     {
       kf_request = webrtc::kViEKeyFrameRequestFirRtcp;
     }
 
     // Check whether NACK is requested
-    if(codecConfigList[i]->RtcpFbIsSet(SDP_RTCP_FB_NACK_BASIC))
+    if(codecConfigList[i]->RtcpFbNackIsSet(""))
     {
       use_nack_basic = true;
     }
