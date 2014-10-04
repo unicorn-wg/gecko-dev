@@ -1113,7 +1113,7 @@ const std::string kBasicAudioVideoOffer =
 "c=IN IP6 ::1" CRLF
 "a=mid:second" CRLF
 "a=rtpmap:120 VP8/90000" CRLF
-"a=fmtp:120 PROFILE=0;LEVEL=0;profile-level-id=42a01e;packetization-mode=1;level-asymmetry-allowed=1;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0" CRLF
+"a=fmtp:120 max-fs=3600;max-fr=30" CRLF
 "a=recvonly" CRLF
 "a=rtcp-fb:120 nack" CRLF
 "a=rtcp-fb:120 nack pli" CRLF
@@ -1292,7 +1292,7 @@ const std::string kH264AudioVideoOffer =
 "a=candidate:2 2 UDP 1694236670 24.6.134.204 55428 typ srflx raddr 10.0.0.36 rport 55428" CRLF
 "a=candidate:6 2 UDP 16515070 162.222.183.171 50340 typ relay raddr 162.222.183.171 rport 50340" CRLF
 "a=candidate:0 2 UDP 2130379006 10.0.0.36 55428 typ host" CRLF
-"m=video 9 RTP/SAVPF 97 98" CRLF
+"m=video 9 RTP/SAVPF 97 98 120" CRLF
 "c=IN IP6 ::1" CRLF
 "a=mid:second" CRLF
 "a=rtpmap:97 H264/90000" CRLF
@@ -1305,6 +1305,8 @@ const std::string kH264AudioVideoOffer =
 "a=fmtp:97 profile-level-id=42a01e;level-asymmetry-allowed=0" CRLF
 "a=rtpmap:98 H264/90000" CRLF
 "a=fmtp:98 PROFILE=0;LEVEL=0;profile-level-id=42a00d;packetization-mode=1;level-asymmetry-allowed=1;max-mbps=42000;max-fs=1400;max-cpb=1000;max-dpb=1000;max-br=180000;parameter-add=1;usedtx=0;stereo=0;useinbandfec=0;cbr=0" CRLF
+"a=rtpmap:120 VP8/90000" CRLF
+"a=fmtp:120 max-fs=3601;max-fr=31" CRLF
 "a=recvonly" CRLF
 "a=setup:active" CRLF
 "a=rtcp-mux" CRLF
@@ -1342,7 +1344,7 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
       SdpAttribute::kFmtpAttribute));
   auto video_format_params =
       mSdp->GetMediaSection(1).GetAttributeList().GetFmtp().mFmtps;
-  ASSERT_EQ(2U, video_format_params.size());
+  ASSERT_EQ(3U, video_format_params.size());
   ASSERT_EQ("97", video_format_params[0].format);
   ASSERT_TRUE(video_format_params[0].parameters);
   ASSERT_EQ(SdpRtpmapAttributeList::kH264,
@@ -1374,6 +1376,16 @@ TEST_P(NewSdpTest, CheckFormatParameters) {
   ASSERT_EQ(1000U, h264_parameters->max_cpb);
   ASSERT_EQ(1000U, h264_parameters->max_dpb);
   ASSERT_EQ(180000U, h264_parameters->max_br);
+
+  ASSERT_EQ("120", video_format_params[2].format);
+  ASSERT_TRUE(video_format_params[2].parameters);
+  ASSERT_EQ(SdpRtpmapAttributeList::kVP8,
+            video_format_params[2].parameters->codec_type);
+  const SdpFmtpAttributeList::VP8Parameters *vp8_parameters =
+      static_cast<SdpFmtpAttributeList::VP8Parameters*>(
+        video_format_params[2].parameters.get());
+  ASSERT_EQ(3601U, vp8_parameters->max_fs);
+  ASSERT_EQ(31U, vp8_parameters->max_fr);
 
   ASSERT_FALSE(mSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
       SdpAttribute::kFmtpAttribute));
