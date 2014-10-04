@@ -505,6 +505,17 @@ SipccSdpAttributeList::LoadFmtp(sdp_t* sdp, uint16_t level) {
             parameters.reset(h264_parameters);
           }
           break;
+        case RTP_VP8:
+          {
+            SdpFmtpAttributeList::VP8Parameters* vp8_parameters(
+                new SdpFmtpAttributeList::VP8Parameters);
+
+            vp8_parameters->max_fs = fmtp->max_fs;
+            vp8_parameters->max_fr = fmtp->max_fr;
+
+            parameters.reset(vp8_parameters);
+          }
+          break;
         default:
           {}
       }
@@ -523,6 +534,8 @@ SipccSdpAttributeList::LoadFmtp(sdp_t* sdp, uint16_t level) {
       break;
     }
   }
+
+  // Do we let missing fmtps slide?
 
   if (fmtps->mFmtps.empty()) {
     delete fmtps;
