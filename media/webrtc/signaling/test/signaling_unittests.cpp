@@ -1142,8 +1142,6 @@ class SignalingAgent {
     // Now call CreateOffer as JS would
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->CreateOffer(options), NS_OK);
-    ASSERT_TRUE_WAIT(pObserver->state != TestObserver::stateNoResponse,
-                     kDefaultTimeout);
     ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
     SDPSanityCheck(pObserver->lastString.c_str(), sdpCheck, true);
     ASSERT_EQ(signaling_state(), endState);
@@ -1170,8 +1168,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     // then perform SDP checking based on which stream disabled
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->CreateAnswer(), NS_OK);
-    ASSERT_TRUE_WAIT(pObserver->state != TestObserver::stateNoResponse,
-                     kDefaultTimeout);
     ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
     SDPSanityCheck(pObserver->lastString.c_str(), sdpCheck, false);
     ASSERT_EQ(signaling_state(), endState);
@@ -1198,8 +1194,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     // Now call CreateOffer as JS would
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->CreateOffer(options), NS_OK);
-    ASSERT_TRUE_WAIT(pObserver->state != TestObserver::stateNoResponse,
-                     kDefaultTimeout);
     ASSERT_TRUE(pObserver->state == TestObserver::stateSuccess);
     SDPSanityCheck(pObserver->lastString.c_str(), sdpCheck, true);
     offer_ = pObserver->lastString;
@@ -1218,8 +1212,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
 
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->SetRemoteDescription(action, remote.c_str()), NS_OK);
-    ASSERT_TRUE_WAIT(pObserver->state != TestObserver::stateNoResponse,
-                     kDefaultTimeout);
     ASSERT_EQ(signaling_state(), endState);
     if (!ignoreError) {
       // TODO(ekr@rtfm.com): Now that ICE candidates are queued, this
@@ -1251,8 +1243,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
 
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->SetLocalDescription(action, local.c_str()), NS_OK);
-    ASSERT_TRUE_WAIT(pObserver->state != TestObserver::stateNoResponse,
-                     kDefaultTimeout);
     ASSERT_EQ(signaling_state(), endState);
     if (!ignoreError) {
       ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
@@ -1284,8 +1274,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     PCImplSignalingState endState = signaling_state();
     pObserver->state = TestObserver::stateNoResponse;
     pc->AddIceCandidate(candidate, mid, level);
-    ASSERT_TRUE_WAIT(pObserver->state != TestObserver::stateNoResponse,
-                     kDefaultTimeout);
     ASSERT_TRUE(pObserver->state ==
                 expectSuccess ? TestObserver::stateSuccess :
                                 TestObserver::stateError
