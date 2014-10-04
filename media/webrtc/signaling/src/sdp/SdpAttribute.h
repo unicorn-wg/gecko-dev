@@ -796,7 +796,6 @@ public:
 //                       / SP token [SP byte-string]
 //                       / ; empty
 //
-// TODO: Specialize into ack/nack/etc
 class SdpRtcpFbAttributeList : public SdpAttribute
 {
 public:
@@ -815,6 +814,11 @@ public:
   static const char *sli;
   static const char *rpsi;
   static const char *app;
+
+  static const char *fir;
+  static const char *tmmbr;
+  static const char *tstr;
+  static const char *vbcm;
 
   struct Feedback {
     std::string pt;
