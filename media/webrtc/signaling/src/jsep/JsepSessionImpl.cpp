@@ -186,8 +186,8 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     ++mline_index;
   }
 
-  while (options.mOfferToReceiveAudio.isSome() && nAudio <
-         *options.mOfferToReceiveAudio) {
+  while (options.mOfferToReceiveAudio.isSome() &&
+         nAudio < *options.mOfferToReceiveAudio) {
     SdpMediaSection& msection = sdp->AddMediaSection(
         SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
     AddCodecs(SdpMediaSection::kAudio, &msection);
@@ -302,80 +302,94 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
     SdpMediaSection& msection =
       sdp->AddMediaSection(remote_msection.GetMediaType());
 
-    // Determine the role.
-    // RFC 5763 says:
-    //
-    //   The endpoint MUST use the setup attribute defined in [RFC4145].
-    //   The endpoint that is the offerer MUST use the setup attribute
-    //   value of setup:actpass and be prepared to receive a client_hello
-    //   before it receives the answer.  The answerer MUST use either a
-    //   setup attribute value of setup:active or setup:passive.  Note that
-    //   if the answerer uses setup:passive, then the DTLS handshake will
-    //   not begin until the answerer is received, which adds additional
-    //   latency. setup:active allows the answer and the DTLS handshake to
-    //   occur in parallel.  Thus, setup:active is RECOMMENDED.  Whichever
-    //   party is active MUST initiate a DTLS handshake by sending a
-    //   ClientHello over each flow (host/port quartet).
-    //
-    //   We default to assuming that the offerer is passive and we are active.
-    SdpSetupAttribute::Role role = SdpSetupAttribute::kActive;
-
-    if (remote_msection.GetAttributeList().HasAttribute(
-          SdpAttribute::kSetupAttribute)) {
-      switch (remote_msection.GetAttributeList().GetSetup().mRole) {
-        case SdpSetupAttribute::kActive:
-          role = SdpSetupAttribute::kPassive;
-          break;
-        case SdpSetupAttribute::kPassive:
-        case SdpSetupAttribute::kActpass:
-          role = SdpSetupAttribute::kActive;
-          break;
-        case SdpSetupAttribute::kHoldconn:
-          MOZ_MTLOG(ML_ERROR,
-                    "The other side used an illegal setup attribute"
-                    "(\"holdconn\").");
-          return NS_ERROR_FAILURE;
-      }
-    }
-    rv = AddTransportAttributes(&msection, kJsepSdpAnswer, role);
+    rv = CreateAnswerMSection(
+        options, i, remote_msection, &msection, sdp.get());
     if (NS_FAILED(rv))
       return rv;
-
-    bool matched = false;
-
-    for (auto track = mLocalTracks.begin();
-       track != mLocalTracks.end(); ++track) {
-      if (track->mAssignedMLine.isSome())
-        continue;
-      if (track->mTrack->media_type() != remote_msection.GetMediaType())
-        continue;
-
-      matched = true;
-      track->mAssignedMLine = Some(i);
-      break;
-    }
-
-    // If we matched, then it's sendrecv, else recvonly. No way to
-    // do sendonly here. inactive would be used if we had a codec
-    // mismatch, but we don't have that worked out yet.
-    msection.GetAttributeList().SetAttribute(
-      new SdpDirectionAttribute(matched ?
-                                SdpDirectionAttribute::kSendrecv :
-                                SdpDirectionAttribute::kRecvonly));
-
-    if (remote_msection.GetAttributeList().HasAttribute(
-          SdpAttribute::kRtcpMuxAttribute)) {
-      msection.GetAttributeList().SetAttribute(
-          new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
-    }
-
-    // Now add the codecs.
-    // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive.
-    AddCommonCodecs(remote_msection, &msection);
   }
 
   *answer = sdp->toString();
   mGeneratedLocalDescription = Move(sdp);
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
+                                               size_t mline_index,
+                                               const SdpMediaSection&
+                                               remote_msection,
+                                               SdpMediaSection* msection,
+                                               Sdp* sdp) {
+  // Determine the role.
+  // RFC 5763 says:
+  //
+  //   The endpoint MUST use the setup attribute defined in [RFC4145].
+  //   The endpoint that is the offerer MUST use the setup attribute
+  //   value of setup:actpass and be prepared to receive a client_hello
+  //   before it receives the answer.  The answerer MUST use either a
+  //   setup attribute value of setup:active or setup:passive.  Note that
+  //   if the answerer uses setup:passive, then the DTLS handshake will
+  //   not begin until the answerer is received, which adds additional
+  //   latency. setup:active allows the answer and the DTLS handshake to
+  //   occur in parallel.  Thus, setup:active is RECOMMENDED.  Whichever
+  //   party is active MUST initiate a DTLS handshake by sending a
+  //   ClientHello over each flow (host/port quartet).
+  //
+  //   We default to assuming that the offerer is passive and we are active.
+  SdpSetupAttribute::Role role = SdpSetupAttribute::kActive;
+
+  if (remote_msection.GetAttributeList().HasAttribute(
+          SdpAttribute::kSetupAttribute)) {
+    switch (remote_msection.GetAttributeList().GetSetup().mRole) {
+      case SdpSetupAttribute::kActive:
+        role = SdpSetupAttribute::kPassive;
+        break;
+      case SdpSetupAttribute::kPassive:
+      case SdpSetupAttribute::kActpass:
+        role = SdpSetupAttribute::kActive;
+        break;
+      case SdpSetupAttribute::kHoldconn:
+        MOZ_MTLOG(ML_ERROR,
+                  "The other side used an illegal setup attribute"
+                  "(\"holdconn\").");
+        return NS_ERROR_FAILURE;
+    }
+  }
+  nsresult rv = AddTransportAttributes(msection, kJsepSdpAnswer, role);
+  if (NS_FAILED(rv))
+    return rv;
+
+  bool matched = false;
+
+  for (auto track = mLocalTracks.begin();
+       track != mLocalTracks.end(); ++track) {
+    if (track->mAssignedMLine.isSome())
+      continue;
+    if (track->mTrack->media_type() != remote_msection.GetMediaType())
+      continue;
+
+    matched = true;
+    track->mAssignedMLine = Some(mline_index);
+    break;
+  }
+
+  // If we matched, then it's sendrecv, else recvonly. No way to
+  // do sendonly here. inactive would be used if we had a codec
+  // mismatch, but we don't have that worked out yet.
+  msection->GetAttributeList().SetAttribute(
+      new SdpDirectionAttribute(matched ?
+                                SdpDirectionAttribute::kSendrecv :
+                                SdpDirectionAttribute::kRecvonly));
+
+  if (remote_msection.GetAttributeList().HasAttribute(
+          SdpAttribute::kRtcpMuxAttribute)) {
+    msection->GetAttributeList().SetAttribute(
+        new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
+  }
+
+  // Now add the codecs.
+  // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive.
+  AddCommonCodecs(remote_msection, msection);
 
   return NS_OK;
 }
@@ -884,17 +898,6 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
       mLastError = "Invalid description, no ice-pwd attribute";
       return NS_ERROR_INVALID_ARG;
     }
-
-#if 0
-    // Removed by EKR because we aren't sure if there are clients
-    // which still omit setup (Chrome used to) and the rest of the
-    // code handles this.
-    if (!parsed->GetMediaSection(i).GetAttributeList().HasAttribute(
-          SdpAttribute::kSetupAttribute)) {
-      mLastError = "Invalid description, no setup attribute";
-      return NS_ERROR_INVALID_ARG;
-    }
-#endif
 
     if (!parsed->GetMediaSection(i).GetAttributeList().HasAttribute(
           SdpAttribute::kFingerprintAttribute)) {

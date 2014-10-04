@@ -162,7 +162,11 @@ class JsepSessionImpl : public JsepSession {
   nsresult AddTransportAttributes(SdpMediaSection* msection,
                                   JsepSdpType type,
                                   SdpSetupAttribute::Role dtls_role);
-
+  nsresult CreateAnswerMSection(const JsepAnswerOptions& options,
+                                size_t mline_index,
+                                const SdpMediaSection& remote_msection,
+                                SdpMediaSection* msection,
+                                Sdp* sdp);
   nsresult CreateTrack(const SdpMediaSection& receive,
                        const SdpMediaSection& send,
                        JsepTrack::Direction,
