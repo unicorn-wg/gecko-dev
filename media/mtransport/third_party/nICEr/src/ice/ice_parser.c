@@ -138,7 +138,7 @@ nr_ice_peer_candidate_from_attribute(nr_ice_ctx *ctx,char *orig,nr_ice_media_str
     skip_whitespace(&str);
 
     /* Skip a= if present */
-    if (!strncasecmp(str, "a=", 2))
+    if (!strncmp(str, "a=", 2))
         str += 2;
 
     /* Candidate attr */
