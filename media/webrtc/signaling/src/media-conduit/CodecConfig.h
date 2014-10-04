@@ -7,7 +7,7 @@
 #define CODEC_CONFIG_H_
 
 #include <string>
-#include "ccsdp_rtcp_fb.h"
+#include <vector>
 
 namespace mozilla {
 
@@ -76,7 +76,11 @@ public:
    */
   int mType; // payload type
   std::string mName;
-  uint32_t mRtcpFbTypes;
+
+  std::vector<std::string> mAckFbTypes;
+  std::vector<std::string> mNackFbTypes;
+  std::vector<std::string> mCcmFbTypes;
+
   unsigned int mMaxFrameSize;
   unsigned int mMaxFrameRate;
   unsigned int mMaxMBPS;    // in macroblocks-per-second
@@ -91,13 +95,11 @@ public:
 
   VideoCodecConfig(int type,
                    std::string name,
-                   int rtcpFbTypes,
                    unsigned int max_fs = 0,
                    unsigned int max_fr = 0,
                    const struct VideoCodecConfigH264 *h264 = nullptr) :
     mType(type),
     mName(name),
-    mRtcpFbTypes(rtcpFbTypes),
     mMaxFrameSize(max_fs), // may be overridden
     mMaxFrameRate(max_fr),
     mMaxMBPS(0),
@@ -121,55 +123,36 @@ public:
     }
   }
 
-  static int32_t
-    sdp_rtcp_fb_nack_to_bitmap(sdp_rtcp_fb_nack_type_e type)
-    {
-      int bitnumber = type;
-
-      if (type < 0 || type >= SDP_MAX_RTCP_FB_NACK) {
-        return 0;
-      }
-
-      return (1 << bitnumber);
-    }
-
-  static int32_t
-    sdp_rtcp_fb_ack_to_bitmap(sdp_rtcp_fb_ack_type_e type)
-    {
-      int bitnumber = type + SDP_MAX_RTCP_FB_NACK;
-
-      if (type < 0 || type >= SDP_MAX_RTCP_FB_ACK) {
-        return 0;
-      }
-
-      return (1 << bitnumber);
-    }
-
-  static int32_t
-    sdp_rtcp_fb_ccm_to_bitmap(sdp_rtcp_fb_ccm_type_e type)
-    {
-      int bitnumber = type + SDP_MAX_RTCP_FB_NACK + SDP_MAX_RTCP_FB_ACK;
-
-      if (type < 0 || type >= SDP_MAX_RTCP_FB_CCM) {
-        return 0;
-      }
-
-      return (1 << bitnumber);
-    }
-
-  bool RtcpFbIsSet(sdp_rtcp_fb_nack_type_e type) const
+  // Nothing seems to use this right now. Do we intend to support this
+  // someday?
+  bool RtcpFbAckIsSet(const std::string& type) const
   {
-    return mRtcpFbTypes & sdp_rtcp_fb_nack_to_bitmap(type);
+    for (auto i = mAckFbTypes.begin(); i != mAckFbTypes.end(); ++i) {
+      if (*i == type) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  bool RtcpFbIsSet(sdp_rtcp_fb_ack_type_e type) const
+  bool RtcpFbNackIsSet(const std::string& type) const
   {
-    return mRtcpFbTypes & sdp_rtcp_fb_ack_to_bitmap(type);
+    for (auto i = mNackFbTypes.begin(); i != mNackFbTypes.end(); ++i) {
+      if (*i == type) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  bool RtcpFbIsSet(sdp_rtcp_fb_ccm_type_e type) const
+  bool RtcpFbCcmIsSet(const std::string& type) const
   {
-    return mRtcpFbTypes & sdp_rtcp_fb_ccm_to_bitmap(type);
+    for (auto i = mCcmFbTypes.begin(); i != mCcmFbTypes.end(); ++i) {
+      if (*i == type) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 }

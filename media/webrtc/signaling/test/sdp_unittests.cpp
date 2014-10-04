@@ -1635,6 +1635,10 @@ const std::string kBasicAudioVideoDataOffer =
 "a=rtcp-fb:120 nack app foo" CRLF
 "a=rtcp-fb:120 nack foo" CRLF // Should be ignored
 "a=rtcp-fb:120 ccm fir" CRLF
+"a=rtcp-fb:120 ccm tmmbr" CRLF
+"a=rtcp-fb:120 ccm tstr" CRLF
+"a=rtcp-fb:120 ccm vbcm" CRLF
+"a=rtcp-fb:120 ccm foo" CRLF // Should be ignored
 "a=rtcp-fb:120 trr-int 10" CRLF
 "a=rtcp-fb:120 foo" CRLF // Should be ignored
 "a=rtcp-fb:126 nack" CRLF
@@ -1729,7 +1733,7 @@ TEST_P(NewSdpTest, CheckRtcpFb) {
   auto& video_attrs = mSdp->GetMediaSection(1).GetAttributeList();
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute));
   auto& rtcpfbs = video_attrs.GetRtcpFb().mFeedbacks;
-  ASSERT_EQ(12U, rtcpfbs.size());
+  ASSERT_EQ(18U, rtcpfbs.size());
   CheckRtcpFb(rtcpfbs[0], "120", SdpRtcpFbAttributeList::kAck, "rpsi");
   CheckRtcpFb(rtcpfbs[1], "120", SdpRtcpFbAttributeList::kAck, "app", "foo");
   CheckRtcpFb(rtcpfbs[2], "120", SdpRtcpFbAttributeList::kNack, "");
@@ -1737,11 +1741,17 @@ TEST_P(NewSdpTest, CheckRtcpFb) {
   CheckRtcpFb(rtcpfbs[4], "120", SdpRtcpFbAttributeList::kNack, "pli");
   CheckRtcpFb(rtcpfbs[5], "120", SdpRtcpFbAttributeList::kNack, "rpsi");
   CheckRtcpFb(rtcpfbs[6], "120", SdpRtcpFbAttributeList::kNack, "app", "foo");
-  CheckRtcpFb(rtcpfbs[7], "120", SdpRtcpFbAttributeList::kTrrInt, "10");
-  CheckRtcpFb(rtcpfbs[8], "126", SdpRtcpFbAttributeList::kNack, "");
-  CheckRtcpFb(rtcpfbs[9], "126", SdpRtcpFbAttributeList::kNack, "pli");
-  CheckRtcpFb(rtcpfbs[10], "97",  SdpRtcpFbAttributeList::kNack, "");
-  CheckRtcpFb(rtcpfbs[11], "97",  SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[7], "120", SdpRtcpFbAttributeList::kCcm, "fir");
+  CheckRtcpFb(rtcpfbs[8], "120", SdpRtcpFbAttributeList::kCcm, "tmmbr");
+  CheckRtcpFb(rtcpfbs[9], "120", SdpRtcpFbAttributeList::kCcm, "tstr");
+  CheckRtcpFb(rtcpfbs[10], "120", SdpRtcpFbAttributeList::kCcm, "vbcm");
+  CheckRtcpFb(rtcpfbs[11], "120", SdpRtcpFbAttributeList::kTrrInt, "10");
+  CheckRtcpFb(rtcpfbs[12], "126", SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[13], "126", SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[14], "126", SdpRtcpFbAttributeList::kCcm, "fir");
+  CheckRtcpFb(rtcpfbs[15], "97",  SdpRtcpFbAttributeList::kNack, "");
+  CheckRtcpFb(rtcpfbs[16], "97",  SdpRtcpFbAttributeList::kNack, "pli");
+  CheckRtcpFb(rtcpfbs[17], "97", SdpRtcpFbAttributeList::kCcm, "fir");
 }
 
 // TODO: Tests that parse above SDP, and check various things

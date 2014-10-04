@@ -117,10 +117,13 @@ static nsresult JsepCodecDescToCodecConfig(const
   config_raw = new mozilla::VideoCodecConfig(
       pt,
       desc.mName,
-      0, // TODO(ekr@rtfm.com): FB types
       desc.mMaxFs,
       desc.mMaxFr,
-      h264_config); // TODO(ekr@rtfm.com): H.264 codec specific
+      h264_config);
+
+  config_raw->mAckFbTypes = desc.mAckFbTypes;
+  config_raw->mNackFbTypes = desc.mNackFbTypes;
+  config_raw->mCcmFbTypes = desc.mCcmFbTypes;
 
   *config = config_raw;
   return NS_OK;

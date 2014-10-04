@@ -128,6 +128,12 @@ const char *SdpRtcpFbAttributeList::sli = "sli";
 const char *SdpRtcpFbAttributeList::rpsi = "rpsi";
 const char *SdpRtcpFbAttributeList::app = "app";
 
+const char *SdpRtcpFbAttributeList::fir = "fir";
+const char *SdpRtcpFbAttributeList::tmmbr = "tmmbr";
+const char *SdpRtcpFbAttributeList::tstr = "tstr";
+const char *SdpRtcpFbAttributeList::vbcm = "vbcm";
+
+
 void SdpRtcpFbAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mFeedbacks.begin(); i != mFeedbacks.end(); ++i) {
