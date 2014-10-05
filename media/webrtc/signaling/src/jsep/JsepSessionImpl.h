@@ -167,6 +167,9 @@ class JsepSessionImpl : public JsepSession {
                                 const SdpMediaSection& remote_msection,
                                 SdpMediaSection* msection,
                                 Sdp* sdp);
+  nsresult DetermineAnswererSetupRole(const SdpMediaSection& remote_msection,
+                                      SdpSetupAttribute::Role* rolep);
+
   nsresult CreateTrack(const SdpMediaSection& receive,
                        const SdpMediaSection& send,
                        JsepTrack::Direction,
