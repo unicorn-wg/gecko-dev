@@ -507,6 +507,9 @@ nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
 nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
                                                const std::string& sdp) {
 
+  MOZ_MTLOG(ML_DEBUG, "SetRemoteDescription type="
+            << type
+            << "\nSDP=\n" << sdp);
   switch (mState) {
     case kJsepStateStable:
       if (type != kJsepSdpOffer) {
@@ -1002,8 +1005,9 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       "9",
       "G722",
       8000,
-      0  // This means default 1
-                      ));
+      1,
+      320,
+      64000));
 
   mCodecs.push_back(new JsepAudioCodecDescription(
       "0",
