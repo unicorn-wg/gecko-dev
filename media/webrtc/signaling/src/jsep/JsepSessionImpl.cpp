@@ -320,42 +320,12 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
                                                remote_msection,
                                                SdpMediaSection* msection,
                                                Sdp* sdp) {
-  // Determine the role.
-  // RFC 5763 says:
-  //
-  //   The endpoint MUST use the setup attribute defined in [RFC4145].
-  //   The endpoint that is the offerer MUST use the setup attribute
-  //   value of setup:actpass and be prepared to receive a client_hello
-  //   before it receives the answer.  The answerer MUST use either a
-  //   setup attribute value of setup:active or setup:passive.  Note that
-  //   if the answerer uses setup:passive, then the DTLS handshake will
-  //   not begin until the answerer is received, which adds additional
-  //   latency. setup:active allows the answer and the DTLS handshake to
-  //   occur in parallel.  Thus, setup:active is RECOMMENDED.  Whichever
-  //   party is active MUST initiate a DTLS handshake by sending a
-  //   ClientHello over each flow (host/port quartet).
-  //
-  //   We default to assuming that the offerer is passive and we are active.
-  SdpSetupAttribute::Role role = SdpSetupAttribute::kActive;
+  SdpSetupAttribute::Role role;
+  nsresult rv = DetermineAnswererSetupRole(remote_msection, &role);
+  if (NS_FAILED(rv))
+    return rv;
 
-  if (remote_msection.GetAttributeList().HasAttribute(
-          SdpAttribute::kSetupAttribute)) {
-    switch (remote_msection.GetAttributeList().GetSetup().mRole) {
-      case SdpSetupAttribute::kActive:
-        role = SdpSetupAttribute::kPassive;
-        break;
-      case SdpSetupAttribute::kPassive:
-      case SdpSetupAttribute::kActpass:
-        role = SdpSetupAttribute::kActive;
-        break;
-      case SdpSetupAttribute::kHoldconn:
-        MOZ_MTLOG(ML_ERROR,
-                  "The other side used an illegal setup attribute"
-                  "(\"holdconn\").");
-        return NS_ERROR_FAILURE;
-    }
-  }
-  nsresult rv = AddTransportAttributes(msection, kJsepSdpAnswer, role);
+  rv = AddTransportAttributes(msection, kJsepSdpAnswer, role);
   if (NS_FAILED(rv))
     return rv;
 
@@ -391,6 +361,50 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
   // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive.
   AddCommonCodecs(remote_msection, msection);
 
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::DetermineAnswererSetupRole(const SdpMediaSection&
+                                                     remote_msection,
+                                                     SdpSetupAttribute::Role*
+                                                     rolep) {
+  // Determine the role.
+  // RFC 5763 says:
+  //
+  //   The endpoint MUST use the setup attribute defined in [RFC4145].
+  //   The endpoint that is the offerer MUST use the setup attribute
+  //   value of setup:actpass and be prepared to receive a client_hello
+  //   before it receives the answer.  The answerer MUST use either a
+  //   setup attribute value of setup:active or setup:passive.  Note that
+  //   if the answerer uses setup:passive, then the DTLS handshake will
+  //   not begin until the answerer is received, which adds additional
+  //   latency. setup:active allows the answer and the DTLS handshake to
+  //   occur in parallel.  Thus, setup:active is RECOMMENDED.  Whichever
+  //   party is active MUST initiate a DTLS handshake by sending a
+  //   ClientHello over each flow (host/port quartet).
+  //
+  //   We default to assuming that the offerer is passive and we are active.
+  SdpSetupAttribute::Role role = SdpSetupAttribute::kActive;
+
+  if (remote_msection.GetAttributeList().HasAttribute(
+          SdpAttribute::kSetupAttribute)) {
+    switch (remote_msection.GetAttributeList().GetSetup().mRole) {
+      case SdpSetupAttribute::kActive:
+        role = SdpSetupAttribute::kPassive;
+        break;
+      case SdpSetupAttribute::kPassive:
+      case SdpSetupAttribute::kActpass:
+        role = SdpSetupAttribute::kActive;
+        break;
+      case SdpSetupAttribute::kHoldconn:
+        MOZ_MTLOG(ML_ERROR,
+                  "The other side used an illegal setup attribute"
+                  "(\"holdconn\").");
+        return NS_ERROR_FAILURE;
+    }
+  }
+
+  *rolep = role;
   return NS_OK;
 }
 
@@ -493,6 +507,9 @@ nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
 nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
                                                const std::string& sdp) {
 
+  MOZ_MTLOG(ML_DEBUG, "SetRemoteDescription type="
+            << type
+            << "\nSDP=\n" << sdp);
   switch (mState) {
     case kJsepStateStable:
       if (type != kJsepSdpOffer) {
@@ -988,8 +1005,9 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       "9",
       "G722",
       8000,
-      0  // This means default 1
-                      ));
+      1,
+      320,
+      64000));
 
   mCodecs.push_back(new JsepAudioCodecDescription(
       "0",
