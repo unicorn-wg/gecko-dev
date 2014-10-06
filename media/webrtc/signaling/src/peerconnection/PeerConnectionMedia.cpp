@@ -327,11 +327,14 @@ nsresult PeerConnectionMedia::UpdateMediaPipelines(
 
     if (pair->mSending) {
       rv = factory.CreateMediaPipeline(session, *pair, pair->mSending);
-      if (NS_FAILED(rv))
+      if (NS_FAILED(rv)) {
+        CSFLogError(logTag, "Failed to create sending pipeline");
         return rv;
+      }
     }
     if (pair->mReceiving) {
       rv = factory.CreateMediaPipeline(session, *pair, pair->mReceiving);
+      CSFLogError(logTag, "Failed to create receiving pipeline");
       if (NS_FAILED(rv))
         return rv;
     }

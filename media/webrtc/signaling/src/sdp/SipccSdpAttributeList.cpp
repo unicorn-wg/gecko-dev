@@ -348,7 +348,14 @@ bool
 SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
                                   SdpErrorHolder& errorHolder) {
   SdpRtpmapAttributeList* rtpmap = new SdpRtpmapAttributeList();
-  uint16_t count = sdp_get_media_num_payload_types(sdp, level);
+  uint16_t count;
+  sdp_result_e result = sdp_attr_num_instances(sdp, level, 0, SDP_ATTR_RTPMAP,
+                                               &count);
+  if (result != SDP_SUCCESS) {
+    errorHolder.AddParseError(sdp_get_media_line_number(sdp, level),
+                              "Unable to get rtpmap size");
+    return false;
+  }
   for (uint16_t i = 0; i < count; ++i) {
     uint16_t pt = sdp_attr_get_rtpmap_payload_type(sdp, level, 0, i + 1);
     const char* ccName = sdp_attr_get_rtpmap_encname(sdp, level, 0, i + 1);

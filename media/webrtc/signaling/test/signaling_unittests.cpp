@@ -3329,7 +3329,7 @@ TEST_F(SignalingTest, AudioOnlyG722MostPreferred)
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 9\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 9"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
 
   a1_->CloseSendStreams();
@@ -3355,7 +3355,7 @@ TEST_F(SignalingTest, AudioOnlyG722Rejected)
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 0\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 0 8\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:0 PCMU/8000"), std::string::npos);
   ASSERT_EQ(a2_->getLocalDescription().find("a=rtpmap:109 opus/48000/2"), std::string::npos);
   ASSERT_EQ(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
