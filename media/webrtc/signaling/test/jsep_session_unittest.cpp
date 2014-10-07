@@ -387,13 +387,6 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
 }
 
 TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
-  JsepVideoCodecDescription* h264 =
-    new JsepVideoCodecDescription("98", "H264", 90000);
-
-  h264->mProfileLevelId = 0x42a01e;
-
-  mSessionOff.Codecs().push_back(h264);
-
   types.push_back(SdpMediaSection::kAudio);
   types.push_back(SdpMediaSection::kVideo);
 
@@ -459,23 +452,23 @@ TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
     *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
         fmtps[1].parameters.get());
 
-  ASSERT_EQ((uint32_t)0x42a01e, parsed_h264_params.profile_level_id);
+  ASSERT_EQ((uint32_t)0x42e00d, parsed_h264_params.profile_level_id);
   ASSERT_TRUE(parsed_h264_params.level_asymmetry_allowed);
 }
 
 TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
-  JsepVideoCodecDescription* h264 =
-    new JsepVideoCodecDescription("98", "H264", 90000);
 
-  h264->mProfileLevelId = 0x42a01e;
-
-  JsepVideoCodecDescription* h264_2 =
-    new JsepVideoCodecDescription("97", "H264", 90000);
-
-  h264_2->mProfileLevelId = 0x42a00d;
-
-  mSessionOff.Codecs().push_back(h264);
-  mSessionAns.Codecs().push_back(h264_2);
+  for (auto i = mSessionAns.Codecs().begin();
+       i != mSessionAns.Codecs().end();
+       ++i) {
+    auto *codec = *i;
+    if (codec->mName == "H264") {
+      JsepVideoCodecDescription* h264 =
+        static_cast<JsepVideoCodecDescription*>(codec);
+      h264->mProfileLevelId = 0x42a00d;
+      h264->mDefaultPt = "97";
+    }
+  }
 
   types.push_back(SdpMediaSection::kAudio);
   types.push_back(SdpMediaSection::kVideo);
