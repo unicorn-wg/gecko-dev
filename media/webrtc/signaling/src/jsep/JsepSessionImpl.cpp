@@ -252,13 +252,13 @@ void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
     }
 
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
+    // TODO: Will we need to teach this matching function to take fmtp into
+    // account (eg; profile when multiple H264 are offered)?
     JsepCodecDescription* codec = FindMatchingCodec(
         remote_section.GetMediaType(), entry);
     if (codec) {
-      msection->AddCodec(entry.pt,  // Reflect the other side's PT
-                         codec->mName,
-                         codec->mClock,
-                         codec->mChannels);
+      codec->mDefaultPt = entry.pt; // Reflect the other side's PT
+      codec->AddToMediaSection(*msection);
     }
   }
 }
@@ -627,13 +627,13 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     jpair->mLevel = i;
 
     if (sending) {
-      rv = CreateTrack(rm, lm, JsepTrack::kJsepTrackSending,
+      rv = CreateTrack(rm, JsepTrack::kJsepTrackSending,
                        &jpair->mSending);
       if (NS_FAILED(rv))
         return rv;
     }
     if (receiving) {
-      rv = CreateTrack(lm, rm, JsepTrack::kJsepTrackReceiving,
+      rv = CreateTrack(rm, JsepTrack::kJsepTrackReceiving,
                        &jpair->mReceiving);
       if (NS_FAILED(rv))
         return rv;
@@ -678,18 +678,17 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
   return NS_OK;
 }
 
-nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
-                                      const SdpMediaSection& send,
+nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
                                       JsepTrack::Direction direction,
                                       UniquePtr<JsepTrack>* trackp) {
   UniquePtr<JsepTrackImpl> track = MakeUnique<JsepTrackImpl>();
   track->mDirection = direction;
-  track->mMediaType = receive.GetMediaType();
-  track->mProtocol = receive.GetProtocol();
+  track->mMediaType = remote_msection.GetMediaType();
+  track->mProtocol = remote_msection.GetProtocol();
 
   // Insert all the codecs we jointly support.
-  const std::vector<std::string>& formats = receive.GetFormats();
-  const SdpRtpmapAttributeList& rtpmap = receive.
+  const std::vector<std::string>& formats = remote_msection.GetFormats();
+  const SdpRtpmapAttributeList& rtpmap = remote_msection.
        GetAttributeList().GetRtpmap();
 
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
@@ -699,17 +698,17 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& receive,
 
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
     JsepCodecDescription* codec = FindMatchingCodec(
-        receive.GetMediaType(), entry);
+        remote_msection.GetMediaType(), entry);
     if (codec) {
-      JsepCodecDescription* negotiated;
-
-      if (direction == JsepTrack::kJsepTrackSending) {
-        // We need to take the remote side's parameters into account so we can
-        // configure our send media.
-        negotiated = codec->MakeNegotiatedCodec(receive, entry);
-      } else {
-        negotiated = codec->Clone();
-      }
+      bool sending = (direction == JsepTrack::kJsepTrackSending);
+      // We need to take the remote side's parameters into account so we can
+      // configure our send media.
+      // |codec| is assumed to have the necessary state about our own config
+      // in order to negotiate.
+      JsepCodecDescription* negotiated = codec->MakeNegotiatedCodec(
+          remote_msection,
+          entry,
+          sending);
 
       if (!negotiated) {
         // TODO: What should we do here?

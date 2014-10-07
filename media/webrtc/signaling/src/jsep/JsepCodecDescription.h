@@ -42,37 +42,43 @@ struct JsepCodecDescription {
 
 
   virtual JsepCodecDescription* MakeNegotiatedCodec(
-      const mozilla::SdpMediaSection& m_section,
-      const mozilla::SdpRtpmapAttributeList::Rtpmap& rtpmap) const {
+      const mozilla::SdpMediaSection& remote_msection,
+      const mozilla::SdpRtpmapAttributeList::Rtpmap& rtpmap,
+      bool sending) const {
     JsepCodecDescription* negotiated = Clone();
     negotiated->mDefaultPt = rtpmap.pt;
 
-    const SdpAttributeList& attrs = m_section.GetAttributeList();
-    if (attrs.HasAttribute(SdpAttribute::kFmtpAttribute)) {
-      const SdpFmtpAttributeList& fmtps = attrs.GetFmtp();
-      for (auto i = fmtps.mFmtps.begin(); i != fmtps.mFmtps.end(); ++i) {
-        if (i->format == negotiated->mDefaultPt) {
-          if (i->parameters) {
-            if (!negotiated->LoadFmtps(*i->parameters)) {
+    const SdpAttributeList& attrs = remote_msection.GetAttributeList();
+
+    if (sending) {
+      // If a send track, we need to pay attention to remote end's fmtp
+      if (attrs.HasAttribute(SdpAttribute::kFmtpAttribute)) {
+        const SdpFmtpAttributeList& fmtps = attrs.GetFmtp();
+        for (auto i = fmtps.mFmtps.begin(); i != fmtps.mFmtps.end(); ++i) {
+          if (i->format == negotiated->mDefaultPt) {
+            if (i->parameters) {
+              if (!negotiated->LoadFmtps(*i->parameters)) {
+                // Remote parameters were invalid
+                delete negotiated;
+                return nullptr;
+              }
+            } else {
+              // TODO: Fmtp that we don't understand. What should we do here?
+            }
+          }
+        }
+      }
+    } else {
+      // If a receive track, we need to pay attention to remote end's rtcp-fb
+      if (attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute)) {
+        auto& rtcpfbs = attrs.GetRtcpFb().mFeedbacks;
+        for (auto i = rtcpfbs.begin(); i != rtcpfbs.end(); ++i) {
+          if (i->pt == negotiated->mDefaultPt) {
+            if (!negotiated->LoadRtcpFb(*i)) {
               // Remote parameters were invalid
               delete negotiated;
               return nullptr;
             }
-          } else {
-            // TODO: Fmtp that we don't understand. What should we do here?
-          }
-        }
-      }
-    }
-
-    if (attrs.HasAttribute(SdpAttribute::kRtcpFbAttribute)) {
-      auto& rtcpfbs = attrs.GetRtcpFb().mFeedbacks;
-      for (auto i = rtcpfbs.begin(); i != rtcpfbs.end(); ++i) {
-        if (i->pt == negotiated->mDefaultPt) {
-          if (!negotiated->LoadRtcpFb(*i)) {
-              // Remote parameters were invalid
-              delete negotiated;
-              return nullptr;
           }
         }
       }

@@ -1816,16 +1816,9 @@ public:
     }
   }
 
-  void TestRtcpFb(const std::set<std::string>& feedback,
-                  uint32_t rtcpFbFlags,
-                  VideoSessionConduit::FrameRequestType frameRequestMethod) {
-    EnsureInit();
-    sipcc::OfferOptions options;
-
-    a1_->CreateOffer(options, OFFER_AV, SHOULD_SENDRECV_AV);
-    a1_->SetLocal(TestObserver::OFFER, a1_->offer());
-
-    ParsedSDP sdpWrapper(a1_->offer());
+  std::string HardcodeRtcpFb(const std::string& sdp,
+                             const std::set<std::string>& feedback) {
+    ParsedSDP sdpWrapper(sdp);
 
     // Strip out any existing rtcp-fb lines
     sdpWrapper.DeleteLines("a=rtcp-fb:120");
@@ -1844,10 +1837,63 @@ public:
     // Double-check that the offered SDP matches what we expect
     CheckRtcpFbSdp(sdpWrapper.getSdp(), feedback);
 
-    a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp());
+    return sdpWrapper.getSdp();
+  }
+
+  void TestRtcpFbAnswer(const std::set<std::string>& feedback,
+      uint32_t rtcpFbFlags,
+      VideoSessionConduit::FrameRequestType frameRequestMethod) {
+    EnsureInit();
+    sipcc::OfferOptions options;
+
+    a1_->CreateOffer(options, OFFER_AV, SHOULD_SENDRECV_AV);
+    a1_->SetLocal(TestObserver::OFFER, a1_->offer());
+
+    a2_->SetRemote(TestObserver::OFFER, a1_->offer());
     a2_->CreateAnswer(OFFER_AV | ANSWER_AV);
 
-    CheckRtcpFbSdp(a2_->answer(), feedback);
+    a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
+
+    std::string modifiedAnswer(HardcodeRtcpFb(a2_->answer(), feedback));
+
+    a1_->SetRemote(TestObserver::ANSWER, modifiedAnswer);
+
+    WaitForCompleted();
+
+    a1_->CloseSendStreams();
+    a1_->CloseReceiveStreams();
+    a2_->CloseSendStreams();
+    a2_->CloseReceiveStreams();
+
+    // Check caller video settings for remote pipeline
+    a1_->CheckMediaPipeline(0, 1, (fRtcpMux ? PIPELINE_RTCP_MUX : 0) |
+      PIPELINE_VIDEO | rtcpFbFlags, frameRequestMethod);
+
+    // Check caller video settings for remote pipeline
+    // (Should use pli and nack, regardless of what was in the offer)
+    a2_->CheckMediaPipeline(0, 1,
+                            (fRtcpMux ? PIPELINE_RTCP_MUX : 0) |
+                            PIPELINE_VIDEO |
+                            PIPELINE_SEND |
+                            PIPELINE_RTCP_NACK,
+                            VideoSessionConduit::FrameRequestPli);
+  }
+
+  void TestRtcpFbOffer(
+      const std::set<std::string>& feedback,
+      uint32_t rtcpFbFlags,
+      VideoSessionConduit::FrameRequestType frameRequestMethod) {
+    EnsureInit();
+    sipcc::OfferOptions options;
+
+    a1_->CreateOffer(options, OFFER_AV, SHOULD_SENDRECV_AV);
+    a1_->SetLocal(TestObserver::OFFER, a1_->offer());
+
+    std::string modifiedOffer = HardcodeRtcpFb(a1_->offer(),
+                                               feedback);
+
+    a2_->SetRemote(TestObserver::OFFER, modifiedOffer);
+    a2_->CreateAnswer(OFFER_AV | ANSWER_AV);
 
     a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
     a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
@@ -1859,13 +1905,18 @@ public:
     a2_->CloseSendStreams();
     a2_->CloseReceiveStreams();
 
-    // Check caller video settings for remote pipeline
-    a1_->CheckMediaPipeline(0, 1, (fRtcpMux ? PIPELINE_RTCP_MUX : 0) |
-      PIPELINE_SEND | PIPELINE_VIDEO | rtcpFbFlags, frameRequestMethod);
-
     // Check callee video settings for remote pipeline
     a2_->CheckMediaPipeline(0, 1, (fRtcpMux ? PIPELINE_RTCP_MUX : 0) |
       PIPELINE_VIDEO | rtcpFbFlags, frameRequestMethod);
+
+    // Check caller video settings for remote pipeline
+    // (Should use pli and nack, regardless of what was in the offer)
+    a1_->CheckMediaPipeline(0, 1,
+                            (fRtcpMux ? PIPELINE_RTCP_MUX : 0) |
+                            PIPELINE_VIDEO |
+                            PIPELINE_SEND |
+                            PIPELINE_RTCP_NACK,
+                            VideoSessionConduit::FrameRequestPli);
   }
 
   void SetTestStunServer() {
@@ -3428,68 +3479,132 @@ TEST_F(SignalingTest, RtcpFbInOffer)
   CheckRtcpFbSdp(a1_->offer(), ARRAY_TO_SET(std::string, expected));
 }
 
-TEST_F(SignalingTest, RtcpFbInAnswer)
+TEST_F(SignalingTest, RtcpFbOfferAll)
 {
   const char *feedbackTypes[] = { "nack", "nack pli", "ccm fir" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             PIPELINE_RTCP_NACK,
-             VideoSessionConduit::FrameRequestPli);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestPli);
 }
 
-TEST_F(SignalingTest, RtcpFbNoNackBasic)
+TEST_F(SignalingTest, RtcpFbOfferNoNackBasic)
 {
   const char *feedbackTypes[] = { "nack pli", "ccm fir" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             0,
-             VideoSessionConduit::FrameRequestPli);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestPli);
 }
 
-TEST_F(SignalingTest, RtcpFbNoNackPli)
+TEST_F(SignalingTest, RtcpFbOfferNoNackPli)
 {
   const char *feedbackTypes[] = { "nack", "ccm fir" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             PIPELINE_RTCP_NACK,
-             VideoSessionConduit::FrameRequestFir);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestFir);
 }
 
-TEST_F(SignalingTest, RtcpFbNoCcmFir)
+TEST_F(SignalingTest, RtcpFbOfferNoCcmFir)
 {
   const char *feedbackTypes[] = { "nack", "nack pli" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             PIPELINE_RTCP_NACK,
-             VideoSessionConduit::FrameRequestPli);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestPli);
 }
 
-TEST_F(SignalingTest, RtcpFbNoNack)
+TEST_F(SignalingTest, RtcpFbOfferNoNack)
 {
   const char *feedbackTypes[] = { "ccm fir" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             0,
-             VideoSessionConduit::FrameRequestFir);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestFir);
 }
 
-TEST_F(SignalingTest, RtcpFbNoFrameRequest)
+TEST_F(SignalingTest, RtcpFbOfferNoFrameRequest)
 {
   const char *feedbackTypes[] = { "nack" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             PIPELINE_RTCP_NACK,
-             VideoSessionConduit::FrameRequestNone);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestNone);
 }
 
-TEST_F(SignalingTest, RtcpFbPliOnly)
+TEST_F(SignalingTest, RtcpFbOfferPliOnly)
 {
   const char *feedbackTypes[] = { "nack pli" };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             0,
-             VideoSessionConduit::FrameRequestPli);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestPli);
 }
 
-TEST_F(SignalingTest, RtcpFbNoFeedback)
+TEST_F(SignalingTest, RtcpFbOfferNoFeedback)
 {
   const char *feedbackTypes[] = { };
-  TestRtcpFb(ARRAY_TO_SET(std::string, feedbackTypes),
-             0,
-             VideoSessionConduit::FrameRequestNone);
+  TestRtcpFbOffer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestNone);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerAll)
+{
+  const char *feedbackTypes[] = { "nack", "nack pli", "ccm fir" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestPli);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerNoNackBasic)
+{
+  const char *feedbackTypes[] = { "nack pli", "ccm fir" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestPli);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerNoNackPli)
+{
+  const char *feedbackTypes[] = { "nack", "ccm fir" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestFir);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerNoCcmFir)
+{
+  const char *feedbackTypes[] = { "nack", "nack pli" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestPli);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerNoNack)
+{
+  const char *feedbackTypes[] = { "ccm fir" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestFir);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerNoFrameRequest)
+{
+  const char *feedbackTypes[] = { "nack" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  PIPELINE_RTCP_NACK,
+                  VideoSessionConduit::FrameRequestNone);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerPliOnly)
+{
+  const char *feedbackTypes[] = { "nack pli" };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestPli);
+}
+
+TEST_F(SignalingTest, RtcpFbAnswerNoFeedback)
+{
+  const char *feedbackTypes[] = { };
+  TestRtcpFbAnswer(ARRAY_TO_SET(std::string, feedbackTypes),
+                  0,
+                  VideoSessionConduit::FrameRequestNone);
 }
 
 // In this test we will change the offer SDP's a=setup value

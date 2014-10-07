@@ -744,7 +744,7 @@ WebrtcVideoConduit::ConfigureRecvMediaCodecs(
     {
       kf_request = webrtc::kViEKeyFrameRequestPliRtcp;
     } else if(kf_request == webrtc::kViEKeyFrameRequestNone &&
-              codecConfigList[i]->RtcpFbNackIsSet("fir"))
+              codecConfigList[i]->RtcpFbCcmIsSet("fir"))
     {
       kf_request = webrtc::kViEKeyFrameRequestFirRtcp;
     }
