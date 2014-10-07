@@ -1023,6 +1023,12 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       "VP8",
       90000
                       ));
+
+  mCodecs.push_back(new JsepVideoCodecDescription(
+      "98",
+      "H264",
+      90000
+                      ));
 }
 
 void JsepSessionImpl::SetState(JsepSignalingState state) {

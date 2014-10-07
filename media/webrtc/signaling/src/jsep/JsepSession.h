@@ -6,7 +6,7 @@
 #define _JSEPSESSION_H_
 
 #include <string>
-#include <list>
+#include <vector>
 #include "mozilla/Maybe.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
@@ -70,7 +70,7 @@ class JsepSession {
   // alternative is writing a raft of accessor functions that allow arbitrary
   // manipulation (which will be unwieldy), or allowing functors to be injected
   // that manipulate the data structure (still pretty unwieldy).
-  virtual std::list<JsepCodecDescription*>& Codecs() = 0;
+  virtual std::vector<JsepCodecDescription*>& Codecs() = 0;
 
   // Manage tracks. We take shared ownership of any track.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;

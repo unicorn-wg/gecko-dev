@@ -74,6 +74,8 @@ class PeerConnectionCtx {
   void queueJSEPOperation(nsRefPtr<nsIRunnable> aJSEPOperation);
   void onGMPReady();
 
+  bool gmpHasH264();
+
   // Make these classes friend so that they can access mPeerconnections.
   friend class PeerConnectionImpl;
   friend class PeerConnectionWrapper;

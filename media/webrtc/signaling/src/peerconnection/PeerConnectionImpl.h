@@ -601,6 +601,7 @@ private:
                            const IceConfiguration* aConfiguration,
                            const RTCConfiguration* aRTCConfiguration,
                            nsISupports* aThread);
+  nsresult ConfigureJsepSessionCodecs();
 
   NS_IMETHODIMP EnsureDataConnection(uint16_t aNumstreams);
 

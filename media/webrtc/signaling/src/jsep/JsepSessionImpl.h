@@ -6,7 +6,7 @@
 #define _JSEPSESSIONIMPL_H_
 
 
-#include <list>
+#include <vector>
 
 #include "signaling/src/jsep/JsepCodecDescription.h"
 #include "signaling/src/jsep/JsepMediaStreamTrack.h"
@@ -45,7 +45,7 @@ class JsepSessionImpl : public JsepSession {
                                      const std::string& pwd) MOZ_OVERRIDE;
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::string& value) MOZ_OVERRIDE;
-  virtual std::list<JsepCodecDescription*>& Codecs() MOZ_OVERRIDE {
+  virtual std::vector<JsepCodecDescription*>& Codecs() MOZ_OVERRIDE {
     return mCodecs;
   }
 
@@ -207,7 +207,7 @@ class JsepSessionImpl : public JsepSession {
   UniquePtr<Sdp> mCurrentRemoteDescription;
   UniquePtr<Sdp> mPendingLocalDescription;
   UniquePtr<Sdp> mPendingRemoteDescription;
-  std::list<JsepCodecDescription*> mCodecs;
+  std::vector<JsepCodecDescription*> mCodecs;
   std::string mLastError;
   SipccSdpParser mParser;
 };
