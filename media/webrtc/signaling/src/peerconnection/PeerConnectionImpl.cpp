@@ -26,6 +26,8 @@
 #include "nsISocketTransportService.h"
 #include "nsIConsoleService.h"
 #include "nsThreadUtils.h"
+#include "nsIPrefService.h"
+#include "nsIPrefBranch.h"
 #include "nsProxyRelease.h"
 #include "prtime.h"
 
@@ -629,7 +631,6 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   res = PeerConnectionCtx::InitializeGlobal(mThread, mSTSThread);
   NS_ENSURE_SUCCESS(res, res);
 
-  mJsepSession = MakeUnique<JsepSessionImpl>(mName);
 
   IceConfiguration converted;
   if (aRTCConfiguration) {
@@ -662,13 +663,6 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return res;
   }
 
-  res = mJsepSession->SetIceCredentials(mMedia->ice_ctx()->ufrag(),
-                                        mMedia->ice_ctx()->pwd());
-  if (NS_FAILED(res)) {
-    CSFLogError(logTag, "%s: Couldn't set ICE credentials", __FUNCTION__);
-    return res;
-  }
-
   STAMP_TIMECARD(mTimeCard, "Generating DTLS Identity");
   // Create the DTLS Identity
   mIdentity = DtlsIdentity::Generate();
@@ -684,11 +678,170 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     CSFLogError(logTag, "%s: unable to get fingerprint", __FUNCTION__);
     return res;
   }
+
+  mJsepSession = MakeUnique<JsepSessionImpl>(mName);
+
+  res = mJsepSession->SetIceCredentials(mMedia->ice_ctx()->ufrag(),
+                                                 mMedia->ice_ctx()->pwd());
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "%s: Couldn't set ICE credentials", __FUNCTION__);
+    return res;
+  }
+
   res = mJsepSession->AddDtlsFingerprint(GetFingerprintAlgorithm(),
                                          GetFingerprintHexValue());
   if (NS_FAILED(res)) {
     CSFLogError(logTag, "%s: Couldn't set DTLS credentials", __FUNCTION__);
     return res;
+  }
+
+  return NS_OK;
+}
+
+class CompareCodecPriority {
+  public:
+    explicit CompareCodecPriority(int32_t preferredCodec) {
+      // This pref really ought to be a string, preferably something like
+      // "H264" or "VP8" instead of a payload type.
+      std::ostringstream os;
+      os << preferredCodec;
+      mPreferredCodec = os.str();
+    }
+
+    bool operator()(JsepCodecDescription* lhs,
+                    JsepCodecDescription* rhs) {
+      return !mPreferredCodec.empty() &&
+             lhs->mDefaultPt == mPreferredCodec &&
+             rhs->mDefaultPt != mPreferredCodec;
+    }
+
+  private:
+    std::string mPreferredCodec;
+};
+
+nsresult
+PeerConnectionImpl::ConfigureJsepSessionCodecs() {
+  nsresult res;
+  nsCOMPtr<nsIPrefService> prefs =
+    do_GetService("@mozilla.org/preferences-service;1", &res);
+
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "%s: Couldn't get prefs service", __FUNCTION__);
+    return res;
+  }
+
+  nsCOMPtr<nsIPrefBranch> branch = do_QueryInterface(prefs);
+  if (!branch) {
+    CSFLogError(logTag, "%s: Couldn't get prefs branch", __FUNCTION__);
+    return NS_ERROR_FAILURE;
+  }
+
+
+  bool hardware264Enabled = false;
+
+#ifdef MOZ_WEBRTC_OMX
+
+  // Check to see if what HW codecs are available (not in use) at this moment.
+  // Note that streaming video decode can reserve a decoder
+
+  // XXX See bug 1018791 Implement W3 codec reservation policy
+  // Note that currently, OMXCodecReservation needs to be held by an sp<> because it puts
+  // 'this' into an sp<EventListener> to talk to the resource reservation code
+
+  // This pref is a misnomer; it is solely for h264 _hardware_ support.
+  branch->GetBoolPref("media.peerconnection.video.h264_enabled",
+                      &hardware264Enabled);
+
+  if (hardware264Enabled) {
+    // Ok, it is preffed on. Can we actually do it?
+    hardwareH264Enabled = false;
+    android::sp<android::OMXCodecReservation> encode = new android::OMXCodecReservation(true);
+    android::sp<android::OMXCodecReservation> decode = new android::OMXCodecReservation(false);
+
+    // Currently we just check if they're available right now, which will fail if we're
+    // trying to call ourself, for example.  It will work for most real-world cases, like
+    // if we try to add a person to a 2-way call to make a 3-way mesh call
+    if (encode->ReserveOMXCodec() && decode->ReserveOMXCodec()) {
+      CSFLogDebug( logTag, "%s: H264 hardware codec available", __FUNCTION__);
+      hardware264Enabled = true;
+    }
+  }
+
+#endif // MOZ_WEBRTC_OMX
+
+  bool h264Enabled = hardware264Enabled ||
+                     PeerConnectionCtx::GetInstance()->gmpHasH264();
+
+  auto codecs = mJsepSession->Codecs();
+
+  // Set parameters
+  for (auto i = codecs.begin(); i != codecs.end(); ++i) {
+    auto &codec = **i;
+    switch (codec.mType) {
+      case SdpMediaSection::kAudio:
+        // Nothing to configure here, for now.
+        break;
+      case SdpMediaSection::kVideo:
+        {
+          JsepVideoCodecDescription& video_codec =
+            static_cast<JsepVideoCodecDescription&>(codec);
+
+          if (video_codec.mName == "H264") {
+            int32_t level = 13; // minimum suggested for WebRTC spec
+            branch->GetIntPref("media.navigator.video.h264.level", &level);
+            level &= 0xFF;
+            video_codec.mProfileLevelId = level | 0x42E000;
+
+            int32_t max_br = 0; // Unlimited
+            branch->GetIntPref("media.navigator.video.h264.max_br", &max_br);
+            video_codec.mMaxBr = max_br;
+
+            int32_t max_mbps = 0; // Unlimited
+#ifdef MOZ_WEBRTC_OMX
+            max_mbps = 11880;
+#endif
+            branch->GetIntPref("media.navigator.video.h264.max_mbps",
+                               &max_mbps);
+            video_codec.mMaxBr = max_mbps;
+
+            // TODO: Have a separate codec for mode 0?
+            video_codec.mPacketizationMode = 1;
+
+            video_codec.mEnabled = h264Enabled;
+          } else if (codec.mName == "VP8") {
+            int32_t max_fs = 0;
+            branch->GetIntPref("media.navigator.video.max_fs", &max_fs);
+            if (max_fs <= 0) {
+              max_fs = 3600; // We must specify something other than 0
+            }
+
+            video_codec.mMaxFs = max_fs;
+
+            int32_t max_fr = 0;
+            branch->GetIntPref("media.navigator.video.max_fr", &max_fr);
+            if (max_fr <= 0) {
+              max_fr = 30; // We must specify something other than 0
+            }
+            video_codec.mMaxFr = max_fr;
+          }
+        }
+        break;
+      case SdpMediaSection::kText:
+      case SdpMediaSection::kApplication:
+      case SdpMediaSection::kMessage:
+      case SdpMediaSection::kUnknownMediaType:
+        {} // Nothing to configure for these.
+    }
+  }
+
+  // Sort by priority
+  int32_t preferredCodec;
+  branch->GetIntPref("media.navigator.video.preferred_codec",
+                     &preferredCodec);
+
+  if (preferredCodec) {
+    CompareCodecPriority comparator(preferredCodec);
+    std::stable_sort(codecs.begin(), codecs.end(), comparator);
   }
 
   return NS_OK;
@@ -1047,11 +1200,17 @@ PeerConnectionImpl::CreateOffer(const JsepOfferOptions& aOptions)
 
   CSFLogDebug(logTag, "CreateOffer()");
 
+  nsresult nrv = ConfigureJsepSessionCodecs();
+  if (NS_FAILED(nrv)) {
+    CSFLogError(logTag, "Failed to configure codecs");
+    return nrv;
+  }
+
   STAMP_TIMECARD(mTimeCard, "Create Offer");
 
   std::string offer;
 
-  nsresult nrv = mJsepSession->CreateOffer(aOptions, &offer);
+  nrv = mJsepSession->CreateOffer(aOptions, &offer);
   JSErrorResult rv;
   if (NS_FAILED(nrv)) {
     Error error;
@@ -1202,16 +1361,24 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     return NS_OK;
   }
 
-  if (!PeerConnectionCtx::GetInstance()->isReady()) {
-    // Uh oh. We're not ready yet. Enqueue this operation. (This must be a
-    // remote offer, or else we would not have gotten this far)
-    PeerConnectionCtx::GetInstance()->queueJSEPOperation(
-        WrapRunnableNM(DeferredSetRemote,
-                       mHandle,
-                       action,
-                       std::string(aSDP)));
-    STAMP_TIMECARD(mTimeCard, "Deferring SetRemote (not ready)");
-    return NS_OK;
+  if (action == IPeerConnection::kActionOffer) {
+    if (!PeerConnectionCtx::GetInstance()->isReady()) {
+      // Uh oh. We're not ready yet. Enqueue this operation. (This must be a
+      // remote offer, or else we would not have gotten this far)
+      PeerConnectionCtx::GetInstance()->queueJSEPOperation(
+          WrapRunnableNM(DeferredSetRemote,
+            mHandle,
+            action,
+            std::string(aSDP)));
+      STAMP_TIMECARD(mTimeCard, "Deferring SetRemote (not ready)");
+      return NS_OK;
+    }
+
+    nsresult nrv = ConfigureJsepSessionCodecs();
+    if (NS_FAILED(nrv)) {
+      CSFLogError(logTag, "Failed to configure codecs");
+      return nrv;
+    }
   }
 
   STAMP_TIMECARD(mTimeCard, "Set Remote Description");

@@ -198,11 +198,12 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
       mMaxCpb(0),
       mMaxDpb(0),
       mMaxBr(0) {
-      // draft-ietf-payload-vp8 says these are mandatory, so we need sensible
-      // defaults.
+      // Defaults for mandatory params.
       if (mName == "VP8") {
         mMaxFr = 30;
         mMaxFs = 3600;
+      } else if (mName == "H264") {
+        mProfileLevelId = 0x42E00D;
       }
     }
 

@@ -489,4 +489,35 @@ void PeerConnectionCtx::onGMPReady() {
   mQueuedJSEPOperations.Clear();
 }
 
+bool PeerConnectionCtx::gmpHasH264() {
+  if (!mGMPService) {
+    return false;
+  }
+
+  // XXX I'd prefer if this was all known ahead of time...
+
+  nsTArray<nsCString> tags;
+  tags.AppendElement(NS_LITERAL_CSTRING("h264"));
+
+  bool has_gmp;
+  nsresult rv;
+  rv = mGMPService->HasPluginForAPI(NS_LITERAL_STRING(""),
+                                    NS_LITERAL_CSTRING("encode-video"),
+                                    &tags,
+                                    &has_gmp);
+  if (NS_FAILED(rv) || !has_gmp) {
+    return false;
+  }
+
+  rv = mGMPService->HasPluginForAPI(NS_LITERAL_STRING(""),
+                                    NS_LITERAL_CSTRING("decode-video"),
+                                    &tags,
+                                    &has_gmp);
+  if (NS_FAILED(rv) || !has_gmp) {
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace sipcc
