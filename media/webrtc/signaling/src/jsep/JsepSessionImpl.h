@@ -170,8 +170,7 @@ class JsepSessionImpl : public JsepSession {
   nsresult DetermineAnswererSetupRole(const SdpMediaSection& remote_msection,
                                       SdpSetupAttribute::Role* rolep);
 
-  nsresult CreateTrack(const SdpMediaSection& receive,
-                       const SdpMediaSection& send,
+  nsresult CreateTrack(const SdpMediaSection& remote_msection,
                        JsepTrack::Direction,
                        UniquePtr<JsepTrack>* track);
   void ClearNegotiatedPairs() {
