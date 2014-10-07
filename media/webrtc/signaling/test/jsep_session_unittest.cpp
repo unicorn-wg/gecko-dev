@@ -387,12 +387,12 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
 }
 
 TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
-  UniquePtr<JsepVideoCodecDescription> h264 =
-    MakeUnique<JsepVideoCodecDescription>("98", "H264", 90000);
+  JsepVideoCodecDescription* h264 =
+    new JsepVideoCodecDescription("98", "H264", 90000);
 
   h264->mProfileLevelId = 0x42a01e;
 
-  mSessionOff.AddCodec(mozilla::Move(h264));
+  mSessionOff.Codecs().push_back(h264);
 
   types.push_back(SdpMediaSection::kAudio);
   types.push_back(SdpMediaSection::kVideo);
@@ -464,18 +464,18 @@ TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
 }
 
 TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
-  UniquePtr<JsepVideoCodecDescription> h264 =
-    MakeUnique<JsepVideoCodecDescription>("98", "H264", 90000);
+  JsepVideoCodecDescription* h264 =
+    new JsepVideoCodecDescription("98", "H264", 90000);
 
   h264->mProfileLevelId = 0x42a01e;
 
-  UniquePtr<JsepVideoCodecDescription> h264_2 =
-    MakeUnique<JsepVideoCodecDescription>("97", "H264", 90000);
+  JsepVideoCodecDescription* h264_2 =
+    new JsepVideoCodecDescription("97", "H264", 90000);
 
   h264_2->mProfileLevelId = 0x42a00d;
 
-  mSessionOff.AddCodec(mozilla::Move(h264));
-  mSessionAns.AddCodec(mozilla::Move(h264_2));
+  mSessionOff.Codecs().push_back(h264);
+  mSessionAns.Codecs().push_back(h264_2);
 
   types.push_back(SdpMediaSection::kAudio);
   types.push_back(SdpMediaSection::kVideo);

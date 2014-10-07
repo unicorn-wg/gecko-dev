@@ -100,11 +100,6 @@ nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
   return NS_OK;
 }
 
-nsresult JsepSessionImpl::AddCodec(UniquePtr<JsepCodecDescription> codec) {
-  mCodecs.push_back(codec.release());
-  return NS_OK;
-}
-
 nsresult JsepSessionImpl::local_track(
     size_t index,
     RefPtr<JsepMediaStreamTrack>* track) const {
