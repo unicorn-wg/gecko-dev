@@ -13,7 +13,7 @@
 __BEGIN_DECLS
 
 #if 0
-// TODO(ekr@rtfm.com): Uncomment this if we need these functions.
+// TODO(ekr@rtfm.com): Uncomment this if we need these functions. Issue 190.
 
 #if defined SIP_OS_LINUX
 #include "../linux/cpr_linux_string.h"

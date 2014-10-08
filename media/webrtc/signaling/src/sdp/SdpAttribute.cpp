@@ -164,7 +164,7 @@ void SdpSctpmapAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mSctpmaps.begin(); i != mSctpmaps.end(); ++i) {
     os << "a=" << mType << ":" << i->number << " " << i->app;
-    /* TODO our parser can't parse draft 06 yet
+    /* TODO our parser can't parse draft 06 yet. Issue 185.
     if (i->maxMessageSize) {
       os << " max-message-size=" << i->maxMessageSize;
     }

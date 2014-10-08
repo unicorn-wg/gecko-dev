@@ -11,7 +11,7 @@ __BEGIN_DECLS
 
 
 // TODO(ekr@rtfm.com): Are there platforms where we can't use
-// CPR_USE_OS_STRCASECMP?
+// CPR_USE_OS_STRCASECMP? Issue 190.
 #define CPR_USE_OS_STRCASECMP
 
 #ifdef CPR_USE_OS_STRCASECMP

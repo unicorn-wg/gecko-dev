@@ -255,7 +255,9 @@ public:
   TestObserver(sipcc::PeerConnectionImpl *peerConnection,
                const std::string &aName) :
     AFakePCObserver(peerConnection, aName),
-    peerAgent(nullptr) {}
+    peerAgent(nullptr),
+    lastAddIceStatusCode(sipcc::PeerConnectionImpl::kNoError)
+    {}
 
   size_t MatchingCandidates(const std::string& cand) {
     size_t count = 0;
@@ -288,6 +290,11 @@ public:
   NS_IMETHODIMP OnAddIceCandidateSuccess(ER&);
   NS_IMETHODIMP OnAddIceCandidateError(uint32_t code, const char *msg, ER&);
   NS_IMETHODIMP OnIceCandidate(uint16_t level, const char *mid, const char *cand, ER&);
+
+  // Hack because add_ice_candidates can happen asynchronously with respect
+  // to the API calls. The whole test suite needs a refactor.
+  ResponseState addIceCandidateState;
+  sipcc::PeerConnectionImpl::Error lastAddIceStatusCode;
 
   SignalingAgent* peerAgent;
 };
@@ -500,8 +507,8 @@ TestObserver::OnReplaceTrackError(uint32_t code, const char *message, ER&)
 NS_IMETHODIMP
 TestObserver::OnAddIceCandidateSuccess(ER&)
 {
-  lastStatusCode = sipcc::PeerConnectionImpl::kNoError;
-  state = stateSuccess;
+  lastAddIceStatusCode = sipcc::PeerConnectionImpl::kNoError;
+  addIceCandidateState = TestObserver::stateSuccess;
   std::cout << name << ": onAddIceCandidateSuccess" << std::endl;
   addIceSuccessCount++;
   return NS_OK;
@@ -510,8 +517,8 @@ TestObserver::OnAddIceCandidateSuccess(ER&)
 NS_IMETHODIMP
 TestObserver::OnAddIceCandidateError(uint32_t code, const char *message, ER&)
 {
-  lastStatusCode = static_cast<sipcc::PeerConnectionImpl::Error>(code);
-  state = stateError;
+  lastAddIceStatusCode = static_cast<sipcc::PeerConnectionImpl::Error>(code);
+  addIceCandidateState = TestObserver::stateSuccess;
   std::cout << name << ": onAddIceCandidateError = " << code
             << " (" << message << ")" << std::endl;
   return NS_OK;
@@ -997,7 +1004,7 @@ class SignalingAgent {
     return true;
   }
 
-  // TODO: Remove all of this stuff.
+  // TODO: Remove all of this stuff. Issue 171.
   PCImplSipccState sipcc_state()
   {
     return pc->SipccState();
@@ -1214,8 +1221,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     ASSERT_EQ(pc->SetRemoteDescription(action, remote.c_str()), NS_OK);
     ASSERT_EQ(signaling_state(), endState);
     if (!ignoreError) {
-      // TODO(ekr@rtfm.com): Now that ICE candidates are queued, this
-      // seems to happen in the wrong order.
       ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
     }
 
@@ -1272,9 +1277,9 @@ void CreateAnswer(uint32_t offerAnswerFlags,
   void AddIceCandidate(const char *candidate, const char* mid, unsigned short level,
                        bool expectSuccess) {
     PCImplSignalingState endState = signaling_state();
-    pObserver->state = TestObserver::stateNoResponse;
+    pObserver->addIceCandidateState = TestObserver::stateNoResponse;
     pc->AddIceCandidate(candidate, mid, level);
-    ASSERT_TRUE(pObserver->state ==
+    ASSERT_TRUE(pObserver->addIceCandidateState ==
                 expectSuccess ? TestObserver::stateSuccess :
                                 TestObserver::stateError
                );
@@ -3126,12 +3131,12 @@ TEST_F(SignalingTest, AddCandidateInHaveLocalOffer) {
   sipcc::OfferOptions options;
   CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
   a1_->SetLocal(TestObserver::OFFER, a1_->offer());
-  ASSERT_EQ(a1_->pObserver->lastStatusCode,
+  ASSERT_EQ(a1_->pObserver->lastAddIceStatusCode,
             sipcc::PeerConnectionImpl::kNoError);
   a1_->AddIceCandidate(strSampleCandidate.c_str(),
                       strSampleMid.c_str(), nSamplelevel, false);
-  ASSERT_EQ(a1_->pObserver->lastStatusCode,
-            sipcc::PeerConnectionImpl::kInvalidState);
+  ASSERT_EQ(sipcc::PeerConnectionImpl::kInvalidState,
+            a1_->pObserver->lastAddIceStatusCode);
 }
 
 TEST_F(SignalingAgentTest, CreateOffer) {

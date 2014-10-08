@@ -46,7 +46,7 @@ class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
 };
 
 
-// TODO(ekr@rtfm.com): Add state checks.
+// TODO(ekr@rtfm.com): Add state checks. Issue 154
 
 JsepSessionImpl::~JsepSessionImpl() {
   for (auto i = mNegotiatedTrackPairs.begin();
@@ -204,7 +204,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     ++nVideo;
   }
 
-  // TODO(ekr@rtfm.com): Do renegotiation.
+  // TODO(ekr@rtfm.com): Do renegotiation. Issue 155.
   *offer = sdp->toString();
   mGeneratedLocalDescription = Move(sdp);
 
@@ -248,7 +248,7 @@ void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
 
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
     // TODO: Will we need to teach this matching function to take fmtp into
-    // account (eg; profile when multiple H264 are offered)?
+    // account (eg; profile when multiple H264 are offered)? Issue 156.
     JsepCodecDescription* codec = FindMatchingCodec(
         remote_section.GetMediaType(), entry);
     if (codec) {
@@ -293,7 +293,7 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
   for (size_t i = 0; i < num_m_lines; ++i) {
     const SdpMediaSection& remote_msection = offer.GetMediaSection(i);
-    // TODO(ekr@rtfm.com): Reflect protocol value.
+    // TODO(ekr@rtfm.com): Reflect protocol value. Issue 157.
     SdpMediaSection& msection =
       sdp->AddMediaSection(remote_msection.GetMediaType());
 
@@ -353,7 +353,7 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
   }
 
   // Now add the codecs.
-  // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive.
+  // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive. Issue 158.
   AddCommonCodecs(remote_msection, msection);
 
   return NS_OK;
@@ -448,7 +448,7 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
     if (t < mTransports.size())
       continue; // This transport already exists (assume we are renegotiating).
 
-    // TODO(ekr@rtfm.com): Deal with bundle-only and the like.
+    // TODO(ekr@rtfm.com): Deal with bundle-only and the like. Issue 159.
     RefPtr<JsepTransport> transport;
     nsresult rv = CreateTransport(parsed->GetMediaSection(t), &transport);
     if (NS_FAILED(rv)) {
@@ -460,7 +460,7 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
   }
 
   // TODO(ekr@rtfm.com): Compare the generated offer to the passed
-  // in argument.
+  // in argument. Issue 160.
 
   switch (type ) {
     case kJsepSdpOffer:
@@ -533,8 +533,7 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
-  // TODO: What additional validation should we do here?
-
+  // TODO: What additional validation should we do here? Issue 161.
   switch (type) {
     case kJsepSdpOffer:
       rv = SetRemoteDescriptionOffer(Move(parsed));
@@ -594,7 +593,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     transport = mTransports[i];
 
     // If the answer says it's inactive we're not doing anything with it.
-    // TODO(ekr@rtfm.com): Need to handle renegotiation somehow.
+    // TODO(ekr@rtfm.com): Need to handle renegotiation somehow. Issue 155.
     if (answer.GetDirectionAttribute().mValue ==
         SdpDirectionAttribute::kInactive) {
       transport->mState = JsepTransport::kJsepTransportClosed;
@@ -618,7 +617,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
     UniquePtr<JsepTrackPair> jpair = MakeUnique<JsepTrackPair>();
 
-    // TODO(ekr@rtfm.com): Set the bundle level.
+    // TODO(ekr@rtfm.com): Set the bundle level. Issue 159.
     jpair->mLevel = i;
 
     if (sending) {
@@ -645,6 +644,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
     // RTCP MUX or not.
     // TODO(ekr@rtfm.com): verify that the PTs are consistent with mux.
+    // Issue 162.
     if (offer.GetAttributeList().HasAttribute(
             SdpAttribute::kRtcpMuxAttribute) &&
         answer.GetAttributeList().HasAttribute(
@@ -706,7 +706,7 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
           sending);
 
       if (!negotiated) {
-        // TODO: What should we do here?
+        // TODO: What should we do here? Issue 158.
         continue;
       }
 
@@ -749,7 +749,7 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
                                          transport) {
   UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
 
-  // TODO(ekr@rtfm.com): ICE lite, ICE trickle.
+  // TODO(ekr@rtfm.com): ICE lite, ICE trickle. Issue 163.
   // We do sanity-checking for these in ParseSdp
   ice->mUfrag = remote.GetIceUfrag();
   ice->mPwd = remote.GetIcePwd();
@@ -922,7 +922,7 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
 }
 
 nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
-  // TODO(ekr@rtfm.com): Check state.
+  // TODO(ekr@rtfm.com): Check state. Issue 154.
   size_t num_m_lines = offer->GetMediaSectionCount();
 
   for (size_t i = 0; i < num_m_lines; ++i) {
