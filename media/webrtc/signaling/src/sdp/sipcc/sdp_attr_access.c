@@ -7,7 +7,7 @@
 #include "sdp_private.h"
 #include "CSFLog.h"
 
-// TODO(ekr@rtfm.com): Harmonize this with DataChannelProtocol.h
+// TODO(ekr@rtfm.com): Harmonize this with DataChannelProtocol.h. Issue 192.
 #define WEBRTC_DATACHANNEL_STREAMS_DEFAULT 16
 
 static const char* logTag = "sdp_attr_access";

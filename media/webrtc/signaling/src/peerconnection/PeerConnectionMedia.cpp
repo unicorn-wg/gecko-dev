@@ -290,7 +290,7 @@ PeerConnectionMedia::UpdateTransports(
 
     // Update the transport.
     // TODO(ekr@rtfm.com): don't repeat candidates on renegotiation. Perhaps
-    // suppress inside nICEr?
+    // suppress inside nICEr? Issue 155.
     RUN_ON_THREAD(GetSTSThread(),
                   WrapRunnable(RefPtr<PeerConnectionMedia>(this),
                                &PeerConnectionMedia::UpdateIceMediaStream_s,
@@ -304,7 +304,7 @@ PeerConnectionMedia::UpdateTransports(
   }
 
 
-  // TODO(ekr@rtfm.com): Need to deal properly with renegotatiation.
+  // TODO(ekr@rtfm.com): Need to deal properly with renegotatiation. Issue 155.
   // For now just start gathering.
   RUN_ON_THREAD(GetSTSThread(),
                 WrapRunnable(
@@ -368,7 +368,7 @@ void
 PeerConnectionMedia::AddIceCandidate(const std::string& candidate,
                                      const std::string& mid,
                                      uint32_t level) {
-  // TODO(ekr@rtfm.com): Handle end of candidates.
+  // TODO(ekr@rtfm.com): Handle end of candidates. Issue 180.
   if (candidate.empty())
     return;
 
@@ -386,7 +386,7 @@ PeerConnectionMedia::AddIceCandidate_s(const std::string& candidate,
                                        const std::string& mid,
                                        uint32_t level) {
   // TODO(ekr@rtfm.com): Unfortunately, this goes into space
-  // in the period between SetRemote() and SetLocal().
+  // in the period between SetRemote() and SetLocal(). Issue 181.
   if (level >= mIceStreams.size()) {
     CSFLogError(logTag, "Couldn't process ICE candidate for bogus level %u",
                 level);
@@ -418,12 +418,12 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
                                             candidates) {
   CSFLogDebug(logTag, "%s: Creating ICE media stream=%zu components=%zu",
               mParentHandle.c_str(), index, components);
-  // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE.
+  // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE. Issue 182.
   RefPtr<NrIceMediaStream> stream;
   if (mIceStreams.size() <= index) {
     stream = mIceCtx->CreateStream((mParentName+": unknown").c_str(),
                             components);
-    MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check.
+    MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check. Issue 183.
     stream->SetLevel(index);
     stream->SignalReady.connect(this, &PeerConnectionMedia::IceStreamReady);
     stream->SignalCandidate.connect(this,
@@ -439,7 +439,7 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
     attrs.push_back("ice-ufrag:" + ufrag);
     attrs.push_back("ice-pwd:" + password);
 
-    // TODO(ekr@rtfm.com):Add non-trickle candidates.
+    // TODO(ekr@rtfm.com):Add non-trickle candidates. Issue 184.
     nsresult rv = stream->ParseAttributes(attrs);
     if (NS_FAILED(rv)) {
       CSFLogError(logTag, "Couldn't parse ICE attributes");

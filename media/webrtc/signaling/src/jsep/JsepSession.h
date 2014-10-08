@@ -60,7 +60,7 @@ class JsepSession {
   virtual nsresult SetIceCredentials(const std::string& ufrag,
                                      const std::string& pwd) = 0;
   // TODO(ekr@rtfm.com): Need code to add candidates and to set
-  // the negotiated candidate.
+  // the negotiated candidate. Issue 153.
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::string& value) = 0;
 

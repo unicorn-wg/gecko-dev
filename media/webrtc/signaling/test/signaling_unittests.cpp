@@ -1004,7 +1004,7 @@ class SignalingAgent {
     return true;
   }
 
-  // TODO: Remove all of this stuff.
+  // TODO: Remove all of this stuff. Issue 171.
   PCImplSipccState sipcc_state()
   {
     return pc->SipccState();
@@ -1221,8 +1221,6 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     ASSERT_EQ(pc->SetRemoteDescription(action, remote.c_str()), NS_OK);
     ASSERT_EQ(signaling_state(), endState);
     if (!ignoreError) {
-      // TODO(ekr@rtfm.com): Now that ICE candidates are queued, this
-      // seems to happen in the wrong order.
       ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
     }
 

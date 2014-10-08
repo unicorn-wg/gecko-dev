@@ -613,7 +613,7 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return NS_ERROR_UNEXPECTED;
   }
 
-  // TODO(ekr@rtfm.com): Do we still need a handle?
+  // TODO(ekr@rtfm.com): Do we still need a handle? Issue 172.
   char hex[17];
   PR_snprintf(hex,sizeof(hex),"%.2x%.2x%.2x%.2x%.2x%.2x%.2x%.2x",
     handle_bin[0],
@@ -804,7 +804,7 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
                                &max_mbps);
             video_codec.mMaxBr = max_mbps;
 
-            // TODO: Have a separate codec for mode 0?
+            // TODO: Have a separate codec for mode 0? Issue 173.
             video_codec.mPacketizationMode = 1;
 
             video_codec.mEnabled = h264Enabled;
@@ -977,7 +977,7 @@ PeerConnectionImpl::InitializeDataChannel(int track_id,
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
 
-  // TODO(ekr@rtfm.com): Restore.
+  // TODO(ekr@rtfm.com): Restore. Issue 166.
   MOZ_CRASH();
 #if 0
 #ifdef MOZILLA_INTERNAL_API
@@ -1241,7 +1241,7 @@ PeerConnectionImpl::CreateAnswer()
 
   CSFLogDebug(logTag, "CreateAnswer()");
   STAMP_TIMECARD(mTimeCard, "Create Answer");
-  JsepAnswerOptions options; // TODO(ekr@rtfm.com): actually set these
+  JsepAnswerOptions options; // TODO(ekr@rtfm.com): actually set these. 170.
   std::string answer;
 
   nsresult nrv = mJsepSession->CreateAnswer(options, &answer);
@@ -1310,7 +1310,7 @@ PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
   if (NS_FAILED(nrv)) {
     Error error;
     // TODO: Is nsresult going to be enough here? Or do we need to move the
-    // Error enum somewhere JsepSession can use it?
+    // Error enum somewhere JsepSession can use it? Issue 174
     switch (nrv) {
       case NS_ERROR_INVALID_ARG: error = kInvalidSessionDescription; break;
       case NS_ERROR_UNEXPECTED: error = kInvalidState; break;
@@ -1424,13 +1424,13 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
       nsresult rv = CreateRemoteSourceStreamInfo(&info);
       if (NS_FAILED(rv)) {
         MOZ_CRASH();  // TODO(ekr@rtfm.com): How do we recover here? We don't
-                      // want mismatches.
+                      // want mismatches. Issue 175.
       }
 
       rv = mMedia->AddRemoteStream(info);
       if (NS_FAILED(rv)) {
         MOZ_CRASH();  // TODO(ekr@rtfm.com): How do we recover here? We don't
-                      // want mismatches.
+                      // want mismatches. Issue 175.
       }
     } else {
       info = mMedia->GetRemoteStream(0);
@@ -1447,7 +1447,7 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
       rv = mJsepSession->remote_track(i, &track);
       if (NS_FAILED(rv)) {
         MOZ_CRASH();  // TODO(ekr@rtfm.com): How do we recover here? We don't
-                      // want mismatches.
+                      // want mismatches. Issue 175.
       }
       if (track->media_type() == mozilla::SdpMediaSection::kAudio) {
         info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
@@ -1459,7 +1459,7 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     }
 
     // Notify about track availability.
-    // TODO(ekr@rtfm.com): Suppress on renegotiation when no change.
+    // TODO(ekr@rtfm.com): Suppress on renegotiation when no change. Issue 155.
     JSErrorResult jrv;
 
 #ifdef MOZILLA_INTERNAL_API
@@ -1472,7 +1472,7 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     mRemoteSDP = mRemoteRequestedSDP;
     pco->OnSetRemoteDescriptionSuccess(jrv);
 #ifdef MOZILLA_INTERNAL_API
-    // TODO(ekr@rtfm.com): This is crashing.
+    // TODO(ekr@rtfm.com): This is crashing. Issue 176.
     // startCallTelem();
 #endif
   }
@@ -1716,7 +1716,7 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
     aMediaStream.AddPrincipalChangeObserver(this);
   }
 
-  // TODO(ekr@rtfm.com): these integers should be the track IDs
+  // TODO(ekr@rtfm.com): these integers should be the track IDs. Issue 167.
   if (hints & DOMMediaStream::HINT_CONTENTS_AUDIO) {
     res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
         mozilla::SdpMediaSection::kAudio));
@@ -1733,7 +1733,7 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
     res = mJsepSession->AddTrack(new PeerConnectionJsepMST(
         mozilla::SdpMediaSection::kVideo));
     if (NS_FAILED(res)) {
-      std::string error_string = "Error"; // TODO(ekr@rtfm.com): Fill in
+      std::string error_string = "Error"; // TODO(ekr@rtfm.com): Fill in. Issue 177.
       CSFLogError(logTag, "%s (video) : pc = %s, error = %s",
                   __FUNCTION__, mHandle.c_str(), error_string.c_str());
       return NS_ERROR_FAILURE;
@@ -2219,7 +2219,7 @@ PeerConnectionImpl::UpdateSignalingState() {
       MOZ_CRASH();
   }
   if (newState == PCImplSignalingState::SignalingClosed) {
-    MOZ_CRASH();   // TODO(ekr@rtfm.com): Revisit this.
+    MOZ_CRASH();   // TODO(ekr@rtfm.com): Revisit this. Issue 178.
     Close();
   } else {
     SetSignalingState_m(newState);
@@ -2308,10 +2308,10 @@ void PeerConnectionImpl::FoundIceCandidate(const std::string& candidate,
                                            uint16_t level) {
   // TODO: What about mid? Is this something that we will choose, or will
   // SIPCC choose for us? If the latter, we'll need to make it an outparam or
-  // something.
+  // something. Issue 179.
   std::string mid;
 
-  // TODO(ekr@rtfm.com): Tell JsepSession about this.
+  // TODO(ekr@rtfm.com): Tell JsepSession about this. Issue 153.
   CSFLogDebug(logTag, "Passing local candidate to content: %s",
               candidate.c_str());
   SendLocalIceCandidateToContent(level, mid, candidate);
