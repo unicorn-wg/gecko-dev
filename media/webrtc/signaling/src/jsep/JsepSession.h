@@ -64,7 +64,13 @@ class JsepSession {
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::string& value) = 0;
 
-  virtual nsresult AddCodec(UniquePtr<JsepCodecDescription> codec) = 0;
+  // Kinda gross to be locking down the data structure type like this, but
+  // returning by value is problematic due to the lack of stl move semantics in
+  // our build config, since we can't use UniquePtr in the container. The
+  // alternative is writing a raft of accessor functions that allow arbitrary
+  // manipulation (which will be unwieldy), or allowing functors to be injected
+  // that manipulate the data structure (still pretty unwieldy).
+  virtual std::vector<JsepCodecDescription*>& Codecs() = 0;
 
   // Manage tracks. We take shared ownership of any track.
   virtual nsresult AddTrack(const RefPtr<JsepMediaStreamTrack>& track) = 0;
