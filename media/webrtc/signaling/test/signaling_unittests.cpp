@@ -289,6 +289,9 @@ public:
   NS_IMETHODIMP OnAddIceCandidateError(uint32_t code, const char *msg, ER&);
   NS_IMETHODIMP OnIceCandidate(uint16_t level, const char *mid, const char *cand, ER&);
 
+  ResponseState addIceCandidateState; // Hack because add_ice_candidates can
+                                      // happen asynchronously with respect
+                                      // to the tests so we get interference. Ugh.
   SignalingAgent* peerAgent;
 };
 
@@ -500,8 +503,7 @@ TestObserver::OnReplaceTrackError(uint32_t code, const char *message, ER&)
 NS_IMETHODIMP
 TestObserver::OnAddIceCandidateSuccess(ER&)
 {
-  lastStatusCode = sipcc::PeerConnectionImpl::kNoError;
-  state = stateSuccess;
+  addIceCandidateState = TestObserver::stateSuccess;
   std::cout << name << ": onAddIceCandidateSuccess" << std::endl;
   addIceSuccessCount++;
   return NS_OK;
@@ -510,8 +512,7 @@ TestObserver::OnAddIceCandidateSuccess(ER&)
 NS_IMETHODIMP
 TestObserver::OnAddIceCandidateError(uint32_t code, const char *message, ER&)
 {
-  lastStatusCode = static_cast<sipcc::PeerConnectionImpl::Error>(code);
-  state = stateError;
+  addIceCandidateState = TestObserver::stateSuccess;
   std::cout << name << ": onAddIceCandidateError = " << code
             << " (" << message << ")" << std::endl;
   return NS_OK;
@@ -1272,9 +1273,9 @@ void CreateAnswer(uint32_t offerAnswerFlags,
   void AddIceCandidate(const char *candidate, const char* mid, unsigned short level,
                        bool expectSuccess) {
     PCImplSignalingState endState = signaling_state();
-    pObserver->state = TestObserver::stateNoResponse;
+    pObserver->addIceCandidateState = TestObserver::stateNoResponse;
     pc->AddIceCandidate(candidate, mid, level);
-    ASSERT_TRUE(pObserver->state ==
+    ASSERT_TRUE(pObserver->addIceCandidateState ==
                 expectSuccess ? TestObserver::stateSuccess :
                                 TestObserver::stateError
                );
