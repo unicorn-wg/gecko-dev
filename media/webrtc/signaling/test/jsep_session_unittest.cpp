@@ -409,27 +409,31 @@ TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
   auto& video_attrs = video_section.GetAttributeList();
   ASSERT_EQ(SdpDirectionAttribute::kSendrecv, video_attrs.GetDirection());
 
-  ASSERT_EQ(2U, video_section.GetFormats().size());
+  ASSERT_EQ(3U, video_section.GetFormats().size());
   ASSERT_EQ("120", video_section.GetFormats()[0]);
-  ASSERT_EQ("98", video_section.GetFormats()[1]);
+  ASSERT_EQ("126", video_section.GetFormats()[1]);
+  ASSERT_EQ("97", video_section.GetFormats()[2]);
 
   // Validate rtpmap
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kRtpmapAttribute));
   auto& rtpmaps = video_attrs.GetRtpmap();
   ASSERT_TRUE(rtpmaps.HasEntry("120"));
-  ASSERT_TRUE(rtpmaps.HasEntry("98"));
+  ASSERT_TRUE(rtpmaps.HasEntry("126"));
+  ASSERT_TRUE(rtpmaps.HasEntry("97"));
 
   auto& vp8_entry = rtpmaps.GetEntry("120");
-  auto& h264_entry = rtpmaps.GetEntry("98");
+  auto& h264_1_entry = rtpmaps.GetEntry("126");
+  auto& h264_0_entry = rtpmaps.GetEntry("97");
 
   ASSERT_EQ("VP8", vp8_entry.name);
-  ASSERT_EQ("H264", h264_entry.name);
+  ASSERT_EQ("H264", h264_1_entry.name);
+  ASSERT_EQ("H264", h264_0_entry.name);
 
   // Validate fmtps
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kFmtpAttribute));
   auto& fmtps = video_attrs.GetFmtp().mFmtps;
 
-  ASSERT_EQ(2U, fmtps.size());
+  ASSERT_EQ(3U, fmtps.size());
 
   // VP8
   ASSERT_EQ("120", fmtps[0].format);
@@ -443,17 +447,31 @@ TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
   ASSERT_EQ((uint32_t)3600, parsed_vp8_params.max_fs);
   ASSERT_EQ((uint32_t)30, parsed_vp8_params.max_fr);
 
-  // H264
-  ASSERT_EQ("98", fmtps[1].format);
+  // H264 packetization mode 1
+  ASSERT_EQ("126", fmtps[1].format);
   ASSERT_TRUE(fmtps[1].parameters);
   ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[1].parameters->codec_type);
 
-  auto& parsed_h264_params =
+  auto& parsed_h264_1_params =
     *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
         fmtps[1].parameters.get());
 
-  ASSERT_EQ((uint32_t)0x42e00d, parsed_h264_params.profile_level_id);
-  ASSERT_TRUE(parsed_h264_params.level_asymmetry_allowed);
+  ASSERT_EQ((uint32_t)0x42e00d, parsed_h264_1_params.profile_level_id);
+  ASSERT_TRUE(parsed_h264_1_params.level_asymmetry_allowed);
+  ASSERT_EQ(1U, parsed_h264_1_params.packetization_mode);
+
+  // H264 packetization mode 0
+  ASSERT_EQ("97", fmtps[2].format);
+  ASSERT_TRUE(fmtps[2].parameters);
+  ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[2].parameters->codec_type);
+
+  auto& parsed_h264_0_params =
+    *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
+        fmtps[2].parameters.get());
+
+  ASSERT_EQ((uint32_t)0x42e00d, parsed_h264_0_params.profile_level_id);
+  ASSERT_TRUE(parsed_h264_0_params.level_asymmetry_allowed);
+  ASSERT_EQ(0U, parsed_h264_0_params.packetization_mode);
 }
 
 TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
@@ -466,7 +484,12 @@ TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
       JsepVideoCodecDescription* h264 =
         static_cast<JsepVideoCodecDescription*>(codec);
       h264->mProfileLevelId = 0x42a00d;
-      h264->mDefaultPt = "97";
+      // Switch up the pts
+      if (h264->mDefaultPt == "126") {
+        h264->mDefaultPt = "97";
+      } else {
+        h264->mDefaultPt = "126";
+      }
     }
   }
 
@@ -503,28 +526,31 @@ TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
   auto& video_attrs = video_section.GetAttributeList();
   ASSERT_EQ(SdpDirectionAttribute::kSendrecv, video_attrs.GetDirection());
 
-  ASSERT_EQ(2U, video_section.GetFormats().size());
+  ASSERT_EQ(3U, video_section.GetFormats().size());
   ASSERT_EQ("120", video_section.GetFormats()[0]);
-  // We should still use 98 since it was in the offer
-  ASSERT_EQ("98", video_section.GetFormats()[1]);
+  ASSERT_EQ("126", video_section.GetFormats()[1]);
+  ASSERT_EQ("97", video_section.GetFormats()[2]);
 
   // Validate rtpmap
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kRtpmapAttribute));
   auto& rtpmaps = video_attrs.GetRtpmap();
   ASSERT_TRUE(rtpmaps.HasEntry("120"));
-  ASSERT_TRUE(rtpmaps.HasEntry("98"));
+  ASSERT_TRUE(rtpmaps.HasEntry("126"));
+  ASSERT_TRUE(rtpmaps.HasEntry("97"));
 
   auto& vp8_entry = rtpmaps.GetEntry("120");
-  auto& h264_entry = rtpmaps.GetEntry("98");
+  auto& h264_1_entry = rtpmaps.GetEntry("126");
+  auto& h264_0_entry = rtpmaps.GetEntry("97");
 
   ASSERT_EQ("VP8", vp8_entry.name);
-  ASSERT_EQ("H264", h264_entry.name);
+  ASSERT_EQ("H264", h264_1_entry.name);
+  ASSERT_EQ("H264", h264_0_entry.name);
 
   // Validate fmtps
   ASSERT_TRUE(video_attrs.HasAttribute(SdpAttribute::kFmtpAttribute));
   auto& fmtps = video_attrs.GetFmtp().mFmtps;
 
-  ASSERT_EQ(2U, fmtps.size());
+  ASSERT_EQ(3U, fmtps.size());
 
   // VP8
   ASSERT_EQ("120", fmtps[0].format);
@@ -538,17 +564,31 @@ TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
   ASSERT_EQ((uint32_t)3600, parsed_vp8_params.max_fs);
   ASSERT_EQ((uint32_t)30, parsed_vp8_params.max_fr);
 
-  // H264
-  ASSERT_EQ("98", fmtps[1].format);
+  // H264 packetization mode 1
+  ASSERT_EQ("126", fmtps[1].format);
   ASSERT_TRUE(fmtps[1].parameters);
   ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[1].parameters->codec_type);
 
-  auto& parsed_h264_params =
+  auto& parsed_h264_1_params =
     *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
         fmtps[1].parameters.get());
 
-  ASSERT_EQ((uint32_t)0x42a00d, parsed_h264_params.profile_level_id);
-  ASSERT_TRUE(parsed_h264_params.level_asymmetry_allowed);
+  ASSERT_EQ((uint32_t)0x42a00d, parsed_h264_1_params.profile_level_id);
+  ASSERT_TRUE(parsed_h264_1_params.level_asymmetry_allowed);
+  ASSERT_EQ(1U, parsed_h264_1_params.packetization_mode);
+
+  // H264 packetization mode 0
+  ASSERT_EQ("97", fmtps[2].format);
+  ASSERT_TRUE(fmtps[2].parameters);
+  ASSERT_EQ(SdpRtpmapAttributeList::kH264, fmtps[2].parameters->codec_type);
+
+  auto& parsed_h264_0_params =
+    *static_cast<const SdpFmtpAttributeList::H264Parameters*>(
+        fmtps[2].parameters.get());
+
+  ASSERT_EQ((uint32_t)0x42a00d, parsed_h264_0_params.profile_level_id);
+  ASSERT_TRUE(parsed_h264_0_params.level_asymmetry_allowed);
+  ASSERT_EQ(0U, parsed_h264_0_params.packetization_mode);
 }
 
 } // namespace mozilla

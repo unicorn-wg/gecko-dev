@@ -682,7 +682,7 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   mJsepSession = MakeUnique<JsepSessionImpl>(mName);
 
   res = mJsepSession->SetIceCredentials(mMedia->ice_ctx()->ufrag(),
-                                                 mMedia->ice_ctx()->pwd());
+                                        mMedia->ice_ctx()->pwd());
   if (NS_FAILED(res)) {
     CSFLogError(logTag, "%s: Couldn't set ICE credentials", __FUNCTION__);
     return res;
@@ -769,8 +769,14 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
 
 #endif // MOZ_WEBRTC_OMX
 
-  bool h264Enabled = hardware264Enabled ||
-                     PeerConnectionCtx::GetInstance()->gmpHasH264();
+#ifdef MOZILLA_INTERNAL_API
+  bool softwareH264Enabled = PeerConnectionCtx::GetInstance()->gmpHasH264();
+#else
+  // For unit-tests
+  bool softwareH264Enabled = true;
+#endif
+
+  bool h264Enabled = hardware264Enabled || softwareH264Enabled;
 
   auto codecs = mJsepSession->Codecs();
 
@@ -804,10 +810,13 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
                                &max_mbps);
             video_codec.mMaxBr = max_mbps;
 
-            // TODO: Have a separate codec for mode 0? Issue 173.
-            video_codec.mPacketizationMode = 1;
-
             video_codec.mEnabled = h264Enabled;
+
+            if (video_codec.mPacketizationMode == 0 && !softwareH264Enabled) {
+              // We're assuming packetization mode 0 is unsupported by
+              // hardware.
+              video_codec.mEnabled = false;
+            }
           } else if (codec.mName == "VP8") {
             int32_t max_fs = 0;
             branch->GetIntPref("media.navigator.video.max_fs", &max_fs);

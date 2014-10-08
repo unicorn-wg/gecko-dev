@@ -219,15 +219,11 @@ void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
 }
 
 JsepCodecDescription* JsepSessionImpl::FindMatchingCodec(
-    SdpMediaSection::MediaType mediatype,
-    const SdpRtpmapAttributeList::Rtpmap& entry) {
+    const SdpRtpmapAttributeList::Rtpmap& entry,
+    const SdpMediaSection& msection) const {
   for (auto c = mCodecs.begin(); c != mCodecs.end(); ++c) {
     auto codec = *c;
-    if (codec->mEnabled
-        && (codec->mType == mediatype)
-        && (codec->mName == entry.name)
-        && (codec->mClock == entry.clock)
-        && (codec->mChannels = entry.channels)) {
+    if (codec->mEnabled && codec->Matches(entry, msection)) {
       return codec;
     }
   }
@@ -241,16 +237,18 @@ void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
   const SdpRtpmapAttributeList& rtpmap = remote_section.
       GetAttributeList().GetRtpmap();
 
+  const SdpFmtpAttributeList* fmtps = nullptr;
+  if (remote_section.GetAttributeList().HasAttribute(SdpAttribute::kFmtpAttribute)) {
+    fmtps = &remote_section.GetAttributeList().GetFmtp();
+  }
+
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
     if (!rtpmap.HasEntry(*fmt)) {
       continue;
     }
 
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
-    // TODO: Will we need to teach this matching function to take fmtp into
-    // account (eg; profile when multiple H264 are offered)? Issue 156.
-    JsepCodecDescription* codec = FindMatchingCodec(
-        remote_section.GetMediaType(), entry);
+    JsepCodecDescription* codec = FindMatchingCodec(entry, remote_section);
     if (codec) {
       codec->mDefaultPt = entry.pt; // Reflect the other side's PT
       codec->AddToMediaSection(*msection);
@@ -692,8 +690,7 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
     }
 
     const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
-    JsepCodecDescription* codec = FindMatchingCodec(
-        remote_msection.GetMediaType(), entry);
+    JsepCodecDescription* codec = FindMatchingCodec(entry, remote_msection);
     if (codec) {
       bool sending = (direction == JsepTrack::kJsepTrackSending);
       // We need to take the remote side's parameters into account so we can
@@ -1007,28 +1004,48 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       "0",
       "PCMU",
       8000,
-      0  // This means default 1
+      1
                       ));
 
   mCodecs.push_back(new JsepAudioCodecDescription(
       "8",
       "PCMA",
       8000,
-      0  // This means default 1
+      1
                       ));
 
   // Supported video codecs.
-  mCodecs.push_back(new JsepVideoCodecDescription(
+  JsepVideoCodecDescription* vp8 = new JsepVideoCodecDescription(
       "120",
       "VP8",
       90000
-                      ));
+      );
+  // Defaults for mandatory params
+  vp8->mMaxFs = 3600;
+  vp8->mMaxFr = 30;
+  mCodecs.push_back(vp8);
 
-  mCodecs.push_back(new JsepVideoCodecDescription(
-      "98",
+  JsepVideoCodecDescription* h264_1 = new JsepVideoCodecDescription(
+      "126",
       "H264",
       90000
-                      ));
+                      );
+  h264_1->mPacketizationMode = 1;
+
+  // Defaults for mandatory params
+  h264_1->mProfileLevelId = 0x42E00D;
+  mCodecs.push_back(h264_1);
+
+  JsepVideoCodecDescription* h264_0 = new JsepVideoCodecDescription(
+      "97",
+      "H264",
+      90000
+                      );
+  h264_0->mPacketizationMode = 0;
+
+  // Defaults for mandatory params
+  h264_0->mProfileLevelId = 0x42E00D;
+  mCodecs.push_back(h264_0);
 }
 
 void JsepSessionImpl::SetState(JsepSignalingState state) {

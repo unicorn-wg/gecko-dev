@@ -876,6 +876,7 @@ public:
 
   struct Rtpmap {
     std::string pt;
+    CodecType codec;
     std::string name;
     uint32_t clock;
     // Technically, this could mean something else in the future.
@@ -884,10 +885,11 @@ public:
   };
 
   void PushEntry(const std::string &pt,
+                 CodecType codec,
                  const std::string &name,
                  uint32_t clock,
                  uint32_t channels = 0) {
-    mRtpmaps.push_back({pt, name, clock, channels});
+    mRtpmaps.push_back({pt, codec, name, clock, channels});
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
@@ -976,7 +978,10 @@ public:
       virtual void Serialize(std::ostream& os) const {
         // Note: don't move this, since having an unconditional param up top
         // lets us avoid a whole bunch of conditional streaming of ';' below
-        os << "level-asymmetry-allowed="
+        os << "profile-level-id="
+           << std::hex << profile_level_id << std::dec;
+
+        os << ";level-asymmetry-allowed="
            << (level_asymmetry_allowed ? 1 : 0);
 
         if (strlen(sprop_parameter_sets)) {
@@ -985,15 +990,6 @@ public:
 
         if (packetization_mode != 0) {
           os << ";packetization-mode=" << packetization_mode;
-        }
-
-        if (packetization_mode != 0) {
-          os << ";packetization-mode=" << packetization_mode;
-        }
-
-        if (profile_level_id != 0) {
-          os << ";profile-level-id="
-             << std::hex << profile_level_id << std::dec;
         }
 
         if (max_mbps != 0) {

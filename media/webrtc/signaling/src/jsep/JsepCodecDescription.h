@@ -37,8 +37,40 @@ struct JsepCodecDescription {
   virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const = 0;
   virtual bool LoadFmtps(
       const SdpFmtpAttributeList::Parameters& params) = 0;
-  virtual bool LoadRtcpFb(
+  virtual bool LoadRtcpFbs(
       const SdpRtcpFbAttributeList::Feedback& feedback) = 0;
+
+  virtual bool Matches(const SdpRtpmapAttributeList::Rtpmap& rtpmap,
+                       const SdpMediaSection& remote_msection) const {
+    if (mType == remote_msection.GetMediaType()
+        && (mName == rtpmap.name)
+        && (mClock == rtpmap.clock)
+        && (mChannels == rtpmap.channels)) {
+      return Matches(FindParameters(rtpmap.pt, remote_msection));
+    }
+    return false;
+  }
+
+  virtual bool Matches(
+      const SdpFmtpAttributeList::Parameters* fmtp) const {
+    return true;
+  }
+
+  static const SdpFmtpAttributeList::Parameters* FindParameters(
+      const std::string& pt,
+      const mozilla::SdpMediaSection& remote_msection) {
+    const SdpAttributeList& attrs = remote_msection.GetAttributeList();
+
+    if (attrs.HasAttribute(SdpAttribute::kFmtpAttribute)) {
+      const SdpFmtpAttributeList& fmtps = attrs.GetFmtp();
+      for (auto i = fmtps.mFmtps.begin(); i != fmtps.mFmtps.end(); ++i) {
+        if (i->format == pt && i->parameters) {
+          return i->parameters.get();
+        }
+      }
+    }
+    return nullptr;
+  }
 
 
   virtual JsepCodecDescription* MakeNegotiatedCodec(
@@ -51,22 +83,17 @@ struct JsepCodecDescription {
     const SdpAttributeList& attrs = remote_msection.GetAttributeList();
 
     if (sending) {
-      // If a send track, we need to pay attention to remote end's fmtp
-      if (attrs.HasAttribute(SdpAttribute::kFmtpAttribute)) {
-        const SdpFmtpAttributeList& fmtps = attrs.GetFmtp();
-        for (auto i = fmtps.mFmtps.begin(); i != fmtps.mFmtps.end(); ++i) {
-          if (i->format == negotiated->mDefaultPt) {
-            if (i->parameters) {
-              if (!negotiated->LoadFmtps(*i->parameters)) {
-                // Remote parameters were invalid
-                delete negotiated;
-                return nullptr;
-              }
-            } else {
-              // TODO: Fmtp that we don't understand. What should we do here?
-            }
-          }
+      auto* parameters = FindParameters(negotiated->mDefaultPt,
+                                        remote_msection);
+      if (parameters) {
+        if (!negotiated->LoadFmtps(*parameters)) {
+          // Remote parameters were invalid
+          delete negotiated;
+          return nullptr;
         }
+      } else {
+        // TODO: Missing fmtp, or one that we don't understand.
+        // What should we do here?
       }
     } else {
       // If a receive track, we need to pay attention to remote end's rtcp-fb
@@ -74,7 +101,7 @@ struct JsepCodecDescription {
         auto& rtcpfbs = attrs.GetRtcpFb().mFeedbacks;
         for (auto i = rtcpfbs.begin(); i != rtcpfbs.end(); ++i) {
           if (i->pt == negotiated->mDefaultPt) {
-            if (!negotiated->LoadRtcpFb(*i)) {
+            if (!negotiated->LoadRtcpFbs(*i)) {
               // Remote parameters were invalid
               delete negotiated;
               return nullptr;
@@ -171,7 +198,7 @@ struct JsepAudioCodecDescription : public JsepCodecDescription {
     return true;
   }
 
-  virtual bool LoadRtcpFb(
+  virtual bool LoadRtcpFbs(
       const SdpRtcpFbAttributeList::Feedback& feedback) MOZ_OVERRIDE {
     // Nothing to do
     return true;
@@ -198,13 +225,6 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
       mMaxCpb(0),
       mMaxDpb(0),
       mMaxBr(0) {
-      // Defaults for mandatory params.
-      if (mName == "VP8") {
-        mMaxFr = 30;
-        mMaxFs = 3600;
-      } else if (mName == "H264") {
-        mProfileLevelId = 0x42E00D;
-      }
     }
 
   virtual void AddFmtps(SdpFmtpAttributeList& fmtp) const MOZ_OVERRIDE {
@@ -266,7 +286,7 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
     return true;
   }
 
-  virtual bool LoadRtcpFb(
+  virtual bool LoadRtcpFbs(
       const SdpRtcpFbAttributeList::Feedback& feedback) MOZ_OVERRIDE {
     switch (feedback.type) {
       case SdpRtcpFbAttributeList::kAck:
@@ -282,6 +302,34 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
       case SdpRtcpFbAttributeList::kTrrInt:
         // We don't support these, ignore.
         {}
+    }
+    return true;
+  }
+
+  virtual bool Matches(
+      const SdpFmtpAttributeList::Parameters* fmtp) const MOZ_OVERRIDE {
+    // TODO validate params
+    if (mName == "H264") {
+      if (!fmtp) {
+        // Debatable, but if we assume the default is to allow level
+        // asymmetry (an assumption we've been making), and that the default
+        // packetization mode is 0, we should match.
+        return (mPacketizationMode == 0);
+      }
+
+      auto* h264_params =
+        static_cast<const SdpFmtpAttributeList::H264Parameters*>(fmtp);
+
+      if (!h264_params->level_asymmetry_allowed &&
+          h264_params->profile_level_id != mProfileLevelId) {
+        return false;
+      }
+
+      if (h264_params->packetization_mode != mPacketizationMode) {
+        return false;
+      }
+
+      // TODO: What else do we need to check here?
     }
     return true;
   }
