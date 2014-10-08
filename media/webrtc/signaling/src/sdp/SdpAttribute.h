@@ -933,7 +933,7 @@ inline std::ostream& operator <<(std::ostream& os, SdpRtpmapAttributeList::Codec
 //       a=fmtp:<format> <format specific parameters>
 //
 // TODO - Specialize according to codec type, to aid in parsing
-// format-specific parameters
+// format-specific parameters. Issue 186.
 class SdpFmtpAttributeList : public SdpAttribute
 {
 public:
@@ -1192,6 +1192,7 @@ inline std::ostream& operator <<(std::ostream& os, SdpSetupAttribute::Role r)
 // For WebRTC, the key use case for a=ssrc is assocaiting SSRCs with
 // media sections, and we're not really going to care about the attribute
 // itself. So we're just going to store it as a string for the time being.
+// Issue 187.
 class SdpSsrcAttributeList : public SdpAttribute
 {
 public:

@@ -110,7 +110,7 @@ static nsresult JsepCodecDescToCodecConfig(const
     h264_config->max_cpb = desc.mMaxCpb;
     h264_config->max_dpb = desc.mMaxDpb;
     h264_config->max_br = desc.mMaxBr;
-    h264_config->tias_bw = 0; // TODO
+    h264_config->tias_bw = 0; // TODO. Issue 165.
   }
 
   mozilla::VideoCodecConfig *config_raw;
@@ -229,7 +229,7 @@ void MediaPipelineFactory::FinalizeTransportFlow_s(
   ice->SetParameters(media->ice_ctx(),
                      media->ice_media_stream(level),
                      rtcp ? 2 : 1);
-  (void)flow->PushLayers(layers);  // TODO(ekr@rtfm.com): Process errors.
+  (void)flow->PushLayers(layers);  // TODO(ekr@rtfm.com): Process errors. Issue 164
 }
 
 nsresult MediaPipelineFactory::CreateMediaPipeline(
@@ -277,7 +277,7 @@ nsresult MediaPipelineFactory::CreateMediaPipeline(
     if (NS_FAILED(rv))
       return rv;
   } else {
-    MOZ_CRASH(); // TODO(ekr@rtfm.com): Write data
+    MOZ_CRASH(); // TODO(ekr@rtfm.com): Write data. Issue 166.
   }
 
   if (receiving) {
@@ -317,7 +317,7 @@ nsresult MediaPipelineFactory::CreateMediaPipelineReceiving(
 
   mozilla::RefPtr<mozilla::MediaPipelineReceive> pipeline;
 
-  // TODO(ekr@rtfm.com): Need bundle filter.
+  // TODO(ekr@rtfm.com): Need bundle filter. Issue 159.
   nsAutoPtr<mozilla::MediaPipelineFilter> filter (nullptr);
 
   if (track->media_type() == mozilla::SdpMediaSection::kAudio) {
@@ -375,8 +375,8 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
     const mozilla::RefPtr<mozilla::MediaSessionConduit>& conduit) {
   nsresult rv;
 
-  size_t pc_stream_id = 0; // TODO(ekr@rtfm.com). Get real stream/track IDs
-  size_t pc_track_id = trackPair.mLevel + 1; // TODO(ekr@rtfm.com). This isn't right if there are 1-way flows.
+  size_t pc_stream_id = 0; // TODO(ekr@rtfm.com). Get real stream/track IDs Issue 167.
+  size_t pc_track_id = trackPair.mLevel + 1; // TODO(ekr@rtfm.com). This isn't right if there are 1-way flows. Issue 167.
 
   nsRefPtr<sipcc::LocalSourceStreamInfo> stream =
       mPCMedia->GetLocalStream(pc_stream_id);
@@ -415,6 +415,7 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
   }
 
  // TODO(ekr@rtfm.com): Copied from vcmSIPCCBinding. Need to unifdef and port in.
+ // Issue 159.
 #if 0
   // This tells the receive MediaPipeline (if there is one) whether we are
   // doing bundle, and if so, updates the filter. Once the filter is finalized,
@@ -507,7 +508,7 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
       return NS_ERROR_FAILURE;
 
 
-    // TODO(ekr@rtfm.com): Audio level extension.
+    // TODO(ekr@rtfm.com): Audio level extension. Issue 169.
   }
 
   *conduitp = conduit;

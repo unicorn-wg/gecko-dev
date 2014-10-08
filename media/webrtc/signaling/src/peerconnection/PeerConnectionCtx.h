@@ -125,7 +125,7 @@ private:
 #endif
 
   // SIPCC objects
-  mozilla::dom::PCImplSipccState mSipccState;  // TODO(ekr@rtfm.com): refactor this out? What does it do?
+  mozilla::dom::PCImplSipccState mSipccState;  // TODO(ekr@rtfm.com): refactor this out? What does it do? Issue 171.
 
   // We cannot form offers/answers properly until the Gecko Media Plugin stuff
   // has been initted, which is a complicated mess of thread dispatches,

@@ -14,7 +14,7 @@
 #include "CSFLog.h"
 
 // TODO(ekr@rtfm.com): Somehow make sure this matches DataChannelProtocol.h
-#define MAX_SCTP_NUM_STREAMS 2048
+#define MAX_SCTP_NUM_STREAMS 2048 //Issue 191.
 
 static const char* logTag = "sdp_attr";
 
@@ -5007,7 +5007,9 @@ sdp_result_e sdp_parse_attr_rtcp_fb (sdp_t *sdp_p,
             /* TODO -- We don't currently parse tmmbr parameters or vbcm
                submessage types. If we decide to support these modes of
                operation, we probably want to add parsing code for them.
-               For the time being, they'll just end up parsed into "extra". */
+               For the time being, they'll just end up parsed into "extra"
+               Issue 192.
+            */
             break;
 
         case SDP_RTCP_FB_NACK:
