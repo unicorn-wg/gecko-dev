@@ -255,7 +255,9 @@ public:
   TestObserver(sipcc::PeerConnectionImpl *peerConnection,
                const std::string &aName) :
     AFakePCObserver(peerConnection, aName),
-    peerAgent(nullptr) {}
+    peerAgent(nullptr),
+    lastAddIceStatusCode(sipcc::PeerConnectionImpl::kNoError)
+    {}
 
   size_t MatchingCandidates(const std::string& cand) {
     size_t count = 0;
@@ -289,9 +291,11 @@ public:
   NS_IMETHODIMP OnAddIceCandidateError(uint32_t code, const char *msg, ER&);
   NS_IMETHODIMP OnIceCandidate(uint16_t level, const char *mid, const char *cand, ER&);
 
-  ResponseState addIceCandidateState; // Hack because add_ice_candidates can
-                                      // happen asynchronously with respect
-                                      // to the tests so we get interference. Ugh.
+  // Hack because add_ice_candidates can happen asynchronously with respect
+  // to the API calls. The whole test suite needs a refactor.
+  ResponseState addIceCandidateState;
+  sipcc::PeerConnectionImpl::Error lastAddIceStatusCode;
+
   SignalingAgent* peerAgent;
 };
 
@@ -505,6 +509,7 @@ TestObserver::OnReplaceTrackError(uint32_t code, const char *message, ER&)
 NS_IMETHODIMP
 TestObserver::OnAddIceCandidateSuccess(ER&)
 {
+  lastAddIceStatusCode = sipcc::PeerConnectionImpl::kNoError;
   addIceCandidateState = TestObserver::stateSuccess;
   std::cout << name << ": onAddIceCandidateSuccess" << std::endl;
   addIceSuccessCount++;
@@ -514,6 +519,7 @@ TestObserver::OnAddIceCandidateSuccess(ER&)
 NS_IMETHODIMP
 TestObserver::OnAddIceCandidateError(uint32_t code, const char *message, ER&)
 {
+  lastAddIceStatusCode = static_cast<sipcc::PeerConnectionImpl::Error>(code);
   addIceCandidateState = TestObserver::stateSuccess;
   std::cout << name << ": onAddIceCandidateError = " << code
             << " (" << message << ")" << std::endl;
@@ -3129,12 +3135,12 @@ TEST_F(SignalingTest, AddCandidateInHaveLocalOffer) {
   sipcc::OfferOptions options;
   CreateOffer(options, OFFER_AUDIO, SHOULD_SENDRECV_AUDIO);
   a1_->SetLocal(TestObserver::OFFER, a1_->offer());
-  ASSERT_EQ(a1_->pObserver->lastStatusCode,
+  ASSERT_EQ(a1_->pObserver->lastAddIceStatusCode,
             sipcc::PeerConnectionImpl::kNoError);
   a1_->AddIceCandidate(strSampleCandidate.c_str(),
                       strSampleMid.c_str(), nSamplelevel, false);
-  ASSERT_EQ(a1_->pObserver->lastStatusCode,
-            sipcc::PeerConnectionImpl::kInvalidState);
+  ASSERT_EQ(sipcc::PeerConnectionImpl::kInvalidState,
+            a1_->pObserver->lastAddIceStatusCode);
 }
 
 TEST_F(SignalingAgentTest, CreateOffer) {
