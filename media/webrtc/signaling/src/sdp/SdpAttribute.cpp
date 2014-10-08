@@ -133,7 +133,6 @@ const char *SdpRtcpFbAttributeList::tmmbr = "tmmbr";
 const char *SdpRtcpFbAttributeList::tstr = "tstr";
 const char *SdpRtcpFbAttributeList::vbcm = "vbcm";
 
-
 void SdpRtcpFbAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mFeedbacks.begin(); i != mFeedbacks.end(); ++i) {
@@ -148,12 +147,27 @@ void SdpRtcpFbAttributeList::Serialize(std::ostream& os) const
   }
 }
 
+static bool ShouldSerializeChannels(SdpRtpmapAttributeList::CodecType type) {
+  switch (type) {
+    case SdpRtpmapAttributeList::kOpus:
+    case SdpRtpmapAttributeList::kG722:
+      return true;
+    case SdpRtpmapAttributeList::kPCMU:
+    case SdpRtpmapAttributeList::kPCMA:
+    case SdpRtpmapAttributeList::kVP8:
+    case SdpRtpmapAttributeList::kH264:
+      return false;
+    case SdpRtpmapAttributeList::kOtherCodec:
+      return true;
+  }
+}
+
 void SdpRtpmapAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mRtpmaps.begin(); i != mRtpmaps.end(); ++i) {
     os << "a=" << mType << ":" << i->pt << " " << i->name
       << "/" << i->clock;
-    if (i->channels) {
+    if (i->channels && ShouldSerializeChannels(i->codec)) {
       os << "/" << i->channels;
     }
     os << CRLF;
