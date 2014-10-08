@@ -73,7 +73,7 @@ SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
     mOtherAttributes.push_back(attr);
   } else {
     // TODO: Should we be willing to set attributes somewhere they are not
-    // allowed?
+    // allowed? Issue 188.
     RemoveAttribute(attr->GetType());
     mAttributes[attr->GetType()] = attr;
   }
@@ -329,14 +329,14 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
     std::string app(writable);
 
     uint32_t stream = 0;
-    // TODO streams are optional according to latest draft
+    // TODO streams are optional according to latest draft. Issue 185.
     result = sdp_attr_get_sctpmap_streams(sdp, level, 0, 1, &stream);
     if (result != SDP_SUCCESS) {
       return false;
     }
 
     SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
-    // TODO our parser does not support max-message-size
+    // TODO our parser does not support max-message-size. Issue 185.
     sctpmap->PushEntry(num, app, 0, stream);
 
     SetAttribute(sctpmap);
@@ -656,7 +656,7 @@ SipccSdpAttributeList::LoadRtcpFb(sdp_t* sdp,
       case SDP_RTCP_FB_ACK:
         type = SdpRtcpFbAttributeList::kAck;
         switch (rtcpfb->param.ack) {
-          // TODO: sipcc doesn't seem to support ack with no following token
+          // TODO: sipcc doesn't seem to support ack with no following token. Issue 189.
           case SDP_RTCP_FB_ACK_RPSI:
             parameter = SdpRtcpFbAttributeList::rpsi;
             break;

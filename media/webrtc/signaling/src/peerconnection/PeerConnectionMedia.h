@@ -404,7 +404,7 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   static void DtlsConnected_m(const std::string& aParentHandle,
                               bool aPrivacyRequested);
 
-  // TODO(ekr@rtfm.com): Can we get rid of this?
+  // TODO(ekr@rtfm.com): Can we get rid of this? Issue 167.
   mozilla::RefPtr<mozilla::MediaSessionConduit> GetConduit(int aStreamIndex, bool aReceive) {
     int index_inner = aStreamIndex * 2 + (aReceive ? 0 : 1);
 
