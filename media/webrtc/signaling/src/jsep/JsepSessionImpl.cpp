@@ -100,11 +100,6 @@ nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
   return NS_OK;
 }
 
-nsresult JsepSessionImpl::AddCodec(UniquePtr<JsepCodecDescription> codec) {
-  mCodecs.push_back(codec.release());
-  return NS_OK;
-}
-
 nsresult JsepSessionImpl::local_track(
     size_t index,
     RefPtr<JsepMediaStreamTrack>* track) const {
@@ -1026,6 +1021,12 @@ void JsepSessionImpl::SetupDefaultCodecs() {
   mCodecs.push_back(new JsepVideoCodecDescription(
       "120",
       "VP8",
+      90000
+                      ));
+
+  mCodecs.push_back(new JsepVideoCodecDescription(
+      "98",
+      "H264",
       90000
                       ));
 }

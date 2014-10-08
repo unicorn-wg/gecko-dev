@@ -4072,17 +4072,11 @@ TEST_F(SignalingTest, MaxFsFrInAnswer)
   ASSERT_TRUE(prefs);
   FsFrPrefClearer prefClearer(prefs);
 
-  // We don't want max_fs and max_fr prefs impact SDP at this moment
-  SetMaxFsFr(prefs, 0, 0);
-
   a1_->CreateOffer(options, OFFER_AV, SHOULD_CHECK_AV);
 
-  // SDP should not contain max-fs and max-fr here
-  CheckMaxFsFrSdp(a1_->offer(), 120, 0, 0);
+  SetMaxFsFr(prefs, 600, 60);
 
   a2_->SetRemote(TestObserver::OFFER, a1_->offer());
-
-  SetMaxFsFr(prefs, 600, 60);
 
   a2_->CreateAnswer(OFFER_AV | ANSWER_AV);
 
@@ -4101,29 +4095,19 @@ TEST_F(SignalingTest, MaxFsFrCalleeCodec)
   ASSERT_TRUE(prefs);
   FsFrPrefClearer prefClearer(prefs);
 
-  // We don't want max_fs and max_fr prefs impact SDP at this moment
-  SetMaxFsFr(prefs, 0, 0);
-
+  SetMaxFsFr(prefs, 300, 30);
   a1_->CreateOffer(options, OFFER_AV, SHOULD_CHECK_AV);
 
-  ParsedSDP sdpWrapper(a1_->offer());
+  CheckMaxFsFrSdp(a1_->offer(), 120, 300, 30);
 
-  sdpWrapper.ReplaceLine("a=rtpmap:120",
-    "a=rtpmap:120 VP8/90000\r\na=fmtp:120 max-fs=300;max-fr=30\r\n");
+  a1_->SetLocal(TestObserver::OFFER, a1_->offer());
 
-  std::cout << "Modified SDP " << std::endl
-            << indent(sdpWrapper.getSdp()) << std::endl;
-
-  // Double confirm that SDP offer contains correct max-fs and max-fr
-  CheckMaxFsFrSdp(sdpWrapper.getSdp(), 120, 300, 30);
-
-  a1_->SetLocal(TestObserver::OFFER, sdpWrapper.getSdp());
-  a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp());
+  SetMaxFsFr(prefs, 3601, 31);
+  a2_->SetRemote(TestObserver::OFFER, a1_->offer());
 
   a2_->CreateAnswer(OFFER_AV | ANSWER_AV);
 
-  // SDP should not contain max-fs and max-fr here
-  CheckMaxFsFrSdp(a2_->answer(), 120, 0, 0);
+  CheckMaxFsFrSdp(a2_->answer(), 120, 3601, 31);
 
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
@@ -4156,28 +4140,19 @@ TEST_F(SignalingTest, MaxFsFrCallerCodec)
   ASSERT_TRUE(prefs);
   FsFrPrefClearer prefClearer(prefs);
 
-  // We don't want max_fs and max_fr prefs impact SDP at this moment
-  SetMaxFsFr(prefs, 0, 0);
-
   a1_->CreateOffer(options, OFFER_AV, SHOULD_CHECK_AV);
   a1_->SetLocal(TestObserver::OFFER, a1_->offer());
+
+  SetMaxFsFr(prefs, 600, 60);
   a2_->SetRemote(TestObserver::OFFER, a1_->offer());
 
   a2_->CreateAnswer(OFFER_AV | ANSWER_AV);
 
-  ParsedSDP sdpWrapper(a2_->answer());
-
-  sdpWrapper.ReplaceLine("a=rtpmap:120",
-    "a=rtpmap:120 VP8/90000\r\na=fmtp:120 max-fs=600;max-fr=60\r\n");
-
-  std::cout << "Modified SDP " << std::endl
-            << indent(sdpWrapper.getSdp()) << std::endl;
-
   // Double confirm that SDP answer contains correct max-fs and max-fr
-  CheckMaxFsFrSdp(sdpWrapper.getSdp(), 120, 600, 60);
+  CheckMaxFsFrSdp(a2_->answer(), 120, 600, 60);
 
-  a2_->SetLocal(TestObserver::ANSWER, sdpWrapper.getSdp());
-  a1_->SetRemote(TestObserver::ANSWER, sdpWrapper.getSdp());
+  a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
+  a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
 
   WaitForCompleted();
 

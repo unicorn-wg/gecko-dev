@@ -321,8 +321,8 @@ pref("media.navigator.video.default_width",0);  // adaptive default
 pref("media.navigator.video.default_height",0); // adaptive default
 pref("media.peerconnection.enabled", true);
 pref("media.peerconnection.video.enabled", true);
-pref("media.navigator.video.max_fs", 0); // unrestricted
-pref("media.navigator.video.max_fr", 0); // unrestricted
+pref("media.navigator.video.max_fs", 12288); // Enough for 2048x1536
+pref("media.navigator.video.max_fr", 60);
 pref("media.navigator.video.h264.level", 31); // 0x42E01f - level 3.1
 pref("media.navigator.video.h264.max_br", 0);
 pref("media.navigator.video.h264.max_mbps", 0);
