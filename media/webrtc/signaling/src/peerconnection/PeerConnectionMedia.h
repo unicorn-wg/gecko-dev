@@ -428,7 +428,11 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
       SignalIceGatheringStateChange;
   sigslot::signal2<mozilla::NrIceCtx*, mozilla::NrIceCtx::ConnectionState>
       SignalIceConnectionStateChange;
+  // This passes a candidate:... attribute  and level
   sigslot::signal2<const std::string&, uint16_t> SignalCandidate;
+  // This passes address, port, level of the default candidate.
+  sigslot::signal3<const std::string&, uint16_t, uint16_t>
+      SignalEndOfLocalCandidates;
 
  private:
   // Shutdown media transport. Must be called on STS thread.
@@ -460,12 +464,18 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   void IceStreamReady(mozilla::NrIceMediaStream *aStream);
   void OnCandidateFound_s(mozilla::NrIceMediaStream *aStream,
                         const std::string &candidate);
+  void EndOfLocalCandidates(const std::string& defaultAddr,
+                            uint16_t defaultPort,
+                            uint16_t level);
 
   void IceGatheringStateChange_m(mozilla::NrIceCtx* ctx,
                                  mozilla::NrIceCtx::GatheringState state);
   void IceConnectionStateChange_m(mozilla::NrIceCtx* ctx,
                                   mozilla::NrIceCtx::ConnectionState state);
   void OnCandidateFound_m(const std::string &candidate, uint16_t level);
+  void EndOfLocalCandidates_m(const std::string& defaultAddr,
+                              uint16_t defaultPort,
+                              uint16_t level);
 
 
   // The parent PC

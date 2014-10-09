@@ -1089,12 +1089,14 @@ nsresult JsepSessionImpl::AddCandidateToSdp(
     // Trim off a=candidate:
     size_t begin = candidate_untrimmed.find(':');
     if (begin == std::string::npos) {
-      mLastError = "Invalid local candidate, no ':'";
+      mLastError = "Invalid candidate, no ':'";
       return NS_ERROR_INVALID_ARG;
     }
     ++begin;
 
     std::string candidate = candidate_untrimmed.substr(begin);
+
+    // TODO: mid Issue: 179
 
     SdpMediaSection& msection = sdp.GetMediaSection(level);
     SdpAttributeList& attr_list = msection.GetAttributeList();
@@ -1150,7 +1152,7 @@ nsresult JsepSessionImpl::AddLocalIceCandidate(const std::string& candidate,
   return AddCandidateToSdp(*sdp, candidate, mid, level, true);
 }
 
-nsresult JsepSessionImpl::EndOfTrickle(
+nsresult JsepSessionImpl::EndOfLocalCandidates(
     const std::string& defaultCandidateAddr,
     uint16_t defaultCandidatePort,
     uint16_t level) {
@@ -1170,7 +1172,7 @@ nsresult JsepSessionImpl::EndOfTrickle(
     SdpMediaSection& msection = sdp->GetMediaSection(level);
     msection.GetConnection().SetAddress(defaultCandidateAddr);
     msection.SetPort(defaultCandidatePort);
-    // TODO: end-of-trickle attribute
+    // TODO: end-of-candidates attribute Issue 200
   }
 
   return NS_OK;

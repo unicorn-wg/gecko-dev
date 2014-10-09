@@ -277,6 +277,9 @@ public:
                                 NrIceCtx::ConnectionState state);
   void IceGatheringStateChange(NrIceCtx* ctx,
                                NrIceCtx::GatheringState state);
+  void EndOfLocalCandidates(const std::string& defaultAddr,
+                            uint16_t defaultPort,
+                            uint16_t level);
   void IceStreamReady(NrIceMediaStream *aStream);
 
   static void ListenThread(void *aData);

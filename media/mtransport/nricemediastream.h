@@ -136,6 +136,8 @@ class NrIceMediaStream {
   // queue, in priority order. |out_pairs| is cleared before being filled.
   nsresult GetCandidatePairs(std::vector<NrIceCandidatePair>* out_pairs) const;
 
+  nsresult GetDefaultCandidate(NrIceCandidate* candidate) const;
+
   // Parse remote attributes
   nsresult ParseAttributes(std::vector<std::string>& candidates);
 

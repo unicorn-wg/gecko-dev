@@ -102,9 +102,10 @@ class JsepSession {
   virtual nsresult AddLocalIceCandidate(const std::string& candidate,
                                         const std::string& mid,
                                         uint16_t level) = 0;
-  virtual nsresult EndOfTrickle(const std::string& defaultCandidateAddr,
-                                uint16_t defaultCandidatePort,
-                                uint16_t level) = 0;
+  virtual nsresult EndOfLocalCandidates(
+      const std::string& defaultCandidateAddr,
+      uint16_t defaultCandidatePort,
+      uint16_t level) = 0;
   virtual nsresult Close() = 0;
 
   // ICE controlling or controlled
