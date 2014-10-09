@@ -686,9 +686,6 @@ private:
   // The SDP sent in from JS - here for debugging.
   std::string mLocalRequestedSDP;
   std::string mRemoteRequestedSDP;
-  // The SDP we are using.
-  std::string mLocalSDP;
-  std::string mRemoteSDP;
 
   // DTLS fingerprint
   std::string mFingerprint;

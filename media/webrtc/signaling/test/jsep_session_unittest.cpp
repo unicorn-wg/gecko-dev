@@ -29,6 +29,7 @@
 #include "signaling/src/jsep/JsepSessionImpl.h"
 #include "signaling/src/jsep/JsepTrack.h"
 
+using mozilla::jsep::JsepSession;
 using mozilla::jsep::JsepSessionImpl;
 using mozilla::jsep::JsepOfferOptions;
 using mozilla::jsep::JsepAnswerOptions;
@@ -204,6 +205,118 @@ protected:
     DumpTrackPairs(mSessionAns);
   }
 
+  void GatherCandidates(JsepSession& session) {
+    session.AddLocalIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.0.1 2000 typ host", "", 0);
+    session.AddLocalIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.0.1 2001 typ host", "", 0);
+    session.AddLocalIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.0.2 2002 typ srflx "
+        "raddr 10.252.34.97 rport 53594", "", 0);
+    session.EndOfTrickle("192.168.0.2", 2002, 0);
+
+    // Mix up order
+    session.AddLocalIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.1.2 2012 typ srflx "
+        "raddr 10.252.34.97 rport 53594", "", 1);
+    session.AddLocalIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.1.1 2010 typ host", "", 1);
+    session.AddLocalIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.1.1 2011 typ host", "", 1);
+    session.EndOfTrickle("192.168.1.2", 2012, 1);
+
+
+    std::cerr << "SDP after candidates: "
+      << session.GetLocalDescription();
+  }
+
+  void TrickleCandidates(JsepSession& session) {
+    session.AddRemoteIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.0.1 2000 typ host", "", 0);
+    session.AddRemoteIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.0.1 2001 typ host", "", 0);
+    session.AddRemoteIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.0.2 2002 typ srflx "
+        "raddr 10.252.34.97 rport 53594", "", 0);
+
+    // Mix up order
+    session.AddRemoteIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.1.2 2012 typ srflx "
+        "raddr 10.252.34.97 rport 53594", "", 1);
+    session.AddRemoteIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.1.1 2010 typ host", "", 1);
+    session.AddRemoteIceCandidate(
+        "a=candidate:0 1 UDP 9999 192.168.1.1 2011 typ host", "", 1);
+
+    std::cerr << "SDP after candidates: "
+      << session.GetRemoteDescription();
+  }
+
+  void GatherOffererCandidates() {
+    GatherCandidates(mSessionOff);
+  }
+
+  void TrickleOffererCandidates() {
+    TrickleCandidates(mSessionAns);
+  }
+
+  void ValidateCandidates(JsepSession& session, bool local) {
+
+    std::string sdp = local ? session.GetLocalDescription() :
+                              session.GetRemoteDescription();
+    SipccSdpParser parser;
+    UniquePtr<Sdp> parsed = parser.Parse(sdp);
+    ASSERT_TRUE(parsed);
+    ASSERT_LT(0U, parsed->GetMediaSectionCount());
+
+    auto& msection_0 = parsed->GetMediaSection(0);
+
+    // We should not be doing things like setting the c-line on remote SDP
+    if (local) {
+      ASSERT_EQ("192.168.0.2", msection_0.GetConnection().GetAddress());
+      ASSERT_EQ(2002U, msection_0.GetPort());
+      // TODO: Check end-of-trickle
+    }
+
+    auto& attrs_0 = msection_0.GetAttributeList();
+    ASSERT_TRUE(attrs_0.HasAttribute(SdpAttribute::kCandidateAttribute));
+
+    auto& candidates_0 = attrs_0.GetCandidate();
+    ASSERT_EQ(3U, candidates_0.size());
+    ASSERT_EQ("0 1 UDP 9999 192.168.0.1 2000 typ host", candidates_0[0]);
+    ASSERT_EQ("0 1 UDP 9999 192.168.0.1 2001 typ host", candidates_0[1]);
+    ASSERT_EQ("0 1 UDP 9999 192.168.0.2 2002 typ srflx "
+              "raddr 10.252.34.97 rport 53594", candidates_0[2]);
+
+    if (parsed->GetMediaSectionCount() > 1) {
+      auto& msection_1 = parsed->GetMediaSection(1);
+
+      if (local) {
+        ASSERT_EQ("192.168.1.2", msection_1.GetConnection().GetAddress());
+        ASSERT_EQ(2012U, msection_1.GetPort());
+        // TODO: Check end-of-trickle
+      }
+
+      auto& attrs_1 = msection_1.GetAttributeList();
+      ASSERT_TRUE(attrs_1.HasAttribute(SdpAttribute::kCandidateAttribute));
+
+      auto& candidates_1 = attrs_1.GetCandidate();
+      ASSERT_EQ(3U, candidates_1.size());
+      ASSERT_EQ("0 1 UDP 9999 192.168.1.2 2012 typ srflx "
+                "raddr 10.252.34.97 rport 53594", candidates_1[0]);
+      ASSERT_EQ("0 1 UDP 9999 192.168.1.1 2010 typ host", candidates_1[1]);
+      ASSERT_EQ("0 1 UDP 9999 192.168.1.1 2011 typ host", candidates_1[2]);
+    }
+  }
+
+  void ValidateOffererCandidates() {
+    ValidateCandidates(mSessionOff, true);
+  }
+
+  void ValidateAnswererCandidates() {
+    ValidateCandidates(mSessionAns, false);
+  }
+
   void DumpTrack(const jsep::JsepTrack& track) {
     std::cerr << "  type=" << track.media_type() << std::endl;
     std::cerr << "  protocol=" << track.protocol() << std::endl;
@@ -315,6 +428,21 @@ TEST_P(JsepSessionTest, FullCall) {
   std::string offer = CreateOffer();
   SetLocalOffer(offer);
   SetRemoteOffer(offer);
+  AddTracks(&mSessionAns);
+  std::string answer = CreateAnswer();
+  SetLocalAnswer(answer);
+  SetRemoteAnswer(answer);
+}
+
+TEST_P(JsepSessionTest, FullCallWithCandidates) {
+  AddTracks(&mSessionOff);
+  std::string offer = CreateOffer();
+  SetLocalOffer(offer);
+  GatherOffererCandidates();
+  ValidateOffererCandidates();
+  SetRemoteOffer(offer);
+  TrickleOffererCandidates();
+  ValidateAnswererCandidates();
   AddTracks(&mSessionAns);
   std::string answer = CreateAnswer();
   SetLocalAnswer(answer);
