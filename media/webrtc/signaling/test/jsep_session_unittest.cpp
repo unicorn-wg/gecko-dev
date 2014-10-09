@@ -41,6 +41,18 @@ using mozilla::jsep::JsepVideoCodecDescription;
 using mozilla::SipccSdpParser;
 
 namespace mozilla {
+static const char* kCandidates[] = {
+  "0 1 UDP 9999 192.168.0.1 2000 typ host",
+  "0 1 UDP 9999 192.168.0.1 2001 typ host",
+  "0 1 UDP 9999 192.168.0.2 2002 typ srflx raddr 10.252.34.97 rport 53594",
+  // Mix up order
+  "0 1 UDP 9999 192.168.1.2 2012 typ srflx raddr 10.252.34.97 rport 53594",
+  "0 1 UDP 9999 192.168.1.1 2010 typ host",
+  "0 1 UDP 9999 192.168.1.1 2011 typ host"
+};
+
+static std::string kAEqualsCandidate("a=candidate:");
+
 class JsepSessionTestBase : public ::testing::Test {
 
 
@@ -207,23 +219,20 @@ protected:
 
   void GatherCandidates(JsepSession& session) {
     session.AddLocalIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.0.1 2000 typ host", "", 0);
+        kAEqualsCandidate + kCandidates[0], "", 0);
     session.AddLocalIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.0.1 2001 typ host", "", 0);
+        kAEqualsCandidate + kCandidates[1], "", 0);
     session.AddLocalIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.0.2 2002 typ srflx "
-        "raddr 10.252.34.97 rport 53594", "", 0);
-    session.EndOfTrickle("192.168.0.2", 2002, 0);
+        kAEqualsCandidate + kCandidates[2], "", 0);
+    session.EndOfLocalCandidates("192.168.0.2", 2002, 0);
 
-    // Mix up order
     session.AddLocalIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.1.2 2012 typ srflx "
-        "raddr 10.252.34.97 rport 53594", "", 1);
+        kAEqualsCandidate + kCandidates[3], "", 1);
     session.AddLocalIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.1.1 2010 typ host", "", 1);
+        kAEqualsCandidate + kCandidates[4], "", 1);
     session.AddLocalIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.1.1 2011 typ host", "", 1);
-    session.EndOfTrickle("192.168.1.2", 2012, 1);
+        kAEqualsCandidate + kCandidates[5], "", 1);
+    session.EndOfLocalCandidates("192.168.1.2", 2012, 1);
 
 
     std::cerr << "SDP after candidates: "
@@ -232,21 +241,18 @@ protected:
 
   void TrickleCandidates(JsepSession& session) {
     session.AddRemoteIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.0.1 2000 typ host", "", 0);
+        kAEqualsCandidate + kCandidates[0], "", 0);
     session.AddRemoteIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.0.1 2001 typ host", "", 0);
+        kAEqualsCandidate + kCandidates[1], "", 0);
     session.AddRemoteIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.0.2 2002 typ srflx "
-        "raddr 10.252.34.97 rport 53594", "", 0);
+        kAEqualsCandidate + kCandidates[2], "", 0);
 
-    // Mix up order
     session.AddRemoteIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.1.2 2012 typ srflx "
-        "raddr 10.252.34.97 rport 53594", "", 1);
+        kAEqualsCandidate + kCandidates[3], "", 1);
     session.AddRemoteIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.1.1 2010 typ host", "", 1);
+        kAEqualsCandidate + kCandidates[4], "", 1);
     session.AddRemoteIceCandidate(
-        "a=candidate:0 1 UDP 9999 192.168.1.1 2011 typ host", "", 1);
+        kAEqualsCandidate + kCandidates[5], "", 1);
 
     std::cerr << "SDP after candidates: "
       << session.GetRemoteDescription();
@@ -261,7 +267,6 @@ protected:
   }
 
   void ValidateCandidates(JsepSession& session, bool local) {
-
     std::string sdp = local ? session.GetLocalDescription() :
                               session.GetRemoteDescription();
     SipccSdpParser parser;
@@ -275,7 +280,7 @@ protected:
     if (local) {
       ASSERT_EQ("192.168.0.2", msection_0.GetConnection().GetAddress());
       ASSERT_EQ(2002U, msection_0.GetPort());
-      // TODO: Check end-of-trickle
+      // TODO: Check end-of-candidates. Issue 200
     }
 
     auto& attrs_0 = msection_0.GetAttributeList();
@@ -283,10 +288,9 @@ protected:
 
     auto& candidates_0 = attrs_0.GetCandidate();
     ASSERT_EQ(3U, candidates_0.size());
-    ASSERT_EQ("0 1 UDP 9999 192.168.0.1 2000 typ host", candidates_0[0]);
-    ASSERT_EQ("0 1 UDP 9999 192.168.0.1 2001 typ host", candidates_0[1]);
-    ASSERT_EQ("0 1 UDP 9999 192.168.0.2 2002 typ srflx "
-              "raddr 10.252.34.97 rport 53594", candidates_0[2]);
+    ASSERT_EQ(kCandidates[0], candidates_0[0]);
+    ASSERT_EQ(kCandidates[1], candidates_0[1]);
+    ASSERT_EQ(kCandidates[2], candidates_0[2]);
 
     if (parsed->GetMediaSectionCount() > 1) {
       auto& msection_1 = parsed->GetMediaSection(1);
@@ -294,7 +298,7 @@ protected:
       if (local) {
         ASSERT_EQ("192.168.1.2", msection_1.GetConnection().GetAddress());
         ASSERT_EQ(2012U, msection_1.GetPort());
-        // TODO: Check end-of-trickle
+        // TODO: Check end-of-candidates. Issue 200
       }
 
       auto& attrs_1 = msection_1.GetAttributeList();
@@ -302,10 +306,9 @@ protected:
 
       auto& candidates_1 = attrs_1.GetCandidate();
       ASSERT_EQ(3U, candidates_1.size());
-      ASSERT_EQ("0 1 UDP 9999 192.168.1.2 2012 typ srflx "
-                "raddr 10.252.34.97 rport 53594", candidates_1[0]);
-      ASSERT_EQ("0 1 UDP 9999 192.168.1.1 2010 typ host", candidates_1[1]);
-      ASSERT_EQ("0 1 UDP 9999 192.168.1.1 2011 typ host", candidates_1[2]);
+      ASSERT_EQ(kCandidates[3], candidates_1[0]);
+      ASSERT_EQ(kCandidates[4], candidates_1[1]);
+      ASSERT_EQ(kCandidates[5], candidates_1[2]);
     }
   }
 

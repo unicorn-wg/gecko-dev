@@ -87,9 +87,10 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult AddLocalIceCandidate(const std::string& candidate,
                                         const std::string& mid,
                                         uint16_t level) MOZ_OVERRIDE;
-  virtual nsresult EndOfTrickle(const std::string& defaultCandidateAddr,
-                                uint16_t defaultCandidatePort,
-                                uint16_t level) MOZ_OVERRIDE;
+  virtual nsresult EndOfLocalCandidates(
+      const std::string& defaultCandidateAddr,
+      uint16_t defaultCandidatePort,
+      uint16_t level) MOZ_OVERRIDE;
   virtual nsresult Close() MOZ_OVERRIDE;
 
   virtual const std::string last_error() const MOZ_OVERRIDE;

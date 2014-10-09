@@ -742,6 +742,28 @@ void
 PeerConnectionMedia::IceGatheringStateChange(NrIceCtx* ctx,
                                              NrIceCtx::GatheringState state)
 {
+  if (state == NrIceCtx::ICE_CTX_GATHER_COMPLETE) {
+    // Fire off EndOfLocalCandidates for each stream
+    for (size_t i = 0; ; ++i) {
+      RefPtr<NrIceMediaStream> stream(ctx->GetStream(i));
+      if (!stream) {
+        break;
+      }
+
+      NrIceCandidate candidate;
+      nsresult res = stream->GetDefaultCandidate(&candidate);
+      if (NS_SUCCEEDED(res)) {
+        EndOfLocalCandidates(candidate.cand_addr.host,
+                             candidate.cand_addr.port,
+                             i);
+      } else {
+        CSFLogError(logTag, "%s: Could not fire EndOfLocalCandidates for "
+                            "level %u",
+                             __FUNCTION__, (unsigned)i);
+      }
+    }
+  }
+
   // We will still be around because we have not started teardown yet
   GetMainThread()->Dispatch(
     WrapRunnable(this,
@@ -782,6 +804,18 @@ PeerConnectionMedia::OnCandidateFound(NrIceMediaStream *aStream,
 }
 
 void
+PeerConnectionMedia::EndOfLocalCandidates(const std::string& defaultAddr,
+                                          uint16_t defaultPort,
+                                          uint16_t level) {
+  // We will still be around because we have not started teardown yet
+  GetMainThread()->Dispatch(
+    WrapRunnable(this,
+                 &PeerConnectionMedia::EndOfLocalCandidates_m,
+                 defaultAddr, defaultPort, level),
+    NS_DISPATCH_NORMAL);
+}
+
+void
 PeerConnectionMedia::IceGatheringStateChange_m(NrIceCtx* ctx,
                                                NrIceCtx::GatheringState state)
 {
@@ -810,7 +844,12 @@ PeerConnectionMedia::OnCandidateFound_m(const std::string &candidate,
   SignalCandidate(candidate, level);
 }
 
-
+void
+PeerConnectionMedia::EndOfLocalCandidates_m(const std::string& defaultAddr,
+                                            uint16_t defaultPort,
+                                            uint16_t level) {
+  SignalEndOfLocalCandidates(defaultAddr, defaultPort, level);
+}
 
 void
 PeerConnectionMedia::DtlsConnected_s(TransportLayer *dtlsLayer,
