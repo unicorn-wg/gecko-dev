@@ -4403,7 +4403,7 @@ TEST_F(SignalingTest, AnswerWithoutVP8)
 
   // Replace VP8 with H.264 P1
   ParsedSDP sdpWrapper(a2_->answer());
-  sdpWrapper.AddLine("a=fmtp:126 profile-level-id=42E00C;packetization-mode=1\r\n");
+  sdpWrapper.AddLine("a=fmtp:126 profile-level-id=42e00c;level-asymmetry-allowed=1;packetization-mode=1\r\n");
   size_t match;
   answer = sdpWrapper.getSdp();
 

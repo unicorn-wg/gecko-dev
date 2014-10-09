@@ -1775,6 +1775,15 @@ rtp_ptype sdp_get_known_payload_type(void *sdp_ptr,
         if (cpr_strcasecmp(encname, SIPSDP_ATTR_ENCNAME_OPUS) == 0) {
           return (RTP_OPUS);
         }
+        if (cpr_strcasecmp(encname, SIPSDP_ATTR_ENCNAME_PCMU) == 0) {
+          return (RTP_PCMU);
+        }
+        if (cpr_strcasecmp(encname, SIPSDP_ATTR_ENCNAME_PCMA) == 0) {
+          return (RTP_PCMA);
+        }
+        if (cpr_strcasecmp(encname, SIPSDP_ATTR_ENCNAME_G722) == 0) {
+          return (RTP_G722);
+        }
         if (cpr_strcasecmp(encname, SIPSDP_ATTR_ENCNAME_H264) == 0) {
           int fmtp_inst = sdp_find_fmtp_inst(sdp_p, level, rtpmap->payload_num);
           if (fmtp_inst < 0) {

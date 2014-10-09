@@ -239,7 +239,22 @@ SipccSdpMediaSection::AddCodec(const std::string& pt, const std::string& name,
       rtpmap->mRtpmaps.push_back(*it);
     }
   }
-  rtpmap->PushEntry(pt, name, clockrate, channels);
+  SdpRtpmapAttributeList::CodecType codec = SdpRtpmapAttributeList::kOtherCodec;
+  if (name == "opus") {
+    codec = SdpRtpmapAttributeList::kOpus;
+  } else if (name == "G722") {
+    codec = SdpRtpmapAttributeList::kG722;
+  } else if (name == "PCMU") {
+    codec = SdpRtpmapAttributeList::kPCMU;
+  } else if (name == "PCMA") {
+    codec = SdpRtpmapAttributeList::kPCMA;
+  } else if (name == "VP8") {
+    codec = SdpRtpmapAttributeList::kVP8;
+  } else if (name == "H264") {
+    codec = SdpRtpmapAttributeList::kH264;
+  }
+
+  rtpmap->PushEntry(pt, codec, name, clockrate, channels);
   mAttributeList.SetAttribute(rtpmap);
 
   if (!fmtp.empty()) {
