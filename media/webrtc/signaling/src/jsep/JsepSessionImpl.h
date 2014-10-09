@@ -198,7 +198,6 @@ class JsepSessionImpl : public JsepSession {
                            RefPtr<JsepTransport>* transport);
 
   nsresult SetupTransport(const SdpAttributeList& remote,
-                          const SdpAttributeList& offer,
                           const SdpAttributeList& answer,
                           const RefPtr<JsepTransport>& transport);
 
