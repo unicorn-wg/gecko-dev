@@ -93,7 +93,7 @@ struct JsepCodecDescription {
         }
       } else {
         // TODO: Missing fmtp, or one that we don't understand.
-        // What should we do here?
+        // We should probably log something here.
       }
     } else {
       // If a receive track, we need to pay attention to remote end's rtcp-fb
@@ -308,7 +308,6 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
 
   virtual bool Matches(
       const SdpFmtpAttributeList::Parameters* fmtp) const MOZ_OVERRIDE {
-    // TODO validate params
     if (mName == "H264") {
       if (!fmtp) {
         // Debatable, but if we assume the default is to allow level

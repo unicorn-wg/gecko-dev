@@ -6,6 +6,7 @@
 #define _JSEPSESSIONIMPL_H_
 
 
+#include <string>
 #include <vector>
 
 #include "signaling/src/jsep/JsepCodecDescription.h"
@@ -73,14 +74,22 @@ class JsepSessionImpl : public JsepSession {
                                std::string* offer) MOZ_OVERRIDE;
   virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
                                 std::string* answer) MOZ_OVERRIDE;
+  virtual std::string GetLocalDescription() const MOZ_OVERRIDE;
+  virtual std::string GetRemoteDescription() const MOZ_OVERRIDE;
   virtual nsresult SetLocalDescription(JsepSdpType type,
                                        const std::string& sdp) MOZ_OVERRIDE;
 
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) MOZ_OVERRIDE;
-  virtual nsresult AddIceCandidate(const std::string& candidate,
-                                   const std::string& mid,
-                                   uint16_t level) MOZ_OVERRIDE;
+  virtual nsresult AddRemoteIceCandidate(const std::string& candidate,
+                                         const std::string& mid,
+                                         uint16_t level) MOZ_OVERRIDE;
+  virtual nsresult AddLocalIceCandidate(const std::string& candidate,
+                                        const std::string& mid,
+                                        uint16_t level) MOZ_OVERRIDE;
+  virtual nsresult EndOfTrickle(const std::string& defaultCandidateAddr,
+                                uint16_t defaultCandidatePort,
+                                uint16_t level) MOZ_OVERRIDE;
   virtual nsresult Close() MOZ_OVERRIDE;
 
   virtual const std::string last_error() const MOZ_OVERRIDE;
@@ -191,6 +200,11 @@ class JsepSessionImpl : public JsepSession {
                           bool is_offerer,
                           const RefPtr<JsepTransport>& transport);
 
+  nsresult AddCandidateToSdp(Sdp& sdp,
+                             const std::string& candidate,
+                             const std::string& mid,
+                             uint16_t level,
+                             bool localSdp);
 
   std::vector<JsepSendingTrack> mLocalTracks;
   std::vector<JsepReceivingTrack> mRemoteTracks;

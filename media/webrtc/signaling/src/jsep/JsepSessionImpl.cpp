@@ -6,6 +6,7 @@
 
 #include "signaling/src/jsep/JsepSessionImpl.h"
 #include <string>
+#include <stdlib.h>
 
 #include "nspr.h"
 #include "nss.h"
@@ -209,6 +210,26 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   mGeneratedLocalDescription = Move(sdp);
 
   return NS_OK;
+}
+
+std::string JsepSessionImpl::GetLocalDescription() const {
+  std::ostringstream os;
+  if (mPendingLocalDescription) {
+    mPendingLocalDescription->Serialize(os);
+  } else if (mCurrentLocalDescription) {
+    mCurrentLocalDescription->Serialize(os);
+  }
+  return os.str();
+}
+
+std::string JsepSessionImpl::GetRemoteDescription() const {
+  std::ostringstream os;
+  if (mPendingRemoteDescription) {
+    mPendingRemoteDescription->Serialize(os);
+  } else if (mCurrentRemoteDescription) {
+    mCurrentRemoteDescription->Serialize(os);
+  }
+  return os.str();
 }
 
 void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
@@ -1057,9 +1078,47 @@ void JsepSessionImpl::SetState(JsepSignalingState state) {
   mState = state;
 }
 
-nsresult JsepSessionImpl::AddIceCandidate(const std::string& candidate,
-                                          const std::string& mid,
-                                          uint16_t level) {
+nsresult JsepSessionImpl::AddCandidateToSdp(
+    Sdp& sdp,
+    const std::string& candidate_untrimmed,
+    const std::string& mid,
+    uint16_t level,
+    bool localSdp) {
+
+  if (level < sdp.GetMediaSectionCount()) {
+    // Trim off a=candidate:
+    size_t begin = candidate_untrimmed.find(':');
+    if (begin == std::string::npos) {
+      mLastError = "Invalid local candidate, no ':'";
+      return NS_ERROR_INVALID_ARG;
+    }
+    ++begin;
+
+    std::string candidate = candidate_untrimmed.substr(begin);
+
+    SdpMediaSection& msection = sdp.GetMediaSection(level);
+    SdpAttributeList& attr_list = msection.GetAttributeList();
+
+    SdpMultiStringAttribute *candidates = nullptr;
+    if (!attr_list.HasAttribute(SdpAttribute::kCandidateAttribute)) {
+      candidates =
+        new SdpMultiStringAttribute(SdpAttribute::kCandidateAttribute);
+    } else {
+      // Copy existing
+      candidates = new SdpMultiStringAttribute(
+          *static_cast<const SdpMultiStringAttribute*>(
+            attr_list.GetAttribute(SdpAttribute::kCandidateAttribute)));
+    }
+    candidates->PushEntry(candidate);
+    attr_list.SetAttribute(candidates);
+  }
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::AddRemoteIceCandidate(const std::string& candidate,
+                                                const std::string& mid,
+                                                uint16_t level) {
   mozilla::Sdp* sdp = 0;
 
   if (mPendingRemoteDescription) {
@@ -1071,21 +1130,48 @@ nsresult JsepSessionImpl::AddIceCandidate(const std::string& candidate,
     return NS_ERROR_UNEXPECTED;
   }
 
-  SdpAttributeList& attr_list =
-    sdp->GetMediaSection(level).GetAttributeList();
+  return AddCandidateToSdp(*sdp, candidate, mid, level, false);
+}
 
-  SdpMultiStringAttribute *candidates = nullptr;
-  if (!attr_list.HasAttribute(SdpAttribute::kCandidateAttribute)) {
-    candidates =
-      new SdpMultiStringAttribute(SdpAttribute::kCandidateAttribute);
+nsresult JsepSessionImpl::AddLocalIceCandidate(const std::string& candidate,
+                                               const std::string& mid,
+                                               uint16_t level) {
+  mozilla::Sdp* sdp = 0;
+
+  if (mPendingLocalDescription) {
+    sdp = mPendingLocalDescription.get();
+  } else if (mCurrentLocalDescription) {
+    sdp = mCurrentLocalDescription.get();
   } else {
-    // Copy existing
-    candidates = new SdpMultiStringAttribute(
-        *static_cast<const SdpMultiStringAttribute*>(
-          attr_list.GetAttribute(SdpAttribute::kCandidateAttribute)));
+    mLastError = "Cannot add ICE candidate in current state";
+    return NS_ERROR_UNEXPECTED;
   }
-  candidates->PushEntry(candidate);
-  attr_list.SetAttribute(candidates);
+
+  return AddCandidateToSdp(*sdp, candidate, mid, level, true);
+}
+
+nsresult JsepSessionImpl::EndOfTrickle(
+    const std::string& defaultCandidateAddr,
+    uint16_t defaultCandidatePort,
+    uint16_t level) {
+
+  mozilla::Sdp* sdp = 0;
+
+  if (mPendingLocalDescription) {
+    sdp = mPendingLocalDescription.get();
+  } else if (mCurrentLocalDescription) {
+    sdp = mCurrentLocalDescription.get();
+  } else {
+    mLastError = "Cannot add ICE candidate in current state";
+    return NS_ERROR_UNEXPECTED;
+  }
+
+  if (level < sdp->GetMediaSectionCount()) {
+    SdpMediaSection& msection = sdp->GetMediaSection(level);
+    msection.GetConnection().SetAddress(defaultCandidateAddr);
+    msection.SetPort(defaultCandidatePort);
+    // TODO: end-of-trickle attribute
+  }
 
   return NS_OK;
 }
