@@ -344,6 +344,45 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
   return true;
 }
 
+SdpRtpmapAttributeList::CodecType
+SipccSdpAttributeList::GetCodecType(rtp_ptype type) {
+  switch (type) {
+    case RTP_PCMU:
+      return SdpRtpmapAttributeList::kPCMU;
+    case RTP_PCMA:
+      return SdpRtpmapAttributeList::kPCMA;
+    case RTP_G722:
+      return SdpRtpmapAttributeList::kG722;
+    case RTP_H264_P0:
+    case RTP_H264_P1:
+      return SdpRtpmapAttributeList::kH264;
+    case RTP_OPUS:
+      return SdpRtpmapAttributeList::kOpus;
+    case RTP_VP8:
+      return SdpRtpmapAttributeList::kVP8;
+    case RTP_NONE:
+      // Happens when sipcc doesn't know how to translate to the enum
+    case RTP_CELP:
+    case RTP_G726:
+    case RTP_GSM:
+    case RTP_G723:
+    case RTP_DVI4:
+    case RTP_DVI4_II:
+    case RTP_LPC:
+    case RTP_G728:
+    case RTP_G729:
+    case RTP_JPEG:
+    case RTP_NV:
+    case RTP_H261:
+    case RTP_AVT:
+    case RTP_L16:
+    case RTP_H263:
+    case RTP_ILBC:
+    case RTP_I420:
+      return SdpRtpmapAttributeList::kOtherCodec;
+  }
+}
+
 bool
 SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
                                   SdpErrorHolder& errorHolder) {
@@ -368,11 +407,20 @@ SipccSdpAttributeList::LoadRtpmap(sdp_t* sdp, uint16_t level,
                                 "No rtpmap attribute for payload type");
       continue;
     }
+    SdpRtpmapAttributeList::CodecType codec =
+      GetCodecType(sdp_get_known_payload_type(sdp, level, pt));
+
     uint32_t clock = sdp_attr_get_rtpmap_clockrate(sdp, level, 0, i + 1);
-    uint16_t channels = sdp_attr_get_rtpmap_num_chan(sdp, level, 0, i + 1);
+    uint16_t channels = 0;
+
+    // sipcc gives us a channels value of "1" for video, which is broken
+    if (sdp_get_media_type(sdp, level) == SDP_MEDIA_AUDIO) {
+      channels = sdp_attr_get_rtpmap_num_chan(sdp, level, 0, i + 1);
+    }
+
     std::ostringstream ospt;
     ospt << pt;
-    rtpmap->PushEntry(ospt.str(), name, clock, channels);
+    rtpmap->PushEntry(ospt.str(), codec, name, clock, channels);
   }
 
   if (rtpmap->mRtpmaps.empty()) {
