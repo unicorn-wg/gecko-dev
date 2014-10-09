@@ -21,6 +21,11 @@ SipccSdpMediaSection::GetPort() const {
   return mPort;
 }
 
+void
+SipccSdpMediaSection::SetPort(unsigned int port) {
+  mPort = port;
+}
+
 unsigned int
 SipccSdpMediaSection::GetPortCount() const {
   return mPortCount;
@@ -33,6 +38,11 @@ SipccSdpMediaSection::GetProtocol() const {
 
 const SdpConnection&
 SipccSdpMediaSection::GetConnection() const {
+  return *mConnection;
+}
+
+SdpConnection&
+SipccSdpMediaSection::GetConnection() {
   return *mConnection;
 }
 

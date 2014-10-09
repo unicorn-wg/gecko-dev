@@ -81,9 +81,11 @@ public:
 
   virtual MediaType GetMediaType() const = 0;
   virtual unsigned int GetPort() const = 0;
+  virtual void SetPort(unsigned int port) = 0;
   virtual unsigned int GetPortCount() const = 0;
   virtual Protocol GetProtocol() const = 0;
   virtual const SdpConnection& GetConnection() const = 0;
+  virtual SdpConnection& GetConnection() = 0;
   virtual uint32_t GetBandwidth(const std::string& type) const = 0;
   virtual const std::vector<std::string>& GetFormats() const = 0;
 
@@ -191,6 +193,7 @@ public:
 
   sdp::AddrType GetAddrType() const { return mAddrType; }
   const std::string& GetAddress() const { return mAddr; }
+  void SetAddress(const std::string& address) { mAddr = address; }
   uint8_t GetTtl() const { return mTtl; }
   uint32_t GetCount() const { return mCount; }
 
@@ -212,7 +215,7 @@ public:
   }
 private:
   sdp::AddrType mAddrType;
-  const std::string mAddr;
+  std::string mAddr;
   uint8_t mTtl; // 0-255; 0 when unset
   uint32_t mCount; // 0 when unset
 };
