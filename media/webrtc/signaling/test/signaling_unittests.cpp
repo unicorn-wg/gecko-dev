@@ -4252,11 +4252,9 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack pli"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 ccm fir"), std::string::npos);
-  // Ensure VP8 and P0 removed
-  ASSERT_EQ(answer.find("a=rtpmap:97 H264/90000"), std::string::npos);
+  // Ensure VP8 removed
   ASSERT_EQ(answer.find("a=rtpmap:120 VP8/90000"), std::string::npos);
   ASSERT_EQ(answer.find("a=rtcp-fb:120"), std::string::npos);
-  ASSERT_EQ(answer.find("a=rtcp-fb:97"), std::string::npos);
 }
 
 // Insert H.264 before VP8 in Offer, check answer selects H.264
@@ -4319,11 +4317,6 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack pli"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 ccm fir"), std::string::npos);
-  // VP8 and P0 removed
-  ASSERT_EQ(answer.find("a=rtpmap:97 H264/90000"), std::string::npos);
-  ASSERT_EQ(answer.find("a=rtpmap:120 VP8/90000"), std::string::npos);
-  ASSERT_EQ(answer.find("a=rtcp-fb:120"), std::string::npos);
-  ASSERT_EQ(answer.find("a=rtcp-fb:97"), std::string::npos);
 }
 
 #ifdef H264_P0_SUPPORTED
