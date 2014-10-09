@@ -987,6 +987,17 @@ class SignalingAgent {
                      kDefaultTimeout);
 
     std::cout << name << ": Init Complete" << std::endl;
+
+    // Check that the default candidate has been filled out with something
+    std::string localSdp = getLocalDescription();
+
+    std::cout << "Local SDP after gather: " << localSdp;
+    ASSERT_EQ(std::string::npos, localSdp.find("c=IN IP4 0.0.0.0"));
+    ASSERT_EQ(std::string::npos, localSdp.find("m=video 9 "));
+    ASSERT_EQ(std::string::npos, localSdp.find("m=audio 9 "));
+
+    // TODO: Check for end-of-candidates attr, requires parsing the SDP
+    // Issue 200
   }
 
   bool WaitForGatherAllowFail() {
