@@ -90,13 +90,21 @@ class JsepSession {
                                std::string* offer) = 0;
   virtual nsresult CreateAnswer(const JsepAnswerOptions& options,
                                 std::string* answer) = 0;
+  virtual std::string GetLocalDescription() const = 0;
+  virtual std::string GetRemoteDescription() const = 0;
   virtual nsresult SetLocalDescription(JsepSdpType type,
                                        const std::string& sdp) = 0;
   virtual nsresult SetRemoteDescription(JsepSdpType type,
                                         const std::string& sdp) = 0;
-  virtual nsresult AddIceCandidate(const std::string& candidate,
-                                   const std::string& mid,
-                                   uint16_t level) = 0;
+  virtual nsresult AddRemoteIceCandidate(const std::string& candidate,
+                                         const std::string& mid,
+                                         uint16_t level) = 0;
+  virtual nsresult AddLocalIceCandidate(const std::string& candidate,
+                                        const std::string& mid,
+                                        uint16_t level) = 0;
+  virtual nsresult EndOfTrickle(const std::string& defaultCandidateAddr,
+                                uint16_t defaultCandidatePort,
+                                uint16_t level) = 0;
   virtual nsresult Close() = 0;
 
   // ICE controlling or controlled

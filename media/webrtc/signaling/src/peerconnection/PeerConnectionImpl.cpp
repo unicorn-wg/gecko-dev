@@ -1332,7 +1332,6 @@ PeerConnectionImpl::SetLocalDescription(int32_t aAction, const char* aSDP)
                 __FUNCTION__, mHandle.c_str(), error_string.c_str());
     pco->OnSetLocalDescriptionError(error, ObString(error_string.c_str()), rv);
   } else {
-    mLocalSDP = mLocalRequestedSDP;
     pco->OnSetLocalDescriptionSuccess(rv);
   }
 
@@ -1478,7 +1477,6 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
 #else
     pco->OnAddStream(stream, jrv);
 #endif
-    mRemoteSDP = mRemoteRequestedSDP;
     pco->OnSetRemoteDescriptionSuccess(jrv);
 #ifdef MOZILLA_INTERNAL_API
     // TODO(ekr@rtfm.com): This is crashing. Issue 176.
@@ -1574,7 +1572,8 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
     }
   }
 #endif
-  nsresult res = mJsepSession->AddIceCandidate(aCandidate, aMid, aLevel);
+
+  nsresult res = mJsepSession->AddRemoteIceCandidate(aCandidate, aMid, aLevel);
 
   if (NS_SUCCEEDED(res)) {
     mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
@@ -1917,10 +1916,11 @@ PeerConnectionImpl::GetLocalDescription(char** aSDP)
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
   MOZ_ASSERT(aSDP);
+  std::string localSdp = mJsepSession->GetLocalDescription();
 
-  char* tmp = new char[mLocalSDP.size() + 1];
-  std::copy(mLocalSDP.begin(), mLocalSDP.end(), tmp);
-  tmp[mLocalSDP.size()] = '\0';
+  char* tmp = new char[localSdp.size() + 1];
+  std::copy(localSdp.begin(), localSdp.end(), tmp);
+  tmp[localSdp.size()] = '\0';
 
   *aSDP = tmp;
   return NS_OK;
@@ -1931,10 +1931,11 @@ PeerConnectionImpl::GetRemoteDescription(char** aSDP)
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
   MOZ_ASSERT(aSDP);
+  std::string remoteSdp = mJsepSession->GetRemoteDescription();
 
-  char* tmp = new char[mRemoteSDP.size() + 1];
-  std::copy(mRemoteSDP.begin(), mRemoteSDP.end(), tmp);
-  tmp[mRemoteSDP.size()] = '\0';
+  char* tmp = new char[remoteSdp.size() + 1];
+  std::copy(remoteSdp.begin(), remoteSdp.end(), tmp);
+  tmp[remoteSdp.size()] = '\0';
 
   *aSDP = tmp;
   return NS_OK;
@@ -2183,7 +2184,6 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   mSignalingState = aSignalingState;
   if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer ||
       mSignalingState == PCImplSignalingState::SignalingStable) {
-    MOZ_ASSERT(!mLocalSDP.empty());
     mMedia->UpdateTransports(mJsepSession);
   }
 
@@ -2309,7 +2309,6 @@ PeerConnectionImpl::CandidateReady(const std::string& candidate,
                                    uint16_t level) {
   PC_AUTO_ENTER_API_CALL_VOID_RETURN(false);
 
-  MOZ_ASSERT(!mLocalSDP.empty());
   FoundIceCandidate(candidate, level);
 }
 
@@ -2320,7 +2319,14 @@ void PeerConnectionImpl::FoundIceCandidate(const std::string& candidate,
   // something. Issue 179.
   std::string mid;
 
-  // TODO(ekr@rtfm.com): Tell JsepSession about this. Issue 153.
+  nsresult res = mJsepSession->AddLocalIceCandidate(candidate, mid, level);
+
+  if (NS_FAILED(res)) {
+    CSFLogError(logTag, "Failed to incorporate local candidate into SDP:"
+                        " res = %u, candidate = %s, level = %u",
+                        (unsigned)res, candidate.c_str(), (unsigned)level);
+  }
+
   CSFLogDebug(logTag, "Passing local candidate to content: %s",
               candidate.c_str());
   SendLocalIceCandidateToContent(level, mid, candidate);
@@ -2539,10 +2545,14 @@ PeerConnectionImpl::BuildStatsQuery_m(
 
   // Populate SDP on main
   if (query->internalStats) {
-    query->report->mLocalSdp.Construct(
-        NS_ConvertASCIItoUTF16(mLocalSDP.c_str()));
-    query->report->mRemoteSdp.Construct(
-        NS_ConvertASCIItoUTF16(mRemoteSDP.c_str()));
+    if (mJsepSession) {
+      std::string localDescription = mJsepSession->GetLocalDescription();
+      std::string remoteDescription = mJsepSession->GetRemoteDescription();
+      query->report->mLocalSdp.Construct(
+          NS_ConvertASCIItoUTF16(localDescription.c_str()));
+      query->report->mRemoteSdp.Construct(
+          NS_ConvertASCIItoUTF16(remoteDescription.c_str()));
+    }
   }
 
   // Gather up pipelines from mMedia so they may be inspected on STS
