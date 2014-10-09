@@ -649,6 +649,9 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
   mMedia->SignalIceGatheringStateChange.connect(
       this,
       &PeerConnectionImpl::IceGatheringStateChange);
+  mMedia->SignalEndOfLocalCandidates.connect(
+      this,
+      &PeerConnectionImpl::EndOfLocalCandidates);
   mMedia->SignalIceConnectionStateChange.connect(
       this,
       &PeerConnectionImpl::IceConnectionStateChange);
@@ -1587,6 +1590,14 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
     }
 
     std::string error_string = mJsepSession->last_error();
+
+    CSFLogError(logTag, "Failed to incorporate remote candidate into SDP:"
+                        " res = %u, candidate = %s, level = %u, error = %s",
+                        static_cast<unsigned>(res),
+                        aCandidate,
+                        static_cast<unsigned>(aLevel),
+                        error_string.c_str());
+
     pco->OnAddIceCandidateError(error, ObString(error_string.c_str()), rv);
   }
 
@@ -2322,9 +2333,14 @@ void PeerConnectionImpl::FoundIceCandidate(const std::string& candidate,
   nsresult res = mJsepSession->AddLocalIceCandidate(candidate, mid, level);
 
   if (NS_FAILED(res)) {
+    std::string error_string = mJsepSession->last_error();
+
     CSFLogError(logTag, "Failed to incorporate local candidate into SDP:"
-                        " res = %u, candidate = %s, level = %u",
-                        (unsigned)res, candidate.c_str(), (unsigned)level);
+                        " res = %u, candidate = %s, level = %u, error = %s",
+                        static_cast<unsigned>(res),
+                        candidate.c_str(),
+                        static_cast<unsigned>(level),
+                        error_string.c_str());
   }
 
   CSFLogDebug(logTag, "Passing local candidate to content: %s",
@@ -2510,6 +2526,14 @@ PeerConnectionImpl::IceGatheringStateChange(
   if (mIceGatheringState == PCImplIceGatheringState::Complete) {
     SendLocalIceCandidateToContent(0, "", "");
   }
+}
+
+void
+PeerConnectionImpl::EndOfLocalCandidates(const std::string& defaultAddr,
+                                         uint16_t defaultPort,
+                                         uint16_t level) {
+  CSFLogDebug(logTag, "%s", __FUNCTION__);
+  mJsepSession->EndOfLocalCandidates(defaultAddr, defaultPort, level);
 }
 
 #ifdef MOZILLA_INTERNAL_API
