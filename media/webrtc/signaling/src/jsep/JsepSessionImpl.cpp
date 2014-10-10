@@ -1078,13 +1078,13 @@ void JsepSessionImpl::SetState(JsepSignalingState state) {
 }
 
 nsresult JsepSessionImpl::AddCandidateToSdp(
-    Sdp& sdp,
+    Sdp* sdp,
     const std::string& candidate_untrimmed,
     const std::string& mid,
     uint16_t level,
     bool localSdp) {
 
-  if (level < sdp.GetMediaSectionCount()) {
+  if (level < sdp->GetMediaSectionCount()) {
     // Trim off a=candidate:
     size_t begin = candidate_untrimmed.find(':');
     if (begin == std::string::npos) {
@@ -1097,7 +1097,7 @@ nsresult JsepSessionImpl::AddCandidateToSdp(
 
     // TODO: mid Issue: 179
 
-    SdpMediaSection& msection = sdp.GetMediaSection(level);
+    SdpMediaSection& msection = sdp->GetMediaSection(level);
     SdpAttributeList& attr_list = msection.GetAttributeList();
 
     SdpMultiStringAttribute *candidates = nullptr;
@@ -1131,7 +1131,7 @@ nsresult JsepSessionImpl::AddRemoteIceCandidate(const std::string& candidate,
     return NS_ERROR_UNEXPECTED;
   }
 
-  return AddCandidateToSdp(*sdp, candidate, mid, level, false);
+  return AddCandidateToSdp(sdp, candidate, mid, level, false);
 }
 
 nsresult JsepSessionImpl::AddLocalIceCandidate(const std::string& candidate,
@@ -1148,7 +1148,7 @@ nsresult JsepSessionImpl::AddLocalIceCandidate(const std::string& candidate,
     return NS_ERROR_UNEXPECTED;
   }
 
-  return AddCandidateToSdp(*sdp, candidate, mid, level, true);
+  return AddCandidateToSdp(sdp, candidate, mid, level, true);
 }
 
 nsresult JsepSessionImpl::EndOfLocalCandidates(
