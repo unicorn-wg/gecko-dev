@@ -441,6 +441,7 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
         mLastError = "Cannot set local answer in current state";
         return NS_ERROR_UNEXPECTED;
       }
+      mIsOfferer = true;
       break;
     case kJsepStateHaveRemoteOffer:
       if (type != kJsepSdpAnswer && type != kJsepSdpPranswer) {
@@ -506,8 +507,7 @@ nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
   mPendingLocalDescription = Move(answer);
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
-                                        mPendingRemoteDescription,
-                                        false);
+                                        mPendingRemoteDescription);
   if(NS_FAILED(rv))
     return rv;
 
@@ -530,6 +530,7 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
         mLastError = "Cannot set remote answer in current state";
         return NS_ERROR_UNEXPECTED;
       }
+      mIsOfferer = false;
       break;
     case kJsepStateHaveLocalOffer:
     case kJsepStateHaveRemotePranswer:
@@ -567,12 +568,11 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 }
 
 nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
-                                                  const UniquePtr<Sdp>& remote,
-                                                  bool is_offerer) {
+                                                  const UniquePtr<Sdp>& remote) {
   bool remote_ice_lite = remote->GetAttributeList().HasAttribute(
       SdpAttribute::kIceLiteAttribute);
 
-  mIceControlling = remote_ice_lite || is_offerer;
+  mIceControlling = remote_ice_lite || mIsOfferer;
 
   if (local->GetMediaSectionCount() != remote->GetMediaSectionCount()) {
     MOZ_MTLOG(ML_ERROR, "Answer and offer have different number of m-lines");
@@ -588,8 +588,8 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
   for (size_t i = 0; i < local->GetMediaSectionCount(); ++i) {
     const SdpMediaSection& lm = local->GetMediaSection(i);
     const SdpMediaSection& rm = remote->GetMediaSection(i);
-    const SdpMediaSection& offer = is_offerer ? lm : rm;
-    const SdpMediaSection& answer = is_offerer ? rm : lm;
+    const SdpMediaSection& offer = mIsOfferer ? lm : rm;
+    const SdpMediaSection& answer = mIsOfferer ? rm : lm;
 
 
     if (lm.GetMediaType() != rm.GetMediaType()) {
@@ -624,7 +624,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
     rv = DetermineSendingDirection(offer.GetDirectionAttribute().mValue,
                                    answer.GetDirectionAttribute().mValue,
-                                   is_offerer, &sending, &receiving);
+                                   &sending, &receiving);
     if (NS_FAILED(rv))
       return rv;
 
@@ -655,7 +655,6 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     rv = SetupTransport(rm.GetAttributeList(),
                         offer.GetAttributeList(),
                         answer.GetAttributeList(),
-                        is_offerer,
                         transport);
     if (NS_FAILED(rv))
       return rv;
@@ -675,7 +674,6 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
       rv = SetupTransport(rm.GetAttributeList(),
                           offer.GetAttributeList(),
                           answer.GetAttributeList(),
-                          is_offerer,
                           transport);
       if (NS_FAILED(rv))
         return rv;
@@ -762,7 +760,6 @@ nsresult JsepSessionImpl::CreateTransport(const SdpMediaSection& msection,
 nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
                                          const SdpAttributeList& offer,
                                          const SdpAttributeList& answer,
-                                         bool is_offerer,
                                          const RefPtr<JsepTransport>&
                                          transport) {
   UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
@@ -791,11 +788,11 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
   UniquePtr<JsepDtlsTransportImpl> dtls = MakeUnique<JsepDtlsTransportImpl>();
   dtls->mFingerprints = remote.GetFingerprint();
   if (!answer.HasAttribute(mozilla::SdpAttribute::kSetupAttribute)) {
-    dtls->mRole = is_offerer ?
+    dtls->mRole = mIsOfferer ?
         JsepDtlsTransport::kJsepDtlsServer :
         JsepDtlsTransport::kJsepDtlsClient;
   } else {
-    if (is_offerer) {
+    if (mIsOfferer) {
       dtls->mRole = (answer.GetSetup().mRole == SdpSetupAttribute::kActive) ?
         JsepDtlsTransport::kJsepDtlsServer :
         JsepDtlsTransport::kJsepDtlsClient;
@@ -816,7 +813,6 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
 nsresult JsepSessionImpl::DetermineSendingDirection(
     SdpDirectionAttribute::Direction offer,
     SdpDirectionAttribute::Direction answer,
-    bool is_offerer,
     bool* sending, bool* receiving) {
   if (answer == SdpDirectionAttribute::kSendrecv) {
     if (offer != SdpDirectionAttribute::kSendrecv) {
@@ -837,7 +833,7 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
       mLastError = "Answer tried to change m-line to recvonly";
       return NS_ERROR_INVALID_ARG;
     }
-    if (is_offerer) {
+    if (mIsOfferer) {
       *sending = true; *receiving = false;
     } else {
       *sending = false; *receiving = true;
@@ -851,7 +847,7 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
       mLastError = "Answer tried to change m-line to sendonly";
       return NS_ERROR_INVALID_ARG;
     }
-    if (is_offerer) {
+    if (mIsOfferer) {
       *sending = false; *receiving = true;
     } else {
       *sending = true; *receiving = false;
@@ -880,11 +876,15 @@ nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection,
     return NS_ERROR_FAILURE;
   }
 
-  msection->GetAttributeList().SetAttribute(new SdpStringAttribute(
+  SdpAttributeList& attrList = msection->GetAttributeList();
+  attrList.SetAttribute(new SdpStringAttribute(
       SdpAttribute::kIceUfragAttribute, mIceUfrag));
-  msection->GetAttributeList().SetAttribute(new SdpStringAttribute(
+  attrList.SetAttribute(new SdpStringAttribute(
       SdpAttribute::kIcePwdAttribute, mIcePwd));
-
+  SdpMultiStringAttribute* iceOptions
+      = new SdpMultiStringAttribute(SdpAttribute::kIceOptionsAttribute, false);
+  iceOptions->PushEntry("trickle");
+  attrList.SetAttribute(iceOptions);
 
   UniquePtr<SdpFingerprintAttributeList> fpl =
       MakeUnique<SdpFingerprintAttributeList>();
@@ -963,8 +963,7 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
   mPendingRemoteDescription = Move(answer);
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
-                                        mPendingRemoteDescription,
-                                        true);
+                                        mPendingRemoteDescription);
   if(NS_FAILED(rv))
     return rv;
 
@@ -1172,7 +1171,14 @@ nsresult JsepSessionImpl::EndOfLocalCandidates(
     SdpMediaSection& msection = sdp->GetMediaSection(level);
     msection.GetConnection().SetAddress(defaultCandidateAddr);
     msection.SetPort(defaultCandidatePort);
-    // TODO: end-of-candidates attribute Issue 200
+
+    SdpAttributeList& attrs = msection.GetAttributeList();
+    MOZ_ASSERT(!attrs.HasAttribute(SdpAttribute::kEndOfCandidatesAttribute));
+    attrs.SetAttribute(
+        new SdpFlagAttribute(SdpAttribute::kEndOfCandidatesAttribute));
+    if (!mIsOfferer) {
+      attrs.RemoveAttribute(SdpAttribute::kIceOptionsAttribute);
+    }
   }
 
   return NS_OK;

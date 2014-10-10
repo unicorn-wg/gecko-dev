@@ -198,6 +198,7 @@ enum sdpTestFlags
 
   SHOULD_INCLUDE_DATA   = (1 << 16),
   DONT_CHECK_DATA       = (1 << 17),
+  NO_TRICKLE_OPTION     = (1 << 18),
 
   SHOULD_SENDRECV_AUDIO = SHOULD_SEND_AUDIO | SHOULD_RECV_AUDIO,
   SHOULD_SENDRECV_VIDEO = SHOULD_SEND_VIDEO | SHOULD_RECV_VIDEO,
@@ -255,8 +256,8 @@ public:
   TestObserver(sipcc::PeerConnectionImpl *peerConnection,
                const std::string &aName) :
     AFakePCObserver(peerConnection, aName),
-    peerAgent(nullptr),
-    lastAddIceStatusCode(sipcc::PeerConnectionImpl::kNoError)
+    lastAddIceStatusCode(sipcc::PeerConnectionImpl::kNoError),
+    peerAgent(nullptr)
     {}
 
   size_t MatchingCandidates(const std::string& cand) {
@@ -1456,6 +1457,7 @@ private:
 
               << ((flags & SHOULD_INCLUDE_DATA)?" SHOULD_INCLUDE_DATA":"")
               << ((flags & DONT_CHECK_DATA)?" DONT_CHECK_DATA":"")
+              << ((flags & NO_TRICKLE_OPTION)?" NO_TRICKLE_OPTION":"")
               << std::endl;
 
     switch(flags & AUDIO_FLAGS) {
@@ -1545,6 +1547,10 @@ private:
       ASSERT_NE(sdp.find("m=application"), std::string::npos);
     } else if (!(flags & DONT_CHECK_DATA)) {
       ASSERT_EQ(sdp.find("m=application"), std::string::npos);
+    }
+
+    if (!(flags & NO_TRICKLE_OPTION)) {
+      ASSERT_NE(sdp.find("a=ice-options:trickle"), std::string::npos);
     }
   }
 
@@ -2157,7 +2163,8 @@ TEST_F(SignalingTest, OfferAnswerNoTrickle)
 {
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
-              SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AV,
+              SHOULD_SENDRECV_AV,
+              SHOULD_SENDRECV_AV | NO_TRICKLE_OPTION,
               NO_TRICKLE);
 }
 
@@ -2165,7 +2172,8 @@ TEST_F(SignalingTest, OfferAnswerOffererTrickles)
 {
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
-              SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AV,
+              SHOULD_SENDRECV_AV,
+              SHOULD_SENDRECV_AV | NO_TRICKLE_OPTION,
               OFFERER_TRICKLES);
 }
 
