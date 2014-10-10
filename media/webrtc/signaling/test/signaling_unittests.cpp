@@ -198,7 +198,8 @@ enum sdpTestFlags
 
   SHOULD_INCLUDE_DATA   = (1 << 16),
   DONT_CHECK_DATA       = (1 << 17),
-  NO_TRICKLE_OPTION     = (1 << 18),
+
+  HAS_ALL_CANDIDATES     = (1 << 18),
 
   SHOULD_SENDRECV_AUDIO = SHOULD_SEND_AUDIO | SHOULD_RECV_AUDIO,
   SHOULD_SENDRECV_VIDEO = SHOULD_SEND_VIDEO | SHOULD_RECV_VIDEO,
@@ -257,7 +258,8 @@ public:
                const std::string &aName) :
     AFakePCObserver(peerConnection, aName),
     lastAddIceStatusCode(sipcc::PeerConnectionImpl::kNoError),
-    peerAgent(nullptr)
+    peerAgent(nullptr),
+    trickleCandidates(true)
     {}
 
   size_t MatchingCandidates(const std::string& cand) {
@@ -298,6 +300,7 @@ public:
   sipcc::PeerConnectionImpl::Error lastAddIceStatusCode;
 
   SignalingAgent* peerAgent;
+  bool trickleCandidates;
 };
 
 NS_IMPL_ISUPPORTS(TestObserver, nsISupportsWeakReference)
@@ -1165,8 +1168,9 @@ class SignalingAgent {
 
   // sets the offer to match the local description
   // which isn't good if you are the answerer
-  void UpdateOffer() {
+  void UpdateOffer(uint32_t sdpCheck) {
     offer_ = getLocalDescription();
+    SDPSanityCheck(offer_, sdpCheck, true);
   }
 
   void CreateAnswer(uint32_t offerAnswerFlags,
@@ -1198,8 +1202,9 @@ class SignalingAgent {
 
   // sets the answer to match the local description
   // which isn't good if you are the offerer
-  void UpdateAnswer() {
+  void UpdateAnswer(uint32_t sdpCheck) {
     answer_ = getLocalDescription();
+    SDPSanityCheck(answer_, sdpCheck, false);
   }
 
   // At present, we use the hints field in a stream to find and
@@ -1465,7 +1470,7 @@ private:
 
               << ((flags & SHOULD_INCLUDE_DATA)?" SHOULD_INCLUDE_DATA":"")
               << ((flags & DONT_CHECK_DATA)?" DONT_CHECK_DATA":"")
-              << ((flags & NO_TRICKLE_OPTION)?" NO_TRICKLE_OPTION":"")
+              << ((flags & HAS_ALL_CANDIDATES)?" HAS_ALL_CANDIDATES":"")
               << std::endl;
 
     switch(flags & AUDIO_FLAGS) {
@@ -1557,7 +1562,18 @@ private:
       ASSERT_EQ(sdp.find("m=application"), std::string::npos);
     }
 
-    if (!(flags & NO_TRICKLE_OPTION)) {
+    bool requireTrickleOption = true;
+    if (flags & HAS_ALL_CANDIDATES) {
+      ASSERT_NE(sdp.find("a=candidate"), std::string::npos)
+                << "should have at least one candidate";
+      ASSERT_NE(sdp.find("a=end-of-candidates"), std::string::npos);
+      ASSERT_EQ(sdp.find("c=IN IP4 0.0.0.0"), std::string::npos);
+      if (!offer) {
+        requireTrickleOption = false;
+      }
+    }
+
+    if (requireTrickleOption) {
       ASSERT_NE(sdp.find("a=ice-options:trickle"), std::string::npos);
     }
   }
@@ -1606,7 +1622,7 @@ static void AddIceCandidateToPeer(nsWeakPtr weak_observer,
 
   observer->candidates.push_back(cand);
 
-  if (!observer->peerAgent) {
+  if (!observer->peerAgent || !observer->trickleCandidates) {
     return;
   }
 
@@ -1755,10 +1771,12 @@ public:
              TrickleType trickleType = BOTH_TRICKLE) {
     EnsureInit();
     a1_->CreateOffer(options, offerAnswerFlags, offerSdpCheck);
+    bool trickle = !!(trickleType & OFFERER_TRICKLES);
+    a1_->pObserver->trickleCandidates = trickle;
     a1_->SetLocal(TestObserver::OFFER, a1_->offer());
-    if (!(trickleType & OFFERER_TRICKLES)) {
+    if (!trickle) {
       a1_->WaitForGather();
-      a1_->UpdateOffer();
+      a1_->UpdateOffer(offerSdpCheck | HAS_ALL_CANDIDATES);
     }
     a2_->SetRemote(TestObserver::OFFER, a1_->offer());
   }
@@ -1769,10 +1787,12 @@ public:
               TrickleType trickleType = BOTH_TRICKLE) {
 
     a2_->CreateAnswer(offerAnswerFlags, answerSdpCheck);
+    bool trickle = !!(trickleType & ANSWERER_TRICKLES);
+    a2_->pObserver->trickleCandidates = trickle;
     a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
-    if (!(trickleType & ANSWERER_TRICKLES)) {
+    if (!trickle) {
       a2_->WaitForGather();
-      a2_->UpdateAnswer();
+      a2_->UpdateAnswer(answerSdpCheck | HAS_ALL_CANDIDATES);
     }
     a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
   }
@@ -2189,7 +2209,7 @@ TEST_F(SignalingTest, OfferAnswerNoTrickle)
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
               SHOULD_SENDRECV_AV,
-              SHOULD_SENDRECV_AV | NO_TRICKLE_OPTION,
+              SHOULD_SENDRECV_AV,
               NO_TRICKLE);
 }
 
@@ -2198,7 +2218,7 @@ TEST_F(SignalingTest, OfferAnswerOffererTrickles)
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
               SHOULD_SENDRECV_AV,
-              SHOULD_SENDRECV_AV | NO_TRICKLE_OPTION,
+              SHOULD_SENDRECV_AV,
               OFFERER_TRICKLES);
 }
 
