@@ -32,7 +32,7 @@ public:
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttributeList& GetFingerprint() const MOZ_OVERRIDE;
   virtual const SdpGroupAttributeList& GetGroup() const MOZ_OVERRIDE;
-  virtual const SdpIceOptionsAttribute& GetIceOptions() const MOZ_OVERRIDE;
+  virtual const SdpMultiStringAttribute& GetIceOptions() const MOZ_OVERRIDE;
   virtual const SdpRtcpAttribute& GetRtcp() const MOZ_OVERRIDE;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const MOZ_OVERRIDE;
   virtual const SdpSetupAttribute& GetSetup() const MOZ_OVERRIDE;
