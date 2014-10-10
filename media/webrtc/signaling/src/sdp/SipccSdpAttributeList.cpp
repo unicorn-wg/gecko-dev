@@ -222,6 +222,22 @@ SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
                                         std::string(value)));
   }
 
+  const char* iceOptVal = sdp_attr_get_simple_string(sdp, SDP_ATTR_ICE_OPTIONS,
+                                                     level, 0, 1);
+  if (iceOptVal) {
+    std::string iceOptStr = iceOptVal;
+    auto* iceOptions = new SdpMultiStringAttribute(
+        SdpAttribute::kIceOptionsAttribute, false);
+    size_t start = 0;
+    size_t end = iceOptStr.find(' ');
+    while (end != std::string::npos) {
+      iceOptions->PushEntry(iceOptStr.substr(start, end));
+      start = end + 1;
+      end = iceOptStr.find(' ', start);
+    }
+    iceOptions->PushEntry(iceOptStr.substr(start));
+    SetAttribute(iceOptions);
+  }
 }
 
 void
@@ -889,9 +905,14 @@ SipccSdpAttributeList::GetGroup() const {
         SdpAttribute::kGroupAttribute));
 }
 
-const SdpIceOptionsAttribute&
+const SdpMultiStringAttribute&
 SipccSdpAttributeList::GetIceOptions() const {
-  MOZ_CRASH("Not yet implemented.");
+  if (!HasAttribute(SdpAttribute::kIceOptionsAttribute)) {
+    MOZ_CRASH();
+  }
+
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kIceOptionsAttribute);
+  return *static_cast<const SdpMultiStringAttribute*>(attr);
 }
 
 const std::string&

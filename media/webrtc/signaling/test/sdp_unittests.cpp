@@ -1080,6 +1080,7 @@ const std::string kBasicAudioVideoOffer =
 "a=ice-ufrag:4a799b2e" CRLF
 "a=ice-pwd:e4cc12a910f106a0a744719425510e17" CRLF
 "a=ice-lite" CRLF
+"a=ice-options:trickle" CRLF
 "a=msid-semantic:WMS plus" CRLF
 "a=fingerprint:sha-256 DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C" CRLF
 "a=group:BUNDLE first second" CRLF
@@ -1138,6 +1139,7 @@ const std::string kBasicAudioVideoOffer =
 "a=mid:third" CRLF
 "a=rtpmap:0 PCMU/8000" CRLF
 "a=ice-lite" CRLF
+"a=ice-options:foo bar" CRLF
 "a=msid:noappdata" CRLF
 "a=bundle-only" CRLF;
 
@@ -1152,6 +1154,14 @@ TEST_P(NewSdpTest, CheckIceUfrag) {
         SdpAttribute::kIceUfragAttribute));
   auto ice_ufrag = mSdp->GetAttributeList().GetIceUfrag();
   ASSERT_EQ("4a799b2e", ice_ufrag) << "Wrong ice-ufrag value";
+
+  ice_ufrag = mSdp->GetMediaSection(0)
+      .GetAttributeList().GetIceUfrag();
+  ASSERT_EQ("00000000", ice_ufrag) << "ice-ufrag isn't overridden";
+
+  ice_ufrag = mSdp->GetMediaSection(1)
+      .GetAttributeList().GetIceUfrag();
+  ASSERT_EQ("4a799b2e", ice_ufrag) << "ice-ufrag isn't carried to m-section";
 }
 
 TEST_P(NewSdpTest, CheckIcePwd) {
@@ -1161,6 +1171,32 @@ TEST_P(NewSdpTest, CheckIcePwd) {
         SdpAttribute::kIcePwdAttribute));
   auto ice_pwd = mSdp->GetAttributeList().GetIcePwd();
   ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd) << "Wrong ice-pwd value";
+
+  ice_pwd = mSdp->GetMediaSection(0)
+      .GetAttributeList().GetIcePwd();
+  ASSERT_EQ("0000000000000000000000000000000", ice_pwd)
+      << "ice-pwd isn't overridden";
+
+  ice_pwd = mSdp->GetMediaSection(1)
+      .GetAttributeList().GetIcePwd();
+  ASSERT_EQ("e4cc12a910f106a0a744719425510e17", ice_pwd)
+      << "ice-pwd isn't carried to m-section";
+}
+
+TEST_P(NewSdpTest, CheckIceOptions) {
+  ParseSdp(kBasicAudioVideoOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_TRUE(mSdp->GetAttributeList().HasAttribute(
+        SdpAttribute::kIceOptionsAttribute));
+  auto ice_options = mSdp->GetAttributeList().GetIceOptions();
+  ASSERT_EQ(1U, ice_options.mValues.size()) << "Wrong ice-options size";
+  ASSERT_EQ("trickle", ice_options.mValues[0]) << "Wrong ice-options value";
+
+  ice_options = mSdp->GetMediaSection(2)
+      .GetAttributeList().GetIceOptions();
+  ASSERT_EQ(2U, ice_options.mValues.size());
+  ASSERT_EQ("foo", ice_options.mValues[0]);
+  ASSERT_EQ("bar", ice_options.mValues[1]);
 }
 
 TEST_P(NewSdpTest, CheckFingerprint) {
