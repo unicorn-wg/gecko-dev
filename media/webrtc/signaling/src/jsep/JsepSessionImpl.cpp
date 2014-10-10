@@ -140,8 +140,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
   // Make the basic SDP that is common to offer/answer.
   nsresult rv = CreateGenericSDP(&sdp);
-  if (NS_FAILED(rv))
-    return rv;
+  NS_ENSURE_SUCCESS(rv, rv);
 
   // Now add all the m-lines that we are attempting to negotiate.
   size_t mline_index = 0;
@@ -169,8 +168,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
     rv = AddTransportAttributes(&msection, kJsepSdpOffer,
                                 SdpSetupAttribute::kActpass);
-    if (NS_FAILED(rv))
-      return rv;
+    NS_ENSURE_SUCCESS(rv, rv);
 
     // Set RTCP-MUX.
     msection.GetAttributeList().SetAttribute(
@@ -189,8 +187,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     AddCodecs(SdpMediaSection::kAudio, &msection);
     rv = AddTransportAttributes(&msection, kJsepSdpOffer,
                                 SdpSetupAttribute::kActpass);
-    if (NS_FAILED(rv))
-      return rv;
+    NS_ENSURE_SUCCESS(rv, rv);
     ++nAudio;
   }
   while (options.mOfferToReceiveVideo.isSome() && nVideo <
@@ -200,8 +197,7 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     AddCodecs(SdpMediaSection::kVideo, &msection);
     rv = AddTransportAttributes(&msection, kJsepSdpOffer,
                                 SdpSetupAttribute::kActpass);
-    if (NS_FAILED(rv))
-      return rv;
+    NS_ENSURE_SUCCESS(rv, rv);
     ++nVideo;
   }
 
@@ -303,8 +299,7 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
   // Make the basic SDP that is common to offer/answer.
   nsresult rv = CreateGenericSDP(&sdp);
-  if (NS_FAILED(rv))
-    return rv;
+  NS_ENSURE_SUCCESS(rv, rv);
 
   const Sdp& offer = *mPendingRemoteDescription;
 
@@ -318,8 +313,7 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
     rv = CreateAnswerMSection(
         options, i, remote_msection, &msection, sdp.get());
-    if (NS_FAILED(rv))
-      return rv;
+    NS_ENSURE_SUCCESS(rv, rv);
   }
 
   *answer = sdp->toString();
@@ -336,12 +330,10 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
                                                Sdp* sdp) {
   SdpSetupAttribute::Role role;
   nsresult rv = DetermineAnswererSetupRole(remote_msection, &role);
-  if (NS_FAILED(rv))
-    return rv;
+  NS_ENSURE_SUCCESS(rv, rv);
 
   rv = AddTransportAttributes(msection, kJsepSdpAnswer, role);
-  if (NS_FAILED(rv))
-    return rv;
+  NS_ENSURE_SUCCESS(rv, rv);
 
   bool matched = false;
 
@@ -456,9 +448,7 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
 
   UniquePtr<Sdp> parsed;
   nsresult rv = ParseSdp(sdp, &parsed);
-  if (NS_FAILED(rv)) {
-    return rv;
-  }
+  NS_ENSURE_SUCCESS(rv, rv);
 
   rv = NS_ERROR_FAILURE;
 
@@ -508,8 +498,7 @@ nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
                                         mPendingRemoteDescription);
-  if(NS_FAILED(rv))
-    return rv;
+  NS_ENSURE_SUCCESS(rv, rv);
 
   mCurrentRemoteDescription = Move(mPendingRemoteDescription);
   mCurrentLocalDescription = Move(mPendingLocalDescription);
@@ -547,9 +536,7 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
   // Parse.
   UniquePtr<Sdp> parsed;
   nsresult rv = ParseSdp(sdp, &parsed);
-  if (NS_FAILED(rv)) {
-    return rv;
-  }
+  NS_ENSURE_SUCCESS(rv, rv);
 
   rv = NS_ERROR_FAILURE;
 
@@ -625,8 +612,7 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     rv = DetermineSendingDirection(offer.GetDirectionAttribute().mValue,
                                    answer.GetDirectionAttribute().mValue,
                                    &sending, &receiving);
-    if (NS_FAILED(rv))
-      return rv;
+    NS_ENSURE_SUCCESS(rv, rv);
 
     MOZ_MTLOG(ML_DEBUG, "Negotiated m= line"
               << " index=" << i
@@ -642,22 +628,19 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     if (sending) {
       rv = CreateTrack(rm, JsepTrack::kJsepTrackSending,
                        &jpair->mSending);
-      if (NS_FAILED(rv))
-        return rv;
+      NS_ENSURE_SUCCESS(rv, rv);
     }
     if (receiving) {
       rv = CreateTrack(rm, JsepTrack::kJsepTrackReceiving,
                        &jpair->mReceiving);
-      if (NS_FAILED(rv))
-        return rv;
+      NS_ENSURE_SUCCESS(rv, rv);
     }
 
     rv = SetupTransport(rm.GetAttributeList(),
                         offer.GetAttributeList(),
                         answer.GetAttributeList(),
                         transport);
-    if (NS_FAILED(rv))
-      return rv;
+    NS_ENSURE_SUCCESS(rv, rv);
     jpair->mRtpTransport = transport;
 
     // RTCP MUX or not.
@@ -675,8 +658,8 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
                           offer.GetAttributeList(),
                           answer.GetAttributeList(),
                           transport);
-      if (NS_FAILED(rv))
-        return rv;
+      NS_ENSURE_SUCCESS(rv, rv);
+
       jpair->mRtcpTransport = transport;
     }
 
@@ -964,8 +947,7 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
                                         mPendingRemoteDescription);
-  if(NS_FAILED(rv))
-    return rv;
+  NS_ENSURE_SUCCESS(rv, rv);
 
   mCurrentRemoteDescription = Move(mPendingRemoteDescription);
   mCurrentLocalDescription = Move(mPendingLocalDescription);
