@@ -198,7 +198,8 @@ enum sdpTestFlags
 
   SHOULD_INCLUDE_DATA   = (1 << 16),
   DONT_CHECK_DATA       = (1 << 17),
-  NO_TRICKLE_OPTION     = (1 << 18),
+
+  HAS_ALL_CANDIDATES     = (1 << 18),
 
   SHOULD_SENDRECV_AUDIO = SHOULD_SEND_AUDIO | SHOULD_RECV_AUDIO,
   SHOULD_SENDRECV_VIDEO = SHOULD_SEND_VIDEO | SHOULD_RECV_VIDEO,
@@ -257,7 +258,8 @@ public:
                const std::string &aName) :
     AFakePCObserver(peerConnection, aName),
     lastAddIceStatusCode(sipcc::PeerConnectionImpl::kNoError),
-    peerAgent(nullptr)
+    peerAgent(nullptr),
+    trickleCandidates(true)
     {}
 
   size_t MatchingCandidates(const std::string& cand) {
@@ -298,6 +300,7 @@ public:
   sipcc::PeerConnectionImpl::Error lastAddIceStatusCode;
 
   SignalingAgent* peerAgent;
+  bool trickleCandidates;
 };
 
 NS_IMPL_ISUPPORTS(TestObserver, nsISupportsWeakReference)
@@ -1065,23 +1068,19 @@ class SignalingAgent {
   }
 
   bool OfferContains(const std::string& str) {
-    std::string o(offer());
-
-    return o.find(str) != std::string::npos;
+    return offer().find(str) != std::string::npos;
   }
 
   bool AnswerContains(const std::string& str) {
-    std::string o(answer());
-
-    return o.find(str) != std::string::npos;
+    return answer().find(str) != std::string::npos;
   }
 
   size_t MatchingCandidates(const std::string& cand) {
     return pObserver->MatchingCandidates(cand);
   }
 
-  const char* offer() const { return offer_.c_str(); }
-  const char* answer() const { return answer_.c_str(); }
+  const std::string& offer() const { return offer_; }
+  const std::string& answer() const { return answer_; }
 
   std::string getLocalDescription() const {
     char *sdp = nullptr;
@@ -1162,12 +1161,19 @@ class SignalingAgent {
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->CreateOffer(options), NS_OK);
     ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
-    SDPSanityCheck(pObserver->lastString.c_str(), sdpCheck, true);
+    SDPSanityCheck(pObserver->lastString, sdpCheck, true);
     ASSERT_EQ(signaling_state(), endState);
     offer_ = pObserver->lastString;
   }
 
-void CreateAnswer(uint32_t offerAnswerFlags,
+  // sets the offer to match the local description
+  // which isn't good if you are the answerer
+  void UpdateOffer(uint32_t sdpCheck) {
+    offer_ = getLocalDescription();
+    SDPSanityCheck(offer_, sdpCheck, true);
+  }
+
+  void CreateAnswer(uint32_t offerAnswerFlags,
                     uint32_t sdpCheck = DONT_CHECK_AUDIO|
                                         DONT_CHECK_VIDEO|
                                         DONT_CHECK_DATA,
@@ -1188,10 +1194,17 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->CreateAnswer(), NS_OK);
     ASSERT_EQ(pObserver->state, TestObserver::stateSuccess);
-    SDPSanityCheck(pObserver->lastString.c_str(), sdpCheck, false);
+    SDPSanityCheck(pObserver->lastString, sdpCheck, false);
     ASSERT_EQ(signaling_state(), endState);
 
     answer_ = pObserver->lastString;
+  }
+
+  // sets the answer to match the local description
+  // which isn't good if you are the offerer
+  void UpdateAnswer(uint32_t sdpCheck) {
+    answer_ = getLocalDescription();
+    SDPSanityCheck(answer_, sdpCheck, false);
   }
 
   // At present, we use the hints field in a stream to find and
@@ -1214,14 +1227,14 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     pObserver->state = TestObserver::stateNoResponse;
     ASSERT_EQ(pc->CreateOffer(options), NS_OK);
     ASSERT_TRUE(pObserver->state == TestObserver::stateSuccess);
-    SDPSanityCheck(pObserver->lastString.c_str(), sdpCheck, true);
+    SDPSanityCheck(pObserver->lastString, sdpCheck, true);
     offer_ = pObserver->lastString;
   }
 
-  void SetRemote(TestObserver::Action action, std::string remote,
+  void SetRemote(TestObserver::Action action, const std::string& remote,
                  bool ignoreError = false,
                  PCImplSignalingState endState =
-                   PCImplSignalingState::SignalingInvalid) {
+                 PCImplSignalingState::SignalingInvalid) {
 
     if (endState == PCImplSignalingState::SignalingInvalid) {
       endState = (action == TestObserver::OFFER ?
@@ -1247,10 +1260,10 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     deferredCandidates_.clear();
   }
 
-  void SetLocal(TestObserver::Action action, std::string local,
+  void SetLocal(TestObserver::Action action, const std::string& local,
                 bool ignoreError = false,
                 PCImplSignalingState endState =
-                  PCImplSignalingState::SignalingInvalid) {
+                PCImplSignalingState::SignalingInvalid) {
 
     if (endState == PCImplSignalingState::SignalingInvalid) {
       endState = (action == TestObserver::OFFER ?
@@ -1275,22 +1288,22 @@ void CreateAnswer(uint32_t offerAnswerFlags,
     return pc->IceConnectionState() == PCImplIceConnectionState::Connected;
   }
 
-  void AddIceCandidateStr(std::string candidate, std::string mid,
-                       unsigned short level) {
+  void AddIceCandidateStr(const std::string& candidate, const std::string& mid,
+                          unsigned short level) {
     if (getRemoteDescription().empty()) {
       // Not time to add this, because the unit-test code hasn't set the
       // description yet.
       deferredCandidates_.push_back({candidate, mid, level, true});
     } else {
-      AddIceCandidate(candidate.c_str(), mid.c_str(), level, true);
+      AddIceCandidate(candidate, mid, level, true);
     }
   }
 
-  void AddIceCandidate(const char *candidate, const char* mid, unsigned short level,
+  void AddIceCandidate(const std::string& candidate, const std::string& mid, unsigned short level,
                        bool expectSuccess) {
     PCImplSignalingState endState = signaling_state();
     pObserver->addIceCandidateState = TestObserver::stateNoResponse;
-    pc->AddIceCandidate(candidate, mid, level);
+    pc->AddIceCandidate(candidate.c_str(), mid.c_str(), level);
     ASSERT_TRUE(pObserver->addIceCandidateState ==
                 expectSuccess ? TestObserver::stateSuccess :
                                 TestObserver::stateError
@@ -1429,7 +1442,7 @@ public:
   std::list<DeferredCandidate> deferredCandidates_;
 
 private:
-  void SDPSanityCheck(std::string sdp, uint32_t flags, bool offer)
+  void SDPSanityCheck(const std::string& sdp, uint32_t flags, bool offer)
   {
     ASSERT_TRUE(pObserver->state == TestObserver::stateSuccess);
     ASSERT_NE(sdp.find("v=0"), std::string::npos);
@@ -1457,7 +1470,7 @@ private:
 
               << ((flags & SHOULD_INCLUDE_DATA)?" SHOULD_INCLUDE_DATA":"")
               << ((flags & DONT_CHECK_DATA)?" DONT_CHECK_DATA":"")
-              << ((flags & NO_TRICKLE_OPTION)?" NO_TRICKLE_OPTION":"")
+              << ((flags & HAS_ALL_CANDIDATES)?" HAS_ALL_CANDIDATES":"")
               << std::endl;
 
     switch(flags & AUDIO_FLAGS) {
@@ -1549,25 +1562,45 @@ private:
       ASSERT_EQ(sdp.find("m=application"), std::string::npos);
     }
 
-    if (!(flags & NO_TRICKLE_OPTION)) {
+    bool requireTrickleOption = true;
+    if (flags & HAS_ALL_CANDIDATES) {
+      ASSERT_NE(sdp.find("a=candidate"), std::string::npos)
+                << "should have at least one candidate";
+      ASSERT_NE(sdp.find("a=end-of-candidates"), std::string::npos);
+      ASSERT_EQ(sdp.find("c=IN IP4 0.0.0.0"), std::string::npos);
+      if (!offer) {
+        requireTrickleOption = false;
+      }
+    }
+
+    if (requireTrickleOption) {
       ASSERT_NE(sdp.find("a=ice-options:trickle"), std::string::npos);
     }
   }
 
-  void AssertWildCardExpressionExists(std::string sdp, std::string expr)
+  void AssertWildCardExpressionExists(const std::string& sdp,
+                                      const std::string& expr)
   {
-    int wildcard_pos=expr.find("*");
-    size_t firstPart=sdp.find(expr.substr(0, wildcard_pos));
-    size_t secondPart=sdp.find(expr.substr(wildcard_pos+1));
-    ASSERT_TRUE(firstPart != std::string::npos && secondPart != std::string::npos);
+    size_t wildcard_pos = expr.find("*");
+    ASSERT_NE(wildcard_pos, std::string::npos);
+    size_t firstPart = sdp.find(expr.substr(0, wildcard_pos));
+    ASSERT_NE(firstPart, std::string::npos);
+    size_t secondPart = sdp.find(expr.substr(wildcard_pos+1),
+                                 firstPart + wildcard_pos);
+    ASSERT_NE(secondPart, std::string::npos);
   }
 
-  void AssertWildCardExpressionNotExists(std::string sdp, std::string expr)
+  void AssertWildCardExpressionNotExists(const std::string& sdp,
+                                         const std::string& expr)
   {
-    int wildcard_pos=expr.find("*");
-    size_t firstPart=sdp.find(expr.substr(0, wildcard_pos));
-    size_t secondPart=sdp.find(expr.substr(wildcard_pos+1));
-    ASSERT_FALSE(firstPart == std::string::npos && secondPart == std::string::npos);
+    size_t wildcard_pos = expr.find("*");
+    ASSERT_NE(wildcard_pos, std::string::npos);
+    size_t firstPart = sdp.find(expr.substr(0, wildcard_pos));
+    if (firstPart != std::string::npos) {
+      size_t secondPart = sdp.find(expr.substr(wildcard_pos + 1),
+                                   firstPart + wildcard_pos);
+      ASSERT_EQ(secondPart, std::string::npos);
+    }
   }
 };
 
@@ -1589,7 +1622,7 @@ static void AddIceCandidateToPeer(nsWeakPtr weak_observer,
 
   observer->candidates.push_back(cand);
 
-  if (!observer->peerAgent) {
+  if (!observer->peerAgent || !observer->trickleCandidates) {
     return;
   }
 
@@ -1738,7 +1771,13 @@ public:
              TrickleType trickleType = BOTH_TRICKLE) {
     EnsureInit();
     a1_->CreateOffer(options, offerAnswerFlags, offerSdpCheck);
+    bool trickle = !!(trickleType & OFFERER_TRICKLES);
+    a1_->pObserver->trickleCandidates = trickle;
     a1_->SetLocal(TestObserver::OFFER, a1_->offer());
+    if (!trickle) {
+      a1_->WaitForGather();
+      a1_->UpdateOffer(offerSdpCheck | HAS_ALL_CANDIDATES);
+    }
     a2_->SetRemote(TestObserver::OFFER, a1_->offer());
   }
 
@@ -1748,7 +1787,13 @@ public:
               TrickleType trickleType = BOTH_TRICKLE) {
 
     a2_->CreateAnswer(offerAnswerFlags, answerSdpCheck);
+    bool trickle = !!(trickleType & ANSWERER_TRICKLES);
+    a2_->pObserver->trickleCandidates = trickle;
     a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
+    if (!trickle) {
+      a2_->WaitForGather();
+      a2_->UpdateAnswer(answerSdpCheck | HAS_ALL_CANDIDATES);
+    }
     a1_->SetRemote(TestObserver::ANSWER, a2_->answer());
   }
 
@@ -1800,14 +1845,14 @@ public:
   }
 
   void CreateOfferAddCandidate(sipcc::OfferOptions& options,
-                               const char * candidate, const char * mid,
+                               const std::string& candidate, const std::string& mid,
                                unsigned short level, uint32_t sdpCheck) {
     EnsureInit();
     a1_->CreateOffer(options, OFFER_AV, sdpCheck);
     a1_->AddIceCandidate(candidate, mid, level, true);
   }
 
-  void AddIceCandidateEarly(const char * candidate, const char * mid,
+  void AddIceCandidateEarly(const std::string& candidate, const std::string& mid,
                             unsigned short level) {
     EnsureInit();
     a1_->AddIceCandidate(candidate, mid, level, false);
@@ -2164,7 +2209,7 @@ TEST_F(SignalingTest, OfferAnswerNoTrickle)
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
               SHOULD_SENDRECV_AV,
-              SHOULD_SENDRECV_AV | NO_TRICKLE_OPTION,
+              SHOULD_SENDRECV_AV,
               NO_TRICKLE);
 }
 
@@ -2173,7 +2218,7 @@ TEST_F(SignalingTest, OfferAnswerOffererTrickles)
   sipcc::OfferOptions options;
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
               SHOULD_SENDRECV_AV,
-              SHOULD_SENDRECV_AV | NO_TRICKLE_OPTION,
+              SHOULD_SENDRECV_AV,
               OFFERER_TRICKLES);
 }
 
@@ -2383,16 +2428,16 @@ TEST_F(SignalingTest,
 TEST_F(SignalingTest, CreateOfferAddCandidate)
 {
   sipcc::OfferOptions options;
-  CreateOfferAddCandidate(options, strSampleCandidate.c_str(),
-                          strSampleMid.c_str(), nSamplelevel,
+  CreateOfferAddCandidate(options, strSampleCandidate,
+                          strSampleMid, nSamplelevel,
                           SHOULD_SENDRECV_AV);
 }
 
 TEST_F(SignalingTest, AddIceCandidateEarly)
 {
   sipcc::OfferOptions options;
-  AddIceCandidateEarly(strSampleCandidate.c_str(),
-                       strSampleMid.c_str(), nSamplelevel);
+  AddIceCandidateEarly(strSampleCandidate,
+                       strSampleMid, nSamplelevel);
 }
 
 // XXX adam@nostrum.com -- This test seems questionable; we need to think
@@ -2972,7 +3017,7 @@ TEST_F(SignalingTest, ipAddrAnyOffer)
     ASSERT_NE(answer.find("a=sendrecv"), std::string::npos);
 }
 
-static void CreateSDPForBigOTests(std::string& offer, const char *number) {
+static void CreateSDPForBigOTests(std::string& offer, const std::string& number) {
   offer =
     "v=0\r\n"
     "o=- ";
@@ -3152,8 +3197,8 @@ TEST_F(SignalingTest, AddCandidateInHaveLocalOffer) {
   a1_->SetLocal(TestObserver::OFFER, a1_->offer());
   ASSERT_EQ(a1_->pObserver->lastAddIceStatusCode,
             sipcc::PeerConnectionImpl::kNoError);
-  a1_->AddIceCandidate(strSampleCandidate.c_str(),
-                      strSampleMid.c_str(), nSamplelevel, false);
+  a1_->AddIceCandidate(strSampleCandidate,
+                      strSampleMid, nSamplelevel, false);
   ASSERT_EQ(sipcc::PeerConnectionImpl::kInvalidState,
             a1_->pObserver->lastAddIceStatusCode);
 }
@@ -3653,8 +3698,8 @@ TEST_F(SignalingTest, AudioCallForceDtlsRoles)
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
-  a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+  a2_->SetRemote(TestObserver::OFFER, offer, false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
   // Now the answer should contain a=setup:active
@@ -3702,8 +3747,8 @@ TEST_F(SignalingTest, AudioCallReverseDtlsRoles)
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
-  a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+  a2_->SetRemote(TestObserver::OFFER, offer, false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
   // Now the answer should contain a=setup:passive
@@ -3745,15 +3790,15 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
   std::string offer(a1_->offer());
   match = offer.find("\r\na=setup:actpass");
   ASSERT_NE(match, std::string::npos);
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
-  a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+  a2_->SetRemote(TestObserver::OFFER, offer, false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
   // Now the answer should contain a=setup:active
   std::string answer(a2_->answer());
   match = answer.find("\r\na=setup:active");
   ASSERT_NE(match, std::string::npos);
-  a2_->SetLocal(TestObserver::ANSWER, answer.c_str(), false);
+  a2_->SetLocal(TestObserver::ANSWER, answer, false);
 
   // Now replace the active with passive so that the offerer will
   // also do active.
@@ -3763,7 +3808,7 @@ TEST_F(SignalingTest, AudioCallMismatchDtlsRoles)
             << indent(answer) << std::endl;
 
   // This should setup the DTLS with both sides playing active
-  a1_->SetRemote(TestObserver::ANSWER, answer.c_str(), false);
+  a1_->SetRemote(TestObserver::ANSWER, answer, false);
 
   WaitForCompleted();
 
@@ -3800,8 +3845,8 @@ TEST_F(SignalingTest, AudioCallGarbageSetup)
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
-  a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+  a2_->SetRemote(TestObserver::OFFER, offer, false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
   // Now the answer should contain a=setup:active
@@ -3849,7 +3894,7 @@ TEST_F(SignalingTest, AudioCallOfferNoSetupOrConnection)
   std::cout << "Modified SDP " << std::endl
             << indent(offer) << std::endl;
 
-  a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
+  a2_->SetRemote(TestObserver::OFFER, offer, false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
   // Now the answer should contain a=setup:active
@@ -3892,8 +3937,8 @@ TEST_F(SignalingTest, AudioCallAnswerNoSetupOrConnection)
   match = offer.find("\r\na=setup:actpass");
   ASSERT_NE(match, std::string::npos);
 
-  a1_->SetLocal(TestObserver::OFFER, offer.c_str(), false);
-  a2_->SetRemote(TestObserver::OFFER, offer.c_str(), false);
+  a1_->SetLocal(TestObserver::OFFER, offer, false);
+  a2_->SetRemote(TestObserver::OFFER, offer, false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
 
   // Now the answer should contain a=setup:active

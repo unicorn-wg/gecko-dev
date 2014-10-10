@@ -50,13 +50,7 @@ class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
 // TODO(ekr@rtfm.com): Add state checks. Issue 154
 
 JsepSessionImpl::~JsepSessionImpl() {
-  for (auto i = mNegotiatedTrackPairs.begin();
-       i != mNegotiatedTrackPairs.end();
-       ++i) {
-    delete *i;
-  }
-  mNegotiatedTrackPairs.clear();
-
+  ClearNegotiatedPairs();
   for (auto i = mCodecs.begin(); i != mCodecs.end(); ++i) {
     delete *i;
   }
@@ -653,7 +647,6 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     }
 
     rv = SetupTransport(rm.GetAttributeList(),
-                        offer.GetAttributeList(),
                         answer.GetAttributeList(),
                         transport);
     if (NS_FAILED(rv))
@@ -672,7 +665,6 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     } else {
       MOZ_MTLOG(ML_DEBUG, "RTCP-MUX is off");
       rv = SetupTransport(rm.GetAttributeList(),
-                          offer.GetAttributeList(),
                           answer.GetAttributeList(),
                           transport);
       if (NS_FAILED(rv))
@@ -758,7 +750,6 @@ nsresult JsepSessionImpl::CreateTransport(const SdpMediaSection& msection,
 }
 
 nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
-                                         const SdpAttributeList& offer,
                                          const SdpAttributeList& answer,
                                          const RefPtr<JsepTransport>&
                                          transport) {
