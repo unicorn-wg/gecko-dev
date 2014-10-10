@@ -4809,7 +4809,7 @@ sdp_result_e sdp_parse_attr_simple_flag (sdp_t *sdp_p, sdp_attr_t *attr_p,
 }
 
 
-sdp_result_e sdp_parse_attr_fingerprint_attr (sdp_t *sdp_p, sdp_attr_t *attr_p,
+sdp_result_e sdp_parse_attr_complete_line (sdp_t *sdp_p, sdp_attr_t *attr_p,
                                            const char *ptr)
 {
     sdp_result_e  result;

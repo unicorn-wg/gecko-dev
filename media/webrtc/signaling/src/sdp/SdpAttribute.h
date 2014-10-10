@@ -562,24 +562,6 @@ inline std::ostream& operator <<(std::ostream& os,
 }
 
 ///////////////////////////////////////////////////////////////////////////
-// a=ice-options, RFC5245
-//-------------------------------------------------------------------------
-// ice-options           = "ice-options" ":" ice-option-tag
-//                           0*(SP ice-option-tag)
-// ice-option-tag        = 1*ice-char
-class SdpIceOptionsAttribute : public SdpAttribute
-{
-public:
-  SdpIceOptionsAttribute(const std::vector<std::string>& options) :
-    SdpAttribute(kIceOptionsAttribute),
-    mOptions(options) {}
-
-  virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
-
-  std::vector<std::string> mOptions;
-};
-
-///////////////////////////////////////////////////////////////////////////
 // a=identity, draft-ietf-rtcweb-security-arch
 //-------------------------------------------------------------------------
 //   identity-attribute  = "identity:" identity-assertion
@@ -1261,8 +1243,8 @@ inline std::ostream& operator <<(std::ostream& os,
 class SdpMultiStringAttribute : public SdpAttribute
 {
 public:
-  explicit SdpMultiStringAttribute(AttributeType type) :
-      SdpAttribute(type) {}
+  explicit SdpMultiStringAttribute(AttributeType type, bool multiLine = true) :
+      SdpAttribute(type), mMultiLine(multiLine) {}
 
   void PushEntry(const std::string& entry) {
     mValues.push_back(entry);
@@ -1271,6 +1253,7 @@ public:
   virtual void Serialize(std::ostream& os) const;
 
   std::vector<std::string> mValues;
+  bool mMultiLine;
 };
 
 

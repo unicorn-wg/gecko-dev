@@ -99,6 +99,10 @@ class JsepSessionImpl : public JsepSession {
     return mIceControlling;
   }
 
+  virtual bool is_offerer() const {
+    return mIsOfferer;
+  }
+
   // Access transports.
   virtual size_t num_transports() const MOZ_OVERRIDE {
     return mTransports.size();
@@ -165,11 +169,9 @@ class JsepSessionImpl : public JsepSession {
   nsresult SetRemoteDescriptionAnswer(JsepSdpType type,
                                       UniquePtr<Sdp> answer);
   nsresult HandleNegotiatedSession(const UniquePtr<Sdp>& local,
-                                   const UniquePtr<Sdp>& remote,
-                                   bool is_offerer);
+                                   const UniquePtr<Sdp>& remote);
   nsresult DetermineSendingDirection(SdpDirectionAttribute::Direction offer,
                                     SdpDirectionAttribute::Direction answer,
-                                    bool is_offerer,
                                     bool* sending, bool* receiving);
   nsresult AddTransportAttributes(SdpMediaSection* msection,
                                   JsepSdpType type,
@@ -198,7 +200,6 @@ class JsepSessionImpl : public JsepSession {
   nsresult SetupTransport(const SdpAttributeList& remote,
                           const SdpAttributeList& offer,
                           const SdpAttributeList& answer,
-                          bool is_offerer,
                           const RefPtr<JsepTransport>& transport);
 
   nsresult AddCandidateToSdp(Sdp& sdp,
@@ -212,6 +213,7 @@ class JsepSessionImpl : public JsepSession {
   std::vector<RefPtr<JsepTransport>> mTransports;
   std::vector<JsepTrackPair*> mNegotiatedTrackPairs;
 
+  bool mIsOfferer;
   bool mIceControlling;
   std::string mIceUfrag;
   std::string mIcePwd;

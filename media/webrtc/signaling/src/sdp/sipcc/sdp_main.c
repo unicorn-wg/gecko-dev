@@ -168,7 +168,7 @@ const sdp_attrarray_t sdp_attr[SDP_MAX_ATTR_TYPES] =
     {"rtcp-mux", sizeof("rtcp-mux"),
       sdp_parse_attr_simple_flag, sdp_build_attr_simple_flag},
     {"fingerprint", sizeof("fingerprint"),
-      sdp_parse_attr_fingerprint_attr, sdp_build_attr_simple_string},
+      sdp_parse_attr_complete_line, sdp_build_attr_simple_string},
     {"maxptime", sizeof("maxptime"),
       sdp_parse_attr_simple_u32, sdp_build_attr_simple_u32},
     {"rtcp-fb", sizeof("rtcp-fb"),
@@ -189,7 +189,10 @@ const sdp_attrarray_t sdp_attr[SDP_MAX_ATTR_TYPES] =
       sdp_parse_attr_simple_flag, sdp_build_attr_simple_flag},
     {"end-of-candidates", sizeof("end-of-candidates"),
       sdp_parse_attr_simple_flag, sdp_build_attr_simple_flag},
+    {"ice-options", sizeof("ice-options"),
+      sdp_parse_attr_complete_line, sdp_build_attr_simple_string},
 };
+
 /* Note: These *must* be in the same order as the enum types. */
 const sdp_namearray_t sdp_media[SDP_MAX_MEDIA_TYPES] =
 {
