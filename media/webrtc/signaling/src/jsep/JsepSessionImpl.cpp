@@ -46,9 +46,6 @@ class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
   mozilla::SdpMediaSection::MediaType mType;
 };
 
-
-// TODO(ekr@rtfm.com): Add state checks. Issue 154
-
 JsepSessionImpl::~JsepSessionImpl() {
   for (auto i = mNegotiatedTrackPairs.begin();
        i != mNegotiatedTrackPairs.end();
@@ -497,6 +494,7 @@ nsresult JsepSessionImpl::SetLocalDescription(JsepSdpType type,
 
 
 nsresult JsepSessionImpl::SetLocalDescriptionOffer(UniquePtr<Sdp> offer) {
+  MOZ_ASSERT(mState == kJsepStateStable);
   mPendingLocalDescription = Move(offer);
   SetState(kJsepStateHaveLocalOffer);
   return NS_OK;
@@ -504,6 +502,7 @@ nsresult JsepSessionImpl::SetLocalDescriptionOffer(UniquePtr<Sdp> offer) {
 
 nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
                                                     UniquePtr<Sdp> answer) {
+  MOZ_ASSERT(mState == kJsepStateHaveRemoteOffer);
   mPendingLocalDescription = Move(answer);
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
@@ -940,7 +939,7 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
 }
 
 nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
-  // TODO(ekr@rtfm.com): Check state. Issue 154.
+  MOZ_ASSERT(mState == kJsepStateStable);
   size_t num_m_lines = offer->GetMediaSectionCount();
 
   for (size_t i = 0; i < num_m_lines; ++i) {
@@ -960,6 +959,8 @@ nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
 
 nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
     JsepSdpType type, UniquePtr<Sdp> answer) {
+  MOZ_ASSERT(mState == kJsepStateHaveLocalOffer ||
+             mState == kJsepStateHaveRemotePranswer);
   mPendingRemoteDescription = Move(answer);
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
