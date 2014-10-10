@@ -499,6 +499,17 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   mozilla::RefPtr<mozilla::NrIceCtx> mIceCtx;
   std::vector<mozilla::RefPtr<mozilla::NrIceMediaStream> > mIceStreams;
 
+  struct DeferredRemoteIceCandidate {
+    std::string candidate;
+    std::string mid;
+    uint16_t level;
+  };
+
+  // Holding tank for remote candidates that arrive before the ICE stack fires
+  // up.
+  std::vector<DeferredRemoteIceCandidate> mDeferredRemoteCandidates;
+  bool mDeferRemoteCandidates;
+
   // DNS
   nsRefPtr<mozilla::NrIceResolver> mDNSResolver;
 

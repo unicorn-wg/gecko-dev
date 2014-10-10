@@ -956,7 +956,10 @@ class SignalingAgent {
  public:
   explicit SignalingAgent(const std::string &aName,
     const std::string stun_addr = g_stun_server_address,
-    uint16_t stun_port = g_stun_server_port) : pc(nullptr), name(aName) {
+    uint16_t stun_port = g_stun_server_port) :
+    pc(nullptr),
+    name(aName),
+    drop_trickle_candidates_(false) {
     cfg_.addStunServer(stun_addr, stun_port);
 
     sipcc::PeerConnectionImpl *pcImpl =
@@ -1017,6 +1020,10 @@ class SignalingAgent {
 
     std::cout << name << "Init Complete" << std::endl;
     return true;
+  }
+
+  void SetDropTrickleCandidates(bool drop) {
+    drop_trickle_candidates_ = drop;
   }
 
   // TODO: Remove all of this stuff. Issue 171.
@@ -1301,6 +1308,9 @@ class SignalingAgent {
 
   void AddIceCandidate(const std::string& candidate, const std::string& mid, unsigned short level,
                        bool expectSuccess) {
+    if (drop_trickle_candidates_) {
+      return;
+    }
     PCImplSignalingState endState = signaling_state();
     pObserver->addIceCandidateState = TestObserver::stateNoResponse;
     pc->AddIceCandidate(candidate.c_str(), mid.c_str(), level);
@@ -1431,6 +1441,7 @@ public:
   nsRefPtr<DOMMediaStream> domMediaStream_;
   sipcc::IceConfiguration cfg_;
   const std::string name;
+  bool drop_trickle_candidates_;
 
   typedef struct {
     std::string candidate;
@@ -2649,6 +2660,30 @@ TEST_F(SignalingTest, DISABLED_FullCallTrickleChrome)
   ASSERT_GE(a2_->GetPacketsReceived(0), 40);
 }
 
+TEST_F(SignalingTest, FullCallTrickleBeforeSetLocal)
+{
+  sipcc::OfferOptions options;
+  Offer(options, OFFER_AV | ANSWER_AV, SHOULD_SENDRECV_AV);
+  // Sabotage a1's reception of trickle candidates; a2's must get through to
+  // the ICE stack for the test to succeed.
+  a1_->SetDropTrickleCandidates(true);
+  // Send a1's candidates over to a2, which has not yet SetLocal.
+  a1_->WaitForGather();
+  Answer(options, OFFER_AV | ANSWER_AV, SHOULD_SENDRECV_AV);
+  WaitForCompleted();
+
+  std::cerr << "ICE handshake completed" << std::endl;
+
+  // Wait for some data to get written
+  ASSERT_TRUE_WAIT(a1_->GetPacketsSent(0) >= 40 &&
+                   a2_->GetPacketsReceived(0) >= 40, kDefaultTimeout * 2);
+
+  a1_->CloseSendStreams();
+  a2_->CloseReceiveStreams();
+  ASSERT_GE(a1_->GetPacketsSent(0), 40);
+  ASSERT_GE(a2_->GetPacketsReceived(0), 40);
+}
+
 // This test comes from Bug 810220
 TEST_F(SignalingTest, AudioOnlyG711Call)
 {
@@ -2874,6 +2909,8 @@ TEST_F(SignalingTest, FullChromeHandshake)
 }
 
 // Disabled pending resolution of bug 818640.
+// Actually, this test is completely broken; you can't just call
+// SetRemote/CreateAnswer over and over again.
 TEST_F(SignalingTest, DISABLED_OfferAllDynamicTypes)
 {
   EnsureInit();
