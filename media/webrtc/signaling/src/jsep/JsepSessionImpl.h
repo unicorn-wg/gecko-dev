@@ -201,7 +201,7 @@ class JsepSessionImpl : public JsepSession {
                           const SdpAttributeList& answer,
                           const RefPtr<JsepTransport>& transport);
 
-  nsresult AddCandidateToSdp(Sdp& sdp,
+  nsresult AddCandidateToSdp(Sdp* sdp,
                              const std::string& candidate,
                              const std::string& mid,
                              uint16_t level,
