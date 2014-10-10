@@ -1163,7 +1163,7 @@ class SignalingAgent {
     offer_ = pObserver->lastString;
   }
 
-  // sets the answer to match the local description
+  // sets the offer to match the local description
   // which isn't good if you are the answerer
   void UpdateOffer() {
     offer_ = getLocalDescription();
