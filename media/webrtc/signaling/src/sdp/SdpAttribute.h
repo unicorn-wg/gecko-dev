@@ -1243,8 +1243,8 @@ inline std::ostream& operator <<(std::ostream& os,
 class SdpMultiStringAttribute : public SdpAttribute
 {
 public:
-  explicit SdpMultiStringAttribute(AttributeType type, bool multiLine = true) :
-      SdpAttribute(type), mMultiLine(multiLine) {}
+  explicit SdpMultiStringAttribute(AttributeType type) :
+      SdpAttribute(type) {}
 
   void PushEntry(const std::string& entry) {
     mValues.push_back(entry);
@@ -1253,8 +1253,28 @@ public:
   virtual void Serialize(std::ostream& os) const;
 
   std::vector<std::string> mValues;
-  bool mMultiLine;
 };
+
+// otherwise identical to SdpMultiStringAttribute, this is used for
+// ice-options and other places where the value is serialized onto
+// a single line with space separating tokens
+class SdpOptionsAttribute : public SdpAttribute
+{
+public:
+  explicit SdpOptionsAttribute(AttributeType type) :
+      SdpAttribute(type) {}
+
+  void PushEntry(const std::string& entry) {
+    mValues.push_back(entry);
+  }
+
+  void Load(const std::string&value);
+
+  virtual void Serialize(std::ostream& os) const;
+
+  std::vector<std::string> mValues;
+};
+
 
 
 // Used for any other kind of attribute not otherwise specialized

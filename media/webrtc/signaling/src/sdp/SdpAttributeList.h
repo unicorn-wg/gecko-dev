@@ -26,7 +26,7 @@ public:
   virtual void RemoveAttribute(AttributeType type) = 0;
 
   virtual const SdpConnectionAttribute& GetConnection() const = 0;
-  virtual const SdpMultiStringAttribute& GetIceOptions() const = 0;
+  virtual const SdpOptionsAttribute& GetIceOptions() const = 0;
   virtual const SdpRtcpAttribute& GetRtcp() const = 0;
   virtual const SdpRemoteCandidatesAttribute& GetRemoteCandidates() const = 0;
   virtual const SdpSetupAttribute& GetSetup() const = 0;
