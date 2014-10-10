@@ -958,8 +958,7 @@ class SignalingAgent {
     const std::string stun_addr = g_stun_server_address,
     uint16_t stun_port = g_stun_server_port) :
     pc(nullptr),
-    name(aName),
-    drop_trickle_candidates_(false) {
+    name(aName) {
     cfg_.addStunServer(stun_addr, stun_port);
 
     sipcc::PeerConnectionImpl *pcImpl =
@@ -1022,8 +1021,8 @@ class SignalingAgent {
     return true;
   }
 
-  void SetDropTrickleCandidates(bool drop) {
-    drop_trickle_candidates_ = drop;
+  void DropOutgoingTrickleCandidates() {
+    pObserver->trickleCandidates = false;
   }
 
   // TODO: Remove all of this stuff. Issue 171.
@@ -1308,9 +1307,6 @@ class SignalingAgent {
 
   void AddIceCandidate(const std::string& candidate, const std::string& mid, unsigned short level,
                        bool expectSuccess) {
-    if (drop_trickle_candidates_) {
-      return;
-    }
     PCImplSignalingState endState = signaling_state();
     pObserver->addIceCandidateState = TestObserver::stateNoResponse;
     pc->AddIceCandidate(candidate.c_str(), mid.c_str(), level);
@@ -1441,7 +1437,6 @@ public:
   nsRefPtr<DOMMediaStream> domMediaStream_;
   sipcc::IceConfiguration cfg_;
   const std::string name;
-  bool drop_trickle_candidates_;
 
   typedef struct {
     std::string candidate;
@@ -1783,7 +1778,9 @@ public:
     EnsureInit();
     a1_->CreateOffer(options, offerAnswerFlags, offerSdpCheck);
     bool trickle = !!(trickleType & OFFERER_TRICKLES);
-    a1_->pObserver->trickleCandidates = trickle;
+    if (!trickle) {
+      a1_->pObserver->trickleCandidates = false;
+    }
     a1_->SetLocal(TestObserver::OFFER, a1_->offer());
     if (!trickle) {
       a1_->WaitForGather();
@@ -1799,7 +1796,9 @@ public:
 
     a2_->CreateAnswer(offerAnswerFlags, answerSdpCheck);
     bool trickle = !!(trickleType & ANSWERER_TRICKLES);
-    a2_->pObserver->trickleCandidates = trickle;
+    if (!trickle) {
+      a2_->pObserver->trickleCandidates = false;
+    }
     a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
     if (!trickle) {
       a2_->WaitForGather();
@@ -2664,10 +2663,12 @@ TEST_F(SignalingTest, FullCallTrickleBeforeSetLocal)
 {
   sipcc::OfferOptions options;
   Offer(options, OFFER_AV | ANSWER_AV, SHOULD_SENDRECV_AV);
-  // Sabotage a1's reception of trickle candidates; a2's must get through to
-  // the ICE stack for the test to succeed.
-  a1_->SetDropTrickleCandidates(true);
-  // Send a1's candidates over to a2, which has not yet SetLocal.
+  // ICE will succeed even if one side fails to trickle, so we need to disable
+  // one side before performing a test that might cause candidates to be
+  // dropped
+  a2_->DropOutgoingTrickleCandidates();
+  // Wait until all of a1's candidates have been trickled to a2, _before_ a2
+  // has called CreateAnswer/SetLocal (ie; the ICE stack is not running yet)
   a1_->WaitForGather();
   Answer(options, OFFER_AV | ANSWER_AV, SHOULD_SENDRECV_AV);
   WaitForCompleted();
