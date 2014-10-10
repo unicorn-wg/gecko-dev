@@ -421,8 +421,9 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
   // TODO(ekr@rtfm.com): Handle changes like RTCP/MUX and BUNDLE. Issue 182.
   RefPtr<NrIceMediaStream> stream;
   if (mIceStreams.size() <= index) {
-    stream = mIceCtx->CreateStream((mParentName+": unknown").c_str(),
-                            components);
+    std::ostringstream os;
+    os << mParentName << " level=" << index;
+    stream = mIceCtx->CreateStream(os.str().c_str(), components);
     MOZ_ASSERT(stream); // TODO(ekr@rtfm.com): Check. Issue 183.
     stream->SetLevel(index);
     stream->SignalReady.connect(this, &PeerConnectionMedia::IceStreamReady);

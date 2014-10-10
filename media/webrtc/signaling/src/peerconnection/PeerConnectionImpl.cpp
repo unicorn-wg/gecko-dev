@@ -666,6 +666,8 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return res;
   }
 
+  PeerConnectionCtx::GetInstance()->mPeerConnections[mHandle] = this;
+
   STAMP_TIMECARD(mTimeCard, "Generating DTLS Identity");
   // Create the DTLS Identity
   mIdentity = DtlsIdentity::Generate();
@@ -2624,21 +2626,20 @@ PeerConnectionImpl::BuildStatsQuery_m(
   if (aSelector) {
     for (size_t p = 0; p < query->pipelines.Length(); ++p) {
       size_t level = query->pipelines[p]->level();
-      MOZ_ASSERT(level);
       levelsToGrab.insert(level);
     }
   } else {
     // We want to grab all streams, so ignore the pipelines (this also ends up
     // grabbing DataChannel streams, which is what we want)
     for (size_t s = 0; s < mMedia->num_ice_media_streams(); ++s) {
-      levelsToGrab.insert(s + 1); // mIceStreams is 0-indexed
+      levelsToGrab.insert(s);
     }
   }
 
   for (auto s = levelsToGrab.begin(); s != levelsToGrab.end(); ++s) {
     // TODO(bcampen@mozilla.com): I may need to revisit this for bundle.
     // (Bug 786234)
-    RefPtr<NrIceMediaStream> temp(mMedia->ice_media_stream(*s - 1));
+    RefPtr<NrIceMediaStream> temp(mMedia->ice_media_stream(*s));
     RefPtr<TransportFlow> flow(mMedia->GetTransportFlow(*s, false));
     // flow can be null for unused levels, such as unused DataChannels
     if (temp && flow) {
