@@ -1562,20 +1562,29 @@ private:
     }
   }
 
-  void AssertWildCardExpressionExists(const std::string& sdp, const std::string& expr)
+  void AssertWildCardExpressionExists(const std::string& sdp,
+                                      const std::string& expr)
   {
-    int wildcard_pos=expr.find("*");
-    size_t firstPart=sdp.find(expr.substr(0, wildcard_pos));
-    size_t secondPart=sdp.find(expr.substr(wildcard_pos+1));
-    ASSERT_TRUE(firstPart != std::string::npos && secondPart != std::string::npos);
+    size_t wildcard_pos = expr.find("*");
+    ASSERT_NE(wildcard_pos, std::string::npos);
+    size_t firstPart = sdp.find(expr.substr(0, wildcard_pos));
+    ASSERT_NE(firstPart, std::string::npos);
+    size_t secondPart = sdp.find(expr.substr(wildcard_pos+1),
+                                 firstPart + wildcard_pos);
+    ASSERT_NE(secondPart, std::string::npos);
   }
 
-  void AssertWildCardExpressionNotExists(const std::string& sdp, const std::string& expr)
+  void AssertWildCardExpressionNotExists(const std::string& sdp,
+                                         const std::string& expr)
   {
-    int wildcard_pos=expr.find("*");
-    size_t firstPart=sdp.find(expr.substr(0, wildcard_pos));
-    size_t secondPart=sdp.find(expr.substr(wildcard_pos+1));
-    ASSERT_FALSE(firstPart == std::string::npos && secondPart == std::string::npos);
+    size_t wildcard_pos = expr.find("*");
+    ASSERT_NE(wildcard_pos, std::string::npos);
+    size_t firstPart = sdp.find(expr.substr(0, wildcard_pos));
+    if (firstPart != std::string::npos) {
+      size_t secondPart = sdp.find(expr.substr(wildcard_pos + 1),
+                                   firstPart + wildcard_pos);
+      ASSERT_EQ(secondPart, std::string::npos);
+    }
   }
 };
 
