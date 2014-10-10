@@ -45,7 +45,7 @@ class JsepSessionImpl : public JsepSession {
   virtual nsresult SetIceCredentials(const std::string& ufrag,
                                      const std::string& pwd) MOZ_OVERRIDE;
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
-                                      const std::string& value) MOZ_OVERRIDE;
+                                      const std::vector<uint8_t>& value) MOZ_OVERRIDE;
   virtual std::vector<JsepCodecDescription*>& Codecs() MOZ_OVERRIDE {
     return mCodecs;
   }
@@ -137,7 +137,7 @@ class JsepSessionImpl : public JsepSession {
  private:
   struct JsepDtlsFingerprint {
     std::string mAlgorithm;
-    std::string mValue;
+    std::vector<uint8_t> mValue;
   };
 
   struct JsepSendingTrack {

@@ -63,7 +63,7 @@ class JsepSession {
   // TODO(ekr@rtfm.com): Need code to add candidates and to set
   // the negotiated candidate. Issue 153.
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
-                                      const std::string& value) = 0;
+                                      const std::vector<uint8_t>& value) = 0;
 
   // Kinda gross to be locking down the data structure type like this, but
   // returning by value is problematic due to the lack of stl move semantics in
