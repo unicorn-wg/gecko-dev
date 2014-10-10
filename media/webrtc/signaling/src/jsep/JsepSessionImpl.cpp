@@ -881,8 +881,8 @@ nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection,
       SdpAttribute::kIceUfragAttribute, mIceUfrag));
   attrList.SetAttribute(new SdpStringAttribute(
       SdpAttribute::kIcePwdAttribute, mIcePwd));
-  SdpMultiStringAttribute* iceOptions
-      = new SdpMultiStringAttribute(SdpAttribute::kIceOptionsAttribute, false);
+  SdpOptionsAttribute* iceOptions
+      = new SdpOptionsAttribute(SdpAttribute::kIceOptionsAttribute);
   iceOptions->PushEntry("trickle");
   attrList.SetAttribute(iceOptions);
 
