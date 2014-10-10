@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <deque>
 #include <sstream>
+#include <vector>
 
 #include "base/histogram.h"
 #include "CSFLog.h"
@@ -39,6 +40,7 @@
 #include "PeerConnectionMedia.h"
 #include "nsDOMDataChannelDeclarations.h"
 #include "dtlsidentity.h"
+#include "signaling/src/sdp/SdpAttribute.h"
 
 #include "signaling/src/jsep/JsepSession.h"
 #include "signaling/src/jsep/JsepSessionImpl.h"
@@ -678,12 +680,6 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return NS_ERROR_FAILURE;
   }
 
-  mFingerprint = mIdentity->GetFormattedFingerprint();
-  if (mFingerprint.empty()) {
-    CSFLogError(logTag, "%s: unable to get fingerprint", __FUNCTION__);
-    return res;
-  }
-
   mJsepSession = MakeUnique<JsepSessionImpl>(mName);
 
   res = mJsepSession->SetIceCredentials(mMedia->ice_ctx()->ufrag(),
@@ -693,8 +689,11 @@ PeerConnectionImpl::Initialize(PeerConnectionObserver& aObserver,
     return res;
   }
 
-  res = mJsepSession->AddDtlsFingerprint(GetFingerprintAlgorithm(),
-                                         GetFingerprintHexValue());
+  const std::string& fpAlg = DtlsIdentity::DEFAULT_HASH_ALGORITHM;
+  std::vector<uint8_t> fingerprint;
+  res = CalculateFingerprint(fpAlg, fingerprint);
+  NS_ENSURE_SUCCESS(res, res);
+  res = mJsepSession->AddDtlsFingerprint(fpAlg, fingerprint);
   if (NS_FAILED(res)) {
     CSFLogError(logTag, "%s: Couldn't set DTLS credentials", __FUNCTION__);
     return res;
@@ -867,50 +866,6 @@ PeerConnectionImpl::GetIdentity() const
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
   return mIdentity;
 }
-
-std::string
-PeerConnectionImpl::GetFingerprint() const
-{
-  PC_AUTO_ENTER_API_CALL_NO_CHECK();
-  return mFingerprint;
-}
-
-NS_IMETHODIMP
-PeerConnectionImpl::FingerprintSplitHelper(std::string& fingerprint,
-    size_t& spaceIdx) const
-{
-  fingerprint = GetFingerprint();
-  spaceIdx = fingerprint.find_first_of(' ');
-  if (spaceIdx == std::string::npos) {
-    CSFLogError(logTag, "%s: fingerprint is messed up: %s",
-        __FUNCTION__, fingerprint.c_str());
-    return NS_ERROR_FAILURE;
-  }
-  return NS_OK;
-}
-
-std::string
-PeerConnectionImpl::GetFingerprintAlgorithm() const
-{
-  std::string fp;
-  size_t spc;
-  if (NS_SUCCEEDED(FingerprintSplitHelper(fp, spc))) {
-    return fp.substr(0, spc);
-  }
-  return "";
-}
-
-std::string
-PeerConnectionImpl::GetFingerprintHexValue() const
-{
-  std::string fp;
-  size_t spc;
-  if (NS_SUCCEEDED(FingerprintSplitHelper(fp, spc))) {
-    return fp.substr(spc + 1);
-  }
-  return "";
-}
-
 
 nsresult
 PeerConnectionImpl::CreateFakeMediaStream(uint32_t aHint, DOMMediaStream** aRetval)
@@ -1972,36 +1927,36 @@ PeerConnectionImpl::ReplaceTrack(MediaStreamTrack& aThisTrack,
   return NS_OK;
 }
 
-/*
-NS_IMETHODIMP
-PeerConnectionImpl::SetRemoteFingerprint(const char* hash, const char* fingerprint)
-{
-  MOZ_ASSERT(hash);
-  MOZ_ASSERT(fingerprint);
-
-  if (fingerprint != nullptr && (strcmp(hash, "sha-1") == 0)) {
-    mRemoteFingerprint = std::string(fingerprint);
-    CSFLogDebug(logTag, "Setting remote fingerprint to %s", mRemoteFingerprint.c_str());
-    return NS_OK;
-  } else {
-    CSFLogError(logTag, "%s: Invalid Remote Finger Print", __FUNCTION__);
-    return NS_ERROR_FAILURE;
+nsresult
+PeerConnectionImpl::CalculateFingerprint(
+    const std::string& algorithm,
+    std::vector<uint8_t>& fingerprint) const {
+  uint8_t buf[DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH];
+  size_t len = 0;
+  nsresult rv = mIdentity->ComputeFingerprint(algorithm, &buf[0], sizeof(buf),
+                                              &len);
+  if (NS_FAILED(rv) || len == 0 ||
+      len > DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH) {
+    CSFLogError(logTag, "Unable to calculate certificate fingerprint");
+    return NS_ERROR_UNEXPECTED;
   }
+  fingerprint.assign(buf, buf + len);
+  return NS_OK;
 }
-*/
 
 NS_IMETHODIMP
 PeerConnectionImpl::GetFingerprint(char** fingerprint)
 {
   MOZ_ASSERT(fingerprint);
+  MOZ_ASSERT(mIdentity);
+  std::vector<uint8_t> fp;
+  nsresult rv = CalculateFingerprint(DtlsIdentity::DEFAULT_HASH_ALGORITHM, fp);
+  NS_ENSURE_SUCCESS(rv, rv);
+  std::string fpStr = SdpFingerprintAttributeList::FormatFingerprint(fp);
 
-  if (!mIdentity) {
-    return NS_ERROR_FAILURE;
-  }
-
-  char* tmp = new char[mFingerprint.size() + 1];
-  std::copy(mFingerprint.begin(), mFingerprint.end(), tmp);
-  tmp[mFingerprint.size()] = '\0';
+  char* tmp = new char[fpStr.size() + 1];
+  std::copy(fpStr.begin(), fpStr.end(), tmp);
+  tmp[fpStr.size()] = '\0';
 
   *fingerprint = tmp;
   return NS_OK;

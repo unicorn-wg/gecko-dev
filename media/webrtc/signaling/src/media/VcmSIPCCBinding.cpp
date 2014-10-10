@@ -859,38 +859,6 @@ short vcmAddRemoteStreamHint(
   return 0;
 }
 
-/*
- * Get DTLS key data
- *
- *  @param[in]  peerconnection - the peerconnection in use
- *  @param[out] digest_algp    - the digest algorithm e.g. 'sha-256'
- *  @param[in] max_digest_alg_len - available length of string
- *  @param[out] digestp        - the digest string
- *  @param[in] max_digest_len - available length of string
- *
- *  Returns: zero(0) for success; otherwise, ERROR for failure
- */
-short vcmGetDtlsIdentity(const char *peerconnection,
-                         char *digest_algp,
-                         size_t max_digest_alg_len,
-                         char *digestp,
-                         size_t max_digest_len) {
-
-  ASSERT_ON_THREAD(VcmSIPCCBinding::getMainThread());
-  digest_algp[0]='\0';
-  digestp[0]='\0';
-
-  sipcc::PeerConnectionWrapper pc(peerconnection);
-  ENSURE_PC(pc, VCM_ERROR);
-
-  std::string algorithm = pc.impl()->GetFingerprintAlgorithm();
-  sstrncpy(digest_algp, algorithm.c_str(), max_digest_alg_len);
-  std::string value = pc.impl()->GetFingerprintHexValue();
-  sstrncpy(digestp, value.c_str(), max_digest_len);
-
-  return 0;
-}
-
 /* Set negotiated DataChannel parameters.
  *
  *  @param[in]  peerconnection - the peerconnection in use

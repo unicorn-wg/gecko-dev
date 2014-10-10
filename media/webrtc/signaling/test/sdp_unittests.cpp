@@ -1219,12 +1219,15 @@ TEST_P(NewSdpTest, CheckFingerprint) {
   auto fingerprints = mSdp->GetAttributeList().GetFingerprint();
   ASSERT_EQ(1U, fingerprints.mFingerprints.size());
   ASSERT_EQ(SdpFingerprintAttributeList::kSha256,
-      fingerprints.mFingerprints.front().hashFunc)
+      fingerprints.mFingerprints[0].hashFunc)
     << "Wrong hash function";
   ASSERT_EQ("DF:2E:AC:8A:FD:0A:8E:99:BF:5D:E8:3C:E7:FA:FB:08:"
             "3B:3C:54:1D:D7:D4:05:77:A0:72:9B:14:08:6D:0F:4C",
-            fingerprints.mFingerprints.front().fingerprint)
+            SdpFingerprintAttributeList::FormatFingerprint(
+                fingerprints.mFingerprints[0].fingerprint))
     << "Wrong fingerprint";
+  ASSERT_EQ(0xdfU, fingerprints.mFingerprints[0].fingerprint[0])
+      << "first fingerprint element is iffy";
 }
 
 TEST_P(NewSdpTest, CheckNumberOfMediaSections) {

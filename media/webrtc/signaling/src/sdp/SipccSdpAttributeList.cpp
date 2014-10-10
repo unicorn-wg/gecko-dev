@@ -290,7 +290,12 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
         ++c;
       }
 
-      std::string fingerprint(fingerprints[0].substr(c - start, size));
+      std::string fpString(fingerprints[0].substr(c - start, size));
+      std::vector<uint8_t> fingerprint =
+          SdpFingerprintAttributeList::ParseFingerprint(fpString);
+      if (fingerprint.size() == 0) {
+        continue; // skip the bad ones
+      }
 
       fingerprint_attrs->PushEntry(algorithm_str, fingerprint);
     }
