@@ -206,13 +206,12 @@ void SdpSsrcGroupAttributeList::Serialize(std::ostream& os) const
 }
 
 void SdpMultiStringAttribute::Serialize(std::ostream& os) const {
-  if (mMultiLine) {
-    for (auto i = mValues.begin(); i != mValues.end(); ++i) {
-      os << "a=" << mType << ":" << *i << CRLF;
-    }
-    return;
+  for (auto i = mValues.begin(); i != mValues.end(); ++i) {
+    os << "a=" << mType << ":" << *i << CRLF;
   }
+}
 
+void SdpOptionsAttribute::Serialize(std::ostream& os) const {
   os << "a=" << mType << ":";
   bool first = true;
   for (auto i = mValues.begin(); i != mValues.end(); ++i) {
@@ -224,6 +223,17 @@ void SdpMultiStringAttribute::Serialize(std::ostream& os) const {
     os << *i;
   }
   os << CRLF;
+}
+
+void SdpOptionsAttribute::Load(const std::string& value) {
+  size_t start = 0;
+  size_t end = value.find(' ');
+  while (end != std::string::npos) {
+    PushEntry(value.substr(start, end));
+    start = end + 1;
+    end = value.find(' ', start);
+  }
+  PushEntry(value.substr(start));
 }
 
 void SdpFlagAttribute::Serialize(std::ostream& os) const {
