@@ -344,8 +344,8 @@ SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
     }
 
     SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
-    // TODO our parser does not support max-message-size. Issue 185.
-    sctpmap->PushEntry(num, app, 0, stream);
+    // TODO our parser does not support draft 06 or 07. Issue 185.
+    sctpmap->PushEntry(num, app, stream);
 
     SetAttribute(sctpmap);
   }
