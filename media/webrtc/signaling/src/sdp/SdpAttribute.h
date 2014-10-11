@@ -1083,19 +1083,19 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-// a=sctpmap, draft-ietf-mmusic-sctp-sdp-06
+// a=sctpmap, draft-ietf-mmusic-sctp-sdp-05
 //-------------------------------------------------------------------------
-//         sctpmap-attr        =  "a=sctpmap:" sctpmap-number
-//                                 app [max-message-size] [streams]
-//         sctpmap-number      =  1*DIGIT
-//         app                 =  token
-//         max-message-size    =  "max-message-size" EQUALS 1*DIGIT
-//         streams             =  "streams" EQUALS 1*DIGIT"
+//      sctpmap-attr        =  "a=sctpmap:" sctpmap-number media-subtypes [streams]
+//      sctpmap-number      =  1*DIGIT
+//      protocol            =  labelstring
+//        labelstring         =  text
+//        text                =  byte-string
+//      streams      =  1*DIGIT
 //
 // We're going to pretend that there are spaces where they make sense.
 //
-// (draft-07 appears to have done something really funky here, but I
-// don't beleive it).
+// (draft-06 is not backward compatabile and draft-07 replaced sctpmap's with
+// fmtp maps - we should carefully choose when to upgrade)
 class SdpSctpmapAttributeList : public SdpAttribute
 {
 public:
@@ -1105,15 +1105,13 @@ public:
   struct Sctpmap {
     uint32_t number;
     std::string app;
-    uint32_t maxMessageSize;
     uint32_t streams;
   };
 
   void PushEntry(uint32_t number,
                  std::string app,
-                 uint32_t maxMessageSize = 0,
                  uint32_t streams = 0) {
-    mSctpmaps.push_back({number, app, maxMessageSize, streams});
+    mSctpmaps.push_back({number, app, streams});
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
