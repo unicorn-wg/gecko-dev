@@ -205,6 +205,7 @@ PeerConnectionMedia::PeerConnectionMedia(PeerConnectionImpl *parent)
       mParentName(parent->GetName()),
       mAllowIceLoopback(false),
       mIceCtx(nullptr),
+      mDeferRemoteCandidates(true),
       mDNSResolver(new mozilla::NrIceResolver()),
       mMainThread(mParent->GetMainThread()),
       mSTSThread(mParent->GetSTSThread()) {
@@ -362,6 +363,14 @@ PeerConnectionMedia::StartIceChecks_s(bool controlling) {
                           NrIceCtx::ICE_CONTROLLING :
                           NrIceCtx::ICE_CONTROLLED);
   mIceCtx->StartChecks();
+
+  mDeferRemoteCandidates = false;
+
+  for (auto i = mDeferredRemoteCandidates.begin();
+       i != mDeferredRemoteCandidates.end();
+       ++i) {
+    AddIceCandidate_s(i->candidate, i->mid, i->level);
+  }
 }
 
 void
@@ -385,8 +394,13 @@ void
 PeerConnectionMedia::AddIceCandidate_s(const std::string& candidate,
                                        const std::string& mid,
                                        uint32_t level) {
-  // TODO(ekr@rtfm.com): Unfortunately, this goes into space
-  // in the period between SetRemote() and SetLocal(). Issue 181.
+  if (mDeferRemoteCandidates) {
+    mDeferredRemoteCandidates.push_back({candidate,
+                                         mid,
+                                         static_cast<uint16_t>(level)});
+    return;
+  }
+
   if (level >= mIceStreams.size()) {
     CSFLogError(logTag, "Couldn't process ICE candidate for bogus level %u",
                 level);
