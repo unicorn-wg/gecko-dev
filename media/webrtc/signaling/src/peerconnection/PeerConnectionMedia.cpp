@@ -210,6 +210,7 @@ PeerConnectionMedia::PeerConnectionMedia(PeerConnectionImpl *parent)
       mAllowIceLoopback(false),
       mIceCtx(nullptr),
       mDNSResolver(new mozilla::NrIceResolver()),
+      mUuidGen(MakeUnique<PCUuidGenerator>()),
       mMainThread(mParent->GetMainThread()),
       mSTSThread(mParent->GetSTSThread()) {
 }
@@ -488,7 +489,7 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
 nsresult
 PeerConnectionMedia::AddStream(DOMMediaStream* aMediaStream,
                                uint32_t hints,
-                               uint32_t *stream_id)
+                               std::string *stream_id)
 {
   ASSERT_ON_THREAD(mMainThread);
 
@@ -527,14 +528,17 @@ PeerConnectionMedia::AddStream(DOMMediaStream* aMediaStream,
     }
     if (aMediaStream == lss->GetMediaStream()) {
       localSourceStream = lss;
-      *stream_id = u;
+      *stream_id = lss->GetId();
       break;
     }
   }
   if (!localSourceStream) {
-    localSourceStream = new LocalSourceStreamInfo(aMediaStream, this);
+    std::string id;
+    if (!mUuidGen->Generate(&id))
+      return NS_ERROR_FAILURE;
+    localSourceStream = new LocalSourceStreamInfo(stream, this, id);
     mLocalSourceStreams.AppendElement(localSourceStream);
-    *stream_id = mLocalSourceStreams.Length() - 1;
+    *stream_id = id;
   }
 
   if (hints & DOMMediaStream::HINT_CONTENTS_AUDIO) {
@@ -647,7 +651,7 @@ PeerConnectionMedia::ShutdownMediaTransport_s()
 }
 
 LocalSourceStreamInfo*
-PeerConnectionMedia::GetLocalStream(int aIndex)
+PeerConnectionMedia::GetLocalStreamByIndex(int aIndex)
 {
   ASSERT_ON_THREAD(mMainThread);
   if(aIndex < 0 || aIndex >= (int) mLocalSourceStreams.Length()) {
@@ -658,8 +662,22 @@ PeerConnectionMedia::GetLocalStream(int aIndex)
   return mLocalSourceStreams[aIndex];
 }
 
+LocalSourceStreamInfo*
+PeerConnectionMedia::GetLocalStreamById(const std::string& id)
+{
+  ASSERT_ON_THREAD(mMainThread);
+  for (size_t i = 0; i < mLocalSourceStreams.Length(); ++i) {
+    if (id == mLocalSourceStreams[i]->GetId()) {
+      return mLocalSourceStreams[i];
+    }
+  }
+
+  MOZ_ASSERT(false);
+  return nullptr;
+}
+
 RemoteSourceStreamInfo*
-PeerConnectionMedia::GetRemoteStream(int aIndex)
+PeerConnectionMedia::GetRemoteStreamByIndex(int aIndex)
 {
   ASSERT_ON_THREAD(mMainThread);
   if(aIndex < 0 || aIndex >= (int) mRemoteSourceStreams.Length()) {
@@ -668,6 +686,19 @@ PeerConnectionMedia::GetRemoteStream(int aIndex)
 
   MOZ_ASSERT(mRemoteSourceStreams[aIndex]);
   return mRemoteSourceStreams[aIndex];
+}
+
+RemoteSourceStreamInfo*
+PeerConnectionMedia::GetRemoteStreamById(const std::string& id)
+{
+  ASSERT_ON_THREAD(mMainThread);
+  for (size_t i = 0; i < mRemoteSourceStreams.Length(); ++i) {
+    if (id == mRemoteSourceStreams[i]->GetId()) {
+      return mRemoteSourceStreams[i];
+    }
+  }
+
+  return nullptr;
 }
 
 bool
