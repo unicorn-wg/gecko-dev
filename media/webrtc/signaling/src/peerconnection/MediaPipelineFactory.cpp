@@ -61,6 +61,7 @@ static nsresult JsepCodecDescToCodecConfig(const
   if ((pt < 0) ||
       (pt > UINT16_MAX) ||
       (length != desc.mDefaultPt.size())) {
+    MOZ_MTLOG(ML_ERROR, "Invalid payload type: " << desc.mDefaultPt);
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -81,8 +82,10 @@ static nsresult JsepCodecDescToCodecConfig(const
                                            jsep::JsepCodecDescription& d,
                                            VideoCodecConfig** config) {
   MOZ_ASSERT(d.mType == mozilla::SdpMediaSection::kVideo);
-  if (d.mType != mozilla::SdpMediaSection::kVideo)
+  if (d.mType != mozilla::SdpMediaSection::kVideo) {
+    MOZ_ASSERT(false, "JsepCodecDescription has wrong type");
     return NS_ERROR_INVALID_ARG;
+  }
 
   const jsep::JsepVideoCodecDescription& desc =
       static_cast<const jsep::JsepVideoCodecDescription&>(d);
@@ -93,6 +96,7 @@ static nsresult JsepCodecDescToCodecConfig(const
   if ((pt < 0) ||
       (pt > UINT16_MAX) ||
       (length != desc.mDefaultPt.size())) {
+    MOZ_MTLOG(ML_ERROR, "Invalid payload type: " << desc.mDefaultPt);
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -158,6 +162,7 @@ nsresult MediaPipelineFactory::CreateOrGetTransportFlow(
 
   mozilla::RefPtr<DtlsIdentity> pcid = mPC->GetIdentity();
   if (!pcid) {
+    MOZ_MTLOG(ML_ERROR, "Failed to get DTLS identity.");
     return NS_ERROR_FAILURE;
   }
   dtls->SetIdentity(pcid);
@@ -206,6 +211,7 @@ nsresult MediaPipelineFactory::CreateOrGetTransportFlow(
                    mPCMedia, flow, level, rtcp, layers),
     NS_DISPATCH_NORMAL);
   if (NS_FAILED(rv)) {
+    MOZ_MTLOG(ML_ERROR, "Failed to dispatch FinalizeTransportFlow_s");
     return rv;
   }
 
@@ -382,7 +388,7 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
   nsRefPtr<sipcc::LocalSourceStreamInfo> stream =
       mPCMedia->GetLocalStream(pc_stream_id);
   if (!stream) {
-    MOZ_MTLOG(ML_ERROR, "Stream not found");
+    MOZ_MTLOG(ML_ERROR, "Stream not found: " << pc_stream_id);
     return NS_ERROR_FAILURE;
   }
 
@@ -457,8 +463,10 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
       mozilla::AudioSessionConduit::Create(
           static_cast<AudioSessionConduit *>(other_conduit.get()));
 
-  if(!conduit)
+  if (!conduit) {
+    MOZ_MTLOG(ML_ERROR, "Could not create audio conduit");
     return NS_ERROR_FAILURE;
+  }
 
   mPCMedia->AddConduit(trackPair.mLevel, receiving, conduit);
   size_t num_codecs = track->num_codecs();
@@ -470,12 +478,14 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
   if (receiving) {
     PtrVector<mozilla::AudioCodecConfig> configs;
 
-    for(size_t i=0; i <num_codecs; i++) {
+    for (size_t i=0; i <num_codecs; i++) {
       const jsep::JsepCodecDescription* cdesc;
       nsresult rv = track->get_codec(i, &cdesc);
       MOZ_ASSERT(NS_SUCCEEDED(rv));
-      if (NS_FAILED(rv))
+      if (NS_FAILED(rv)) {
+        MOZ_MTLOG(ML_ERROR, "Failed to get codec from jsep track");
         return rv;
+      }
 
       mozilla::AudioCodecConfig *config_raw;
       rv = JsepCodecDescToCodecConfig(*cdesc, &config_raw);
@@ -488,6 +498,7 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
     auto error = conduit->ConfigureRecvMediaCodecs(configs.values);
 
     if (error) {
+      MOZ_MTLOG(ML_ERROR, "ConfigureRecvMediaCodecs failed: " << error);
       return NS_ERROR_FAILURE;
     }
   } else {
@@ -495,8 +506,10 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
 
     nsresult rv = track->get_codec(0, &cdesc);  // Best codec.
     MOZ_ASSERT(NS_SUCCEEDED(rv));
-    if (NS_FAILED(rv))
+    if (NS_FAILED(rv)) {
+      MOZ_MTLOG(ML_ERROR, "Failed to get codec from jsep track");
       return rv;
+    }
 
     mozilla::AudioCodecConfig *config_raw;
     rv = JsepCodecDescToCodecConfig(*cdesc, &config_raw);
@@ -505,8 +518,10 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
 
     UniquePtr<mozilla::AudioCodecConfig> config(config_raw);
     auto error = conduit->ConfigureSendMediaCodec(config.get());
-    if (error)
+    if (error) {
+      MOZ_MTLOG(ML_ERROR, "ConfigureSendMediaCodec failed: " << error);
       return NS_ERROR_FAILURE;
+    }
 
 
     // TODO(ekr@rtfm.com): Audio level extension. Issue 169.
@@ -538,6 +553,7 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
         peer_conduit.get()));
 
   if (!conduit) {
+    MOZ_MTLOG(ML_ERROR, "Could not create video conduit");
     return NS_ERROR_FAILURE;
   }
 
@@ -552,13 +568,15 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
   if (receiving) {
     PtrVector<mozilla::VideoCodecConfig> configs;
 
-    for(size_t i=0; i <num_codecs ; i++) {
+    for (size_t i=0; i <num_codecs ; i++) {
       const jsep::JsepCodecDescription* cdesc;
 
       nsresult rv = track->get_codec(i, &cdesc);
       MOZ_ASSERT(NS_SUCCEEDED(rv));
-      if (NS_FAILED(rv))
+      if (NS_FAILED(rv)) {
+        MOZ_MTLOG(ML_ERROR, "Failed to get codec from jsep track");
         return rv;
+      }
 
       mozilla::VideoCodecConfig *config_raw;
       rv = JsepCodecDescToCodecConfig(*cdesc, &config_raw);
@@ -576,6 +594,7 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
     auto error = conduit->ConfigureRecvMediaCodecs(configs.values);
 
     if (error) {
+      MOZ_MTLOG(ML_ERROR, "ConfigureRecvMediaCodecs failed: " << error);
       return NS_ERROR_FAILURE;
     }
   } else {
@@ -592,8 +611,10 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
 
     nsresult rv = track->get_codec(0, &cdesc);   // Best codec.
     MOZ_ASSERT(NS_SUCCEEDED(rv));
-    if (NS_FAILED(rv))
+    if (NS_FAILED(rv)) {
+      MOZ_MTLOG(ML_ERROR, "Failed to get codec from jsep track");
       return rv;
+    }
 
     mozilla::VideoCodecConfig *config_raw;
     rv = JsepCodecDescToCodecConfig(*cdesc, &config_raw);
@@ -604,10 +625,14 @@ nsresult MediaPipelineFactory::CreateVideoConduit(
     mozilla::ScopedDeletePtr<mozilla::VideoCodecConfig> config(config_raw);
 
     if (EnsureExternalCodec(conduit, config, true)) {
+      MOZ_MTLOG(ML_ERROR, "External codec not available");
       return NS_ERROR_FAILURE;
     }
 
-    if (conduit->ConfigureSendMediaCodec(config)) {
+    auto error = conduit->ConfigureSendMediaCodec(config);
+
+    if (error) {
+      MOZ_MTLOG(ML_ERROR, "ConfigureSendMediaCodec failed: " << error);
       return NS_ERROR_FAILURE;
     }
   }
