@@ -1540,10 +1540,10 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
         MOZ_ASSERT(!hasAudio);
         hasAudio = true;
         info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
-      } else if (track->media_type() == mozilla::SdpMediaSection::kAudio) {
+      } else if (track->media_type() == mozilla::SdpMediaSection::kVideo) {
         MOZ_ASSERT(!hasVideo);
         hasVideo = true;
-        info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
+        info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_VIDEO;
       } else {
         // Data channel, ignore.
       }

@@ -168,6 +168,7 @@ class JsepSessionImpl : public JsepSession {
   nsresult SetRemoteDescriptionOffer(UniquePtr<Sdp> offer);
   nsresult SetRemoteDescriptionAnswer(JsepSdpType type,
                                       UniquePtr<Sdp> answer);
+  void SetRemoteTracksFromDescription(const Sdp& remote_description);
   nsresult HandleNegotiatedSession(const UniquePtr<Sdp>& local,
                                    const UniquePtr<Sdp>& remote);
   nsresult DetermineSendingDirection(SdpDirectionAttribute::Direction offer,
