@@ -652,7 +652,7 @@ MediaConduitErrorCode MediaPipelineFactory::EnsureExternalCodec(
 {
   if (config->mName == "VP8") {
     return kMediaConduitNoError;
-  } else if (config->mName == "H264_P0" || config->mName == "H264_P1") {
+  } else if (config->mName == "H264") {
     // Register H.264 codec.
     if (send) {
       VideoEncoder* encoder = nullptr;
