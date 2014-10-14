@@ -1103,18 +1103,36 @@ public:
     SdpAttribute(kSctpmapAttribute) {}
 
   struct Sctpmap {
-    uint32_t number;
-    std::string app;
+    std::string pt;
+    std::string name;
     uint32_t streams;
   };
 
-  void PushEntry(uint32_t number,
-                 std::string app,
+  void PushEntry(const std::string& pt,
+                 const std::string& name,
                  uint32_t streams = 0) {
-    mSctpmaps.push_back({number, app, streams});
+    mSctpmaps.push_back({pt, name, streams});
   }
 
   virtual void Serialize(std::ostream& os) const MOZ_OVERRIDE;
+
+  bool HasEntry(const std::string& pt) const {
+    for (auto it = mSctpmaps.begin(); it != mSctpmaps.end(); ++it) {
+      if (it->pt == pt) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  const Sctpmap& GetEntry(const std::string& pt) const {
+    for (auto it = mSctpmaps.begin(); it != mSctpmaps.end(); ++it) {
+      if (it->pt == pt) {
+        return *it;
+      }
+    }
+    MOZ_CRASH();
+  }
 
   std::vector<Sctpmap> mSctpmaps;
 };

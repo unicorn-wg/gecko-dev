@@ -1,8 +1,10 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "CSFLog.h"
 
@@ -362,6 +364,9 @@ PeerConnectionMedia::StartIceChecks_s(bool controlling) {
   mIceCtx->SetControlling(controlling ?
                           NrIceCtx::ICE_CONTROLLING :
                           NrIceCtx::ICE_CONTROLLED);
+
+  // TODO: Before we start checks, we need to disable unneeded rtcp components
+  // Issue 182
   mIceCtx->StartChecks();
 
   mDeferRemoteCandidates = false;
@@ -450,7 +455,10 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
   }
 
   if (has_attrs) {
-    std::vector<std::string> attrs(candidates.begin(), candidates.end());
+    std::vector<std::string> attrs;
+    for (auto i = candidates.begin(); i != candidates.end(); ++i) {
+      attrs.push_back("candidate:" + *i);
+    }
     attrs.push_back("ice-ufrag:" + ufrag);
     attrs.push_back("ice-pwd:" + password);
 

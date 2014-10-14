@@ -323,32 +323,30 @@ SipccSdpAttributeList::LoadCandidate(sdp_t* sdp, uint16_t level) {
 bool
 SipccSdpAttributeList::LoadSctpmap(sdp_t* sdp, uint16_t level,
                                    SdpErrorHolder& errorHolder) {
-  uint16_t count = sdp_get_media_num_payload_types(sdp, level);
-  if (count > 0) {
-    uint16_t num = sdp_get_media_sctp_port(sdp, level);
+  SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
+  for (uint16_t i = 0; i < UINT16_MAX; ++i) {
+    sdp_attr_t* attr = sdp_find_attr(sdp, level, 0, SDP_ATTR_SCTPMAP, i + 1);
 
-    char writable[SDP_MAX_STRING_LEN + 1];
-    memset(writable, '\0', SDP_MAX_STRING_LEN + 1);
-    sdp_result_e result = sdp_attr_get_sctpmap_protocol(sdp, level, 0, 1,
-      &writable[0]);
-    if (result != SDP_SUCCESS) {
-      return false;
-    }
-    std::string app(writable);
-
-    uint32_t stream = 0;
-    // TODO streams are optional according to latest draft. Issue 185.
-    result = sdp_attr_get_sctpmap_streams(sdp, level, 0, 1, &stream);
-    if (result != SDP_SUCCESS) {
-      return false;
+    if (!attr) {
+      break;
     }
 
-    SdpSctpmapAttributeList* sctpmap = new SdpSctpmapAttributeList();
-    // TODO our parser does not support draft 06 or 07. Issue 185.
-    sctpmap->PushEntry(num, app, stream);
+    // Yeah, this is broken.
+    uint16_t pt = attr->attr.sctpmap.port;
+    uint16_t streams = attr->attr.sctpmap.streams;
+    const char* name = attr->attr.sctpmap.protocol;
 
+    std::ostringstream ospt;
+    ospt << pt;
+    sctpmap->PushEntry(ospt.str(), name, streams);
+  }
+
+  if (sctpmap->mSctpmaps.empty()) {
+    delete sctpmap;
+  } else {
     SetAttribute(sctpmap);
   }
+
   return true;
 }
 
@@ -1014,13 +1012,20 @@ SipccSdpAttributeList::GetRemoteCandidates() const {
 
 const SdpRtpmapAttributeList&
 SipccSdpAttributeList::GetRtpmap() const {
+  if (!HasAttribute(SdpAttribute::kRtpmapAttribute)) {
+    MOZ_CRASH();
+  }
   const SdpAttribute* attr = GetAttribute(SdpAttribute::kRtpmapAttribute);
   return *static_cast<const SdpRtpmapAttributeList*>(attr);
 }
 
 const SdpSctpmapAttributeList&
 SipccSdpAttributeList::GetSctpmap() const {
-  MOZ_CRASH("Not yet implemented");
+  if (!HasAttribute(SdpAttribute::kSctpmapAttribute)) {
+    MOZ_CRASH();
+  }
+  const SdpAttribute* attr = GetAttribute(SdpAttribute::kSctpmapAttribute);
+  return *static_cast<const SdpSctpmapAttributeList*>(attr);
 }
 
 const SdpSetupAttribute&

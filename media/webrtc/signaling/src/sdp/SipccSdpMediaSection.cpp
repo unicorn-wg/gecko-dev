@@ -281,9 +281,21 @@ SipccSdpMediaSection::AddCodec(const std::string& pt, const std::string& name,
   }
 }
 
-void SipccSdpMediaSection::AddDataChannel(uint16_t pt,
-                                          const std::string& sctpmap) {
-  MOZ_CRASH();
+void SipccSdpMediaSection::AddDataChannel(const std::string& pt,
+                                          const std::string& name,
+                                          uint16_t streams) {
+  mFormats.push_back(pt);
+
+  SdpSctpmapAttributeList *sctpmap = new SdpSctpmapAttributeList();
+  if (mAttributeList.HasAttribute(SdpAttribute::kSctpmapAttribute)) {
+    const SdpSctpmapAttributeList& old = mAttributeList.GetSctpmap();
+    for (auto it = old.mSctpmaps.begin(); it != old.mSctpmaps.end(); ++it) {
+      sctpmap->mSctpmaps.push_back(*it);
+    }
+  }
+
+  sctpmap->PushEntry(pt, name, streams);
+  mAttributeList.SetAttribute(sctpmap);
 }
 
 
