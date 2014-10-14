@@ -171,7 +171,7 @@ static int nr_ice_peer_ctx_parse_stream_attributes_int(nr_ice_peer_ctx *pctx, nr
         }
       }
       else {
-        r_log(LOG_ICE,LOG_WARNING,"ICE(%s): peer (%s) specified bogus attribute",pctx->ctx->label,pctx->label);
+        r_log(LOG_ICE,LOG_WARNING,"ICE(%s): peer (%s) specified bogus attribute: %s",pctx->ctx->label,pctx->label,attrs[i]);
       }
     }
 
