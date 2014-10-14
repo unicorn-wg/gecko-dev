@@ -923,17 +923,7 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
 
 nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
   MOZ_ASSERT(mState == kJsepStateStable);
-  size_t num_m_lines = offer->GetMediaSectionCount();
-
-  for (size_t i = 0; i < num_m_lines; ++i) {
-    const SdpMediaSection& msection = offer->GetMediaSection(i);
-    JsepMediaStreamTrackRemote* remote = new JsepMediaStreamTrackRemote(
-        msection.GetMediaType());
-    JsepReceivingTrack rtrack;
-    rtrack.mTrack = remote;
-    mRemoteTracks.push_back(rtrack);
-  }
-
+  SetRemoteTracksFromDescription(*offer);
   mPendingRemoteDescription = Move(offer);
 
   SetState(kJsepStateHaveRemoteOffer);
@@ -950,6 +940,8 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
                                         mPendingRemoteDescription);
   NS_ENSURE_SUCCESS(rv, rv);
 
+  SetRemoteTracksFromDescription(*mPendingRemoteDescription);
+
   mCurrentRemoteDescription = Move(mPendingRemoteDescription);
   mCurrentLocalDescription = Move(mPendingLocalDescription);
 
@@ -957,6 +949,24 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
   return NS_OK;
 }
 
+void JsepSessionImpl::SetRemoteTracksFromDescription(
+    const Sdp& remote_description) {
+  size_t num_m_lines = remote_description.GetMediaSectionCount();
+
+  for (size_t i = 0; i < num_m_lines; ++i) {
+    const SdpMediaSection& msection = remote_description.GetMediaSection(i);
+    auto direction = msection.GetDirectionAttribute().mValue;
+
+    if (direction == SdpDirectionAttribute::kSendrecv ||
+        direction == SdpDirectionAttribute::kSendonly) {
+      JsepMediaStreamTrackRemote* remote = new JsepMediaStreamTrackRemote(
+          msection.GetMediaType());
+      JsepReceivingTrack rtrack;
+      rtrack.mTrack = remote;
+      mRemoteTracks.push_back(rtrack);
+    }
+  }
+}
 
 nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
   // draft-ietf-rtcweb-jsep-08 Section 5.2.1:
