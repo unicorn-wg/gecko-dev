@@ -984,24 +984,91 @@ PeerConnectionImpl::EnsureDataConnection(uint16_t aNumstreams)
 }
 
 nsresult
-PeerConnectionImpl::InitializeDataChannel(int track_id,
-                                          uint16_t aLocalport,
-                                          uint16_t aRemoteport,
-                                          uint16_t aNumstreams)
+PeerConnectionImpl::GetDatachannelCodec(
+    const mozilla::jsep::JsepApplicationCodecDescription** datachannelCodec,
+    uint16_t* level) const {
+
+  for (size_t j = 0; j < mJsepSession->num_negotiated_track_pairs(); ++j) {
+    const JsepTrackPair* trackPair;
+    nsresult res = mJsepSession->negotiated_track_pair(j, &trackPair);
+
+    if (NS_SUCCEEDED(res) &&
+        trackPair->mSending && // Assumes we don't do recvonly datachannel
+        trackPair->mSending->media_type() == SdpMediaSection::kApplication) {
+
+      if (!trackPair->mSending->num_codecs()) {
+        CSFLogError(logTag, "%s: Negotiated m=application with no codec. "
+                            "This is likely to be broken.",
+                            __FUNCTION__);
+        return NS_ERROR_FAILURE;
+      }
+
+      for (size_t i = 0; i < trackPair->mSending->num_codecs(); ++i) {
+        const JsepCodecDescription* codec;
+        res = trackPair->mSending->get_codec(i, &codec);
+
+        if (NS_FAILED(res)) {
+          CSFLogError(logTag, "%s: Failed getting codec for m=application.",
+                              __FUNCTION__);
+          continue;
+        }
+
+        if (codec->mType != SdpMediaSection::kApplication) {
+          CSFLogError(logTag, "%s: Codec type for m=application was %u, this "
+                              "is a bug.",
+                              __FUNCTION__,
+                              static_cast<unsigned>(codec->mType));
+          MOZ_ASSERT(false, "Codec for m=application was not \"application\"");
+          return NS_ERROR_FAILURE;
+        }
+
+        if (codec->mName != "webrtc-datachannel") {
+          CSFLogWarn(logTag, "%s: Codec for m=application was not "
+                             "webrtc-datachannel (was instead %s). ",
+                             __FUNCTION__,
+                             codec->mName.c_str());
+          continue;
+        }
+
+        *datachannelCodec =
+          static_cast<const JsepApplicationCodecDescription*>(codec);
+        *level = static_cast<uint16_t>(trackPair->mLevel);
+        return NS_OK;
+      }
+    }
+  }
+
+  *datachannelCodec = nullptr;
+  *level = 0;
+  return NS_OK;
+}
+
+nsresult
+PeerConnectionImpl::InitializeDataChannel()
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
+  CSFLogDebug(logTag, "%s", __FUNCTION__);
 
-  // TODO(ekr@rtfm.com): Restore. Issue 166.
-  MOZ_CRASH();
-#if 0
+  const JsepApplicationCodecDescription* codec;
+  uint16_t level;
+  nsresult rv = GetDatachannelCodec(&codec, &level);
+
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (!codec) {
+    CSFLogDebug(logTag, "%s: We did not negotiate datachannel", __FUNCTION__);
+    return NS_OK;
+  }
+
 #ifdef MOZILLA_INTERNAL_API
-  nsresult rv = EnsureDataConnection(aNumstreams);
+  rv = EnsureDataConnection(codec->mChannels);
   if (NS_SUCCEEDED(rv)) {
     // use the specified TransportFlow
-    nsRefPtr<TransportFlow> flow = mMedia->GetTransportFlow(track_id, false).get();
-    CSFLogDebug(logTag, "Transportflow[%d] = %p", track_id, flow.get());
+    nsRefPtr<TransportFlow> flow = mMedia->GetTransportFlow(level, false).get();
+    CSFLogDebug(logTag, "Transportflow[%d] = %p", level, flow.get());
     if (flow) {
-      if (mDataConnection->ConnectViaTransportFlow(flow, aLocalport, aRemoteport)) {
+      // TODO: Do these ports matter at all? If not, can we remove the args?
+      if (mDataConnection->ConnectViaTransportFlow(flow, 9, 9)) {
         return NS_OK;
       }
     }
@@ -1009,7 +1076,6 @@ PeerConnectionImpl::InitializeDataChannel(int track_id,
     mDataConnection->Destroy();
   }
   mDataConnection = nullptr;
-#endif
 #endif
   return NS_ERROR_FAILURE;
 }
@@ -1070,15 +1136,16 @@ PeerConnectionImpl::CreateDataChannel(const nsAString& aLabel,
 
   CSFLogDebug(logTag, "%s: making DOMDataChannel", __FUNCTION__);
 
-#ifdef KEEP_SIPCC
   if (!mHaveDataStream) {
-    // XXX stream_id of 0 might confuse things...
-     if (mInternal->mCall->addStream(0, 2, DATA)) {
-       return NS_ERROR_FAILURE;
+    rv = mJsepSession->AddTrack(
+        new PeerConnectionJsepMST(mozilla::SdpMediaSection::kApplication));
+    if (NS_FAILED(rv)) {
+      CSFLogError(logTag, "%s: Failed to add application track.",
+                          __FUNCTION__);
+      return rv;
     }
     mHaveDataStream = true;
   }
-#endif
   nsIDOMDataChannel *retval;
   rv = NS_NewDOMDataChannel(dataChannel.forget(), mWindow, &retval);
   if (NS_FAILED(rv)) {
@@ -1175,6 +1242,11 @@ PeerConnectionImpl::CreateOffer(const RTCOfferOptions& aOptions)
   if (aOptions.mOfferToReceiveVideo.WasPassed()) {
     options.mOfferToReceiveVideo =
         mozilla::Some(size_t(aOptions.mOfferToReceiveVideo.Value()));
+  }
+
+  if (aOptions.mMozDontOfferDataChannel.WasPassed()) {
+    options.mDontOfferDataChannel =
+      mozilla::Some(aOptions.mMozDontOfferDataChannel.Value());
   }
 #endif
   return CreateOffer(options);
@@ -1454,7 +1526,9 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     // two tracks, one audio and one video.
     nsresult rv;
     size_t num_tracks = mJsepSession->num_remote_tracks();
-    MOZ_ASSERT(num_tracks <= 2);
+    MOZ_ASSERT(num_tracks <= 3);
+    bool hasAudio = false;
+    bool hasVideo = false;
     for (size_t i = 0; i < num_tracks; ++i) {
       RefPtr<JsepMediaStreamTrack> track;
       rv = mJsepSession->remote_track(i, &track);
@@ -1463,11 +1537,15 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
                       // want mismatches. Issue 175.
       }
       if (track->media_type() == mozilla::SdpMediaSection::kAudio) {
+        MOZ_ASSERT(!hasAudio);
+        hasAudio = true;
         info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
       } else if (track->media_type() == mozilla::SdpMediaSection::kAudio) {
+        MOZ_ASSERT(!hasVideo);
+        hasVideo = true;
         info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
       } else {
-        // Data channel?
+        // Data channel, ignore.
       }
     }
 
@@ -2202,6 +2280,7 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
 
   if (mSignalingState == PCImplSignalingState::SignalingStable) {
     mMedia->UpdateMediaPipelines(mJsepSession);
+    InitializeDataChannel();
     mMedia->StartIceChecks(mJsepSession);
   }
 
