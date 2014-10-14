@@ -54,8 +54,9 @@ public:
                         uint32_t clockrate, uint16_t channels,
                         const std::string& fmtp) MOZ_OVERRIDE;
 
-  virtual void AddDataChannel(uint16_t pt,
-                              const std::string& sctpmap) MOZ_OVERRIDE;
+  virtual void AddDataChannel(const std::string& pt,
+                              const std::string& name,
+                              uint16_t streams) MOZ_OVERRIDE;
 
   virtual void Serialize(std::ostream&) const MOZ_OVERRIDE;
 

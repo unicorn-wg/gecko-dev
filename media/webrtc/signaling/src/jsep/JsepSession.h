@@ -42,6 +42,7 @@ struct JsepOAOptions {};
 struct JsepOfferOptions : public JsepOAOptions {
   Maybe<size_t> mOfferToReceiveAudio;
   Maybe<size_t> mOfferToReceiveVideo;
+  Maybe<bool> mDontOfferDataChannel;
 };
 struct JsepAnswerOptions : public JsepOAOptions {};
 

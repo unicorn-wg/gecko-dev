@@ -519,8 +519,7 @@ public:
                    const nsAString& aPluginName,
                    const nsAString& aPluginDumpID);
 
-  nsresult InitializeDataChannel(int track_id, uint16_t aLocalport,
-                                 uint16_t aRemoteport, uint16_t aNumstreams);
+  nsresult InitializeDataChannel();
 
   NS_IMETHODIMP_TO_ERRORRESULT(ConnectDataConnection, ErrorResult &rv,
                                uint16_t aLocalport,
@@ -643,6 +642,10 @@ private:
 
   NS_IMETHOD FingerprintSplitHelper(
       std::string& fingerprint, size_t& spaceIdx) const;
+
+  nsresult GetDatachannelCodec(
+      const mozilla::jsep::JsepApplicationCodecDescription** codec,
+      uint16_t* level) const;
 
 
 #ifdef MOZILLA_INTERNAL_API
