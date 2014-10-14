@@ -277,7 +277,8 @@ nsresult MediaPipelineFactory::CreateMediaPipeline(
     if (NS_FAILED(rv))
       return rv;
   } else {
-    MOZ_CRASH(); // TODO(ekr@rtfm.com): Write data. Issue 166.
+    // We've created the TransportFlow, nothing else to do here.
+    return NS_OK;
   }
 
   if (receiving) {
