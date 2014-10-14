@@ -355,52 +355,6 @@ PeerConnectionCtx::EverySecondTelemetryCallback_m(nsITimer* timer, void *closure
 
 nsresult PeerConnectionCtx::Initialize() {
   initGMP();
-#ifdef KEEP_SIPCC
-  mCCM = CSF::CallControlManager::create();
-
-  NS_ENSURE_TRUE(mCCM.get(), NS_ERROR_FAILURE);
-
-  // Add the local audio codecs
-  // FIX - Get this list from MediaEngine instead
-  int codecMask = 0;
-  codecMask |= VCM_CODEC_RESOURCE_G711;
-  codecMask |= VCM_CODEC_RESOURCE_OPUS;
-  //codecMask |= VCM_CODEC_RESOURCE_LINEAR;
-  codecMask |= VCM_CODEC_RESOURCE_G722;
-  //codecMask |= VCM_CODEC_RESOURCE_iLBC;
-  //codecMask |= VCM_CODEC_RESOURCE_iSAC;
-  mCCM->setAudioCodecs(codecMask);
-
-  //Add the local video codecs
-  // FIX - Get this list from MediaEngine instead
-  // Turning them all on for now
-  codecMask = 0;
-  // Only adding codecs supported
-  //codecMask |= VCM_CODEC_RESOURCE_H263;
-
-
-#ifdef MOZILLA_INTERNAL_API
-#ifdef MOZ_WEBRTC_OMX
-  if (Preferences::GetBool("media.peerconnection.video.h264_enabled")) {
-    codecMask |= VCM_CODEC_RESOURCE_H264;
-  }
-#endif
-#else
-  // Outside MOZILLA_INTERNAL_API ensures H.264 available in unit tests
-  codecMask |= VCM_CODEC_RESOURCE_H264;
-#endif
-
-  codecMask |= VCM_CODEC_RESOURCE_VP8;
-  //codecMask |= VCM_CODEC_RESOURCE_I420;
-  mCCM->setVideoCodecs(codecMask);
-  mCCM->addCCObserver(this);
-  ChangeSipccState(dom::PCImplSipccState::Starting);
-
-  if (!mCCM->startSDPMode())
-    return NS_ERROR_FAILURE;
-
-  mDevice = mCCM->getActiveDevice();
-  NS_ENSURE_TRUE(mDevice.get(), NS_ERROR_FAILURE);
 
 #ifdef MOZILLA_INTERNAL_API
   mConnectionCounter = 0;
@@ -412,8 +366,8 @@ nsresult PeerConnectionCtx::Initialize() {
   NS_ENSURE_SUCCESS(rv, rv);
   mTelemetryTimer->InitWithFuncCallback(EverySecondTelemetryCallback_m, this, 1000,
                                         nsITimer::TYPE_REPEATING_PRECISE_CAN_SKIP);
-#endif
-#endif  // KEEP_SIPCC
+#endif // MOZILLA_INTERNAL_API
+
   return NS_OK;
 }
 
