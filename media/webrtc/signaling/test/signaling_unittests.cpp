@@ -1899,6 +1899,8 @@ public:
 
     // Strip out any existing rtcp-fb lines
     sdpWrapper.DeleteLines("a=rtcp-fb:120");
+    sdpWrapper.DeleteLines("a=rtcp-fb:126");
+    sdpWrapper.DeleteLines("a=rtcp-fb:97");
 
     // Add rtcp-fb lines for the desired feedback types
     // We know that the video section is generated second (last),
@@ -1906,6 +1908,8 @@ public:
     std::set<std::string>::const_iterator it;
     for (it = feedback.begin(); it != feedback.end(); ++it) {
       sdpWrapper.AddLine(std::string("a=rtcp-fb:120 ") + (*it) + "\r\n");
+      sdpWrapper.AddLine(std::string("a=rtcp-fb:126 ") + (*it) + "\r\n");
+      sdpWrapper.AddLine(std::string("a=rtcp-fb:97 ") + (*it) + "\r\n");
     }
 
     std::cout << "Modified SDP " << std::endl
