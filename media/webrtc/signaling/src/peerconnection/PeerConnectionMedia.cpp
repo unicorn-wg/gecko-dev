@@ -455,7 +455,10 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
   }
 
   if (has_attrs) {
-    std::vector<std::string> attrs(candidates.begin(), candidates.end());
+    std::vector<std::string> attrs;
+    for (auto i = candidates.begin(); i != candidates.end(); ++i) {
+      attrs.push_back("candidate:" + *i);
+    }
     attrs.push_back("ice-ufrag:" + ufrag);
     attrs.push_back("ice-pwd:" + password);
 
