@@ -104,8 +104,9 @@ public:
                         uint32_t clockrate, uint16_t channels = 0,
                         const std::string& fmtp = "") = 0;
 
-  virtual void AddDataChannel(uint16_t pt = 5000U,
-                              const std::string& sctpmap = "webrtc-datachannel") = 0;
+  virtual void AddDataChannel(const std::string& pt,
+                              const std::string& name,
+                              uint16_t streams) = 0;
 
   size_t GetLevel() const { return mLevel; }
 

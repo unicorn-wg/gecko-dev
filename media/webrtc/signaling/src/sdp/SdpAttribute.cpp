@@ -168,7 +168,7 @@ void SdpRtpmapAttributeList::Serialize(std::ostream& os) const
 void SdpSctpmapAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mSctpmaps.begin(); i != mSctpmaps.end(); ++i) {
-    os << "a=" << mType << ":" << i->number << " " << i->app;
+    os << "a=" << mType << ":" << i->pt << " " << i->name;
     if (i->streams) {
       os << " " << i->streams;
     }
