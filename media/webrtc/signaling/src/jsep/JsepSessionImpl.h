@@ -155,7 +155,7 @@ class JsepSessionImpl : public JsepSession {
   void AddCodecs(SdpMediaSection::MediaType mediatype,
                  SdpMediaSection* msection);
   JsepCodecDescription* FindMatchingCodec(
-      const SdpRtpmapAttributeList::Rtpmap& entry,
+      const std::string& pt,
       const SdpMediaSection& msection) const;
   void AddCommonCodecs(const SdpMediaSection& remote_section,
                        SdpMediaSection* msection);

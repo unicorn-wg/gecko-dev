@@ -145,6 +145,8 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
        track != mLocalTracks.end(); ++track) {
     SdpMediaSection::MediaType mediatype = track->mTrack->media_type();
     SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
+    SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf;
+
     if (mediatype == SdpMediaSection::kAudio) {
       ++nAudio;
       if (options.mOfferToReceiveAudio.isSome() &&
@@ -157,16 +159,34 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
           nVideo > *options.mOfferToReceiveVideo) {
         dir = SdpDirectionAttribute::kSendonly;
       }
+    } else if (mediatype == SdpMediaSection::kApplication) {
+      if (options.mDontOfferDataChannel.isSome() &&
+          *options.mDontOfferDataChannel) {
+        // We have a datachannel track, but the options override this
+        continue;
+      }
+
+      proto = SdpMediaSection::kDtlsSctp;
+    } else {
+      MOZ_CRASH("Unknown media type");
     }
 
-    SdpMediaSection& msection = sdp->AddMediaSection(mediatype, dir);
+    SdpMediaSection& msection = sdp->AddMediaSection(mediatype,
+                                                     dir,
+                                                     9,
+                                                     proto,
+                                                     sdp::kIPv4,
+                                                     "0.0.0.0");
+
+    if (mediatype != SdpMediaSection::kApplication) {
+      // Set RTCP-MUX.
+      msection.GetAttributeList().SetAttribute(
+          new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
+    }
+
     rv = AddTransportAttributes(&msection, kJsepSdpOffer,
                                 SdpSetupAttribute::kActpass);
     NS_ENSURE_SUCCESS(rv, rv);
-
-    // Set RTCP-MUX.
-    msection.GetAttributeList().SetAttribute(
-        new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
 
     AddCodecs(mediatype, &msection);
 
@@ -230,11 +250,11 @@ void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
 }
 
 JsepCodecDescription* JsepSessionImpl::FindMatchingCodec(
-    const SdpRtpmapAttributeList::Rtpmap& entry,
+    const std::string& fmt,
     const SdpMediaSection& msection) const {
   for (auto c = mCodecs.begin(); c != mCodecs.end(); ++c) {
     auto codec = *c;
-    if (codec->mEnabled && codec->Matches(entry, msection)) {
+    if (codec->mEnabled && codec->Matches(fmt, msection)) {
       return codec;
     }
   }
@@ -245,23 +265,11 @@ JsepCodecDescription* JsepSessionImpl::FindMatchingCodec(
 void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
                                       SdpMediaSection* msection) {
   const std::vector<std::string>& formats = remote_section.GetFormats();
-  const SdpRtpmapAttributeList& rtpmap = remote_section.
-      GetAttributeList().GetRtpmap();
-
-  const SdpFmtpAttributeList* fmtps = nullptr;
-  if (remote_section.GetAttributeList().HasAttribute(SdpAttribute::kFmtpAttribute)) {
-    fmtps = &remote_section.GetAttributeList().GetFmtp();
-  }
 
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
-    if (!rtpmap.HasEntry(*fmt)) {
-      continue;
-    }
-
-    const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
-    JsepCodecDescription* codec = FindMatchingCodec(entry, remote_section);
+    JsepCodecDescription* codec = FindMatchingCodec(*fmt, remote_section);
     if (codec) {
-      codec->mDefaultPt = entry.pt; // Reflect the other side's PT
+      codec->mDefaultPt = *fmt; // Reflect the other side's PT
       codec->AddToMediaSection(*msection);
     }
   }
@@ -331,16 +339,22 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
 
   bool matched = false;
 
-  for (auto track = mLocalTracks.begin();
-       track != mLocalTracks.end(); ++track) {
-    if (track->mAssignedMLine.isSome())
-      continue;
-    if (track->mTrack->media_type() != remote_msection.GetMediaType())
-      continue;
-
+  if (remote_msection.GetMediaType() == SdpMediaSection::kApplication) {
+    // If we are offered datachannel, we need to play along even if no track
+    // for it has been added yet.
     matched = true;
-    track->mAssignedMLine = Some(mline_index);
-    break;
+  } else {
+    for (auto track = mLocalTracks.begin();
+         track != mLocalTracks.end(); ++track) {
+      if (track->mAssignedMLine.isSome())
+        continue;
+      if (track->mTrack->media_type() != remote_msection.GetMediaType())
+        continue;
+
+      matched = true;
+      track->mAssignedMLine = Some(mline_index);
+      break;
+    }
   }
 
   // If we matched, then it's sendrecv, else recvonly. No way to
@@ -636,23 +650,25 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     NS_ENSURE_SUCCESS(rv, rv);
     jpair->mRtpTransport = transport;
 
-    // RTCP MUX or not.
-    // TODO(ekr@rtfm.com): verify that the PTs are consistent with mux.
-    // Issue 162.
-    if (offer.GetAttributeList().HasAttribute(
-            SdpAttribute::kRtcpMuxAttribute) &&
-        answer.GetAttributeList().HasAttribute(
-            SdpAttribute::kRtcpMuxAttribute)) {
-      jpair->mRtcpTransport = nullptr;  // We agree on mux.
-      MOZ_MTLOG(ML_DEBUG, "RTCP-MUX is on");
-    } else {
-      MOZ_MTLOG(ML_DEBUG, "RTCP-MUX is off");
-      rv = SetupTransport(rm.GetAttributeList(),
-                          answer.GetAttributeList(),
-                          transport);
-      NS_ENSURE_SUCCESS(rv, rv);
+    if (lm.GetMediaType() != SdpMediaSection::kApplication) {
+      // RTCP MUX or not.
+      // TODO(ekr@rtfm.com): verify that the PTs are consistent with mux.
+      // Issue 162.
+      if (offer.GetAttributeList().HasAttribute(
+              SdpAttribute::kRtcpMuxAttribute) &&
+          answer.GetAttributeList().HasAttribute(
+              SdpAttribute::kRtcpMuxAttribute)) {
+        jpair->mRtcpTransport = nullptr;  // We agree on mux.
+        MOZ_MTLOG(ML_DEBUG, "RTCP-MUX is on");
+      } else {
+        MOZ_MTLOG(ML_DEBUG, "RTCP-MUX is off");
+        rv = SetupTransport(rm.GetAttributeList(),
+                            answer.GetAttributeList(),
+                            transport);
+        NS_ENSURE_SUCCESS(rv, rv);
 
-      jpair->mRtcpTransport = transport;
+        jpair->mRtcpTransport = transport;
+      }
     }
 
     track_pairs.push_back(jpair.release());
@@ -675,16 +691,9 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
 
   // Insert all the codecs we jointly support.
   const std::vector<std::string>& formats = remote_msection.GetFormats();
-  const SdpRtpmapAttributeList& rtpmap = remote_msection.
-       GetAttributeList().GetRtpmap();
 
   for (auto fmt = formats.begin(); fmt != formats.end(); ++fmt) {
-    if (!rtpmap.HasEntry(*fmt)) {
-      continue;
-    }
-
-    const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(*fmt);
-    JsepCodecDescription* codec = FindMatchingCodec(entry, remote_msection);
+    JsepCodecDescription* codec = FindMatchingCodec(*fmt, remote_msection);
     if (codec) {
       bool sending = (direction == JsepTrack::kJsepTrackSending);
       // We need to take the remote side's parameters into account so we can
@@ -693,7 +702,7 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
       // in order to negotiate.
       JsepCodecDescription* negotiated = codec->MakeNegotiatedCodec(
           remote_msection,
-          entry,
+          *fmt,
           sending);
 
       if (!negotiated) {
@@ -1039,6 +1048,12 @@ void JsepSessionImpl::SetupDefaultCodecs() {
   // Defaults for mandatory params
   h264_0->mProfileLevelId = 0x42E00D;
   mCodecs.push_back(h264_0);
+
+  mCodecs.push_back(new JsepApplicationCodecDescription(
+      "5000",
+      "webrtc-datachannel",
+      16
+                      ));
 }
 
 void JsepSessionImpl::SetState(JsepSignalingState state) {

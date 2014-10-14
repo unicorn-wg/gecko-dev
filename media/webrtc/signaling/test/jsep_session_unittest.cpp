@@ -130,8 +130,9 @@ protected:
           type = SdpMediaSection::kAudio;
         } else if (chunk == "video") {
           type = SdpMediaSection::kVideo;
+        } else if (chunk == "datachannel") {
+          type = SdpMediaSection::kApplication;
         } else {
-          // TODO(ekr@rtfm.com): Add Data
           MOZ_CRASH();
         }
         types.push_back(type);
@@ -144,7 +145,7 @@ protected:
 
     for (auto track = types.begin(); track != types.end(); ++track) {
       RefPtr<JsepMediaStreamTrack> mst(new JsepMediaStreamTrackFake(
-          *track));
+            *track));
       side->AddTrack(mst);
     }
   }
@@ -193,7 +194,9 @@ protected:
     for (size_t i = 0; i < types.size(); ++i) {
       const JsepTrackPair* pair;
       ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
+      ASSERT_TRUE(pair->mSending);
       ASSERT_EQ(types[i], pair->mSending->media_type());
+      ASSERT_TRUE(pair->mReceiving);
       ASSERT_EQ(types[i], pair->mReceiving->media_type());
     }
     DumpTrackPairs(mSessionOff);
@@ -453,7 +456,15 @@ TEST_P(JsepSessionTest, FullCallWithCandidates) {
 }
 
 INSTANTIATE_TEST_CASE_P(Variants, JsepSessionTest,
-                        ::testing::Values("audio", "video", "audio,video"));
+                        ::testing::Values("audio",
+                                          "video",
+                                          "datachannel",
+                                          "audio,video",
+                                          "video,audio",
+                                          "audio,datachannel",
+                                          "video,datachannel",
+                                          "video,audio,datachannel",
+                                          "audio,video,datachannel"));
 
 // offerToReceiveXxx variants
 
@@ -461,6 +472,7 @@ TEST_F(JsepSessionTest, CreateOfferRecvOnlyLines) {
   JsepOfferOptions options;
   options.mOfferToReceiveAudio = Some(static_cast<size_t>(1U));
   options.mOfferToReceiveVideo = Some(static_cast<size_t>(2U));
+  options.mDontOfferDataChannel = Some(true);
   std::string offer = CreateOffer(Some(options));
 
   SipccSdpParser parser;
@@ -496,6 +508,7 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
   JsepOfferOptions options;
   options.mOfferToReceiveAudio = Some(static_cast<size_t>(0U));
   options.mOfferToReceiveVideo = Some(static_cast<size_t>(1U));
+  options.mDontOfferDataChannel = Some(true);
   std::string offer = CreateOffer(Some(options));
 
   SipccSdpParser parser;
@@ -515,6 +528,27 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
             .GetMediaType());
   ASSERT_EQ(SdpDirectionAttribute::kSendonly, outputSdp->GetMediaSection(2)
             .GetAttributeList().GetDirection());
+}
+
+TEST_F(JsepSessionTest, CreateOfferNoDatachannelDefault) {
+  RefPtr<JsepMediaStreamTrack> msta(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kAudio));
+  mSessionOff.AddTrack(msta);
+  RefPtr<JsepMediaStreamTrack> mstv1(new JsepMediaStreamTrackFake(
+      SdpMediaSection::kVideo));
+  mSessionOff.AddTrack(mstv1);
+
+  std::string offer = CreateOffer();
+
+  SipccSdpParser parser;
+  auto outputSdp = mozilla::Move(parser.Parse(offer));
+  ASSERT_TRUE(outputSdp) << "Should have valid SDP";
+
+  ASSERT_EQ(2U, outputSdp->GetMediaSectionCount());
+  ASSERT_EQ(SdpMediaSection::kAudio, outputSdp->GetMediaSection(0)
+            .GetMediaType());
+  ASSERT_EQ(SdpMediaSection::kVideo, outputSdp->GetMediaSection(1)
+            .GetMediaType());
 }
 
 TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {

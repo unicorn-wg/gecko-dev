@@ -40,13 +40,25 @@ struct JsepCodecDescription {
   virtual bool LoadRtcpFbs(
       const SdpRtcpFbAttributeList::Feedback& feedback) = 0;
 
-  virtual bool Matches(const SdpRtpmapAttributeList::Rtpmap& rtpmap,
+  virtual bool Matches(const std::string& fmt,
                        const SdpMediaSection& remote_msection) const {
+    auto& attrs = remote_msection.GetAttributeList();
+    if (!attrs.HasAttribute(SdpAttribute::kRtpmapAttribute)) {
+      return false;
+    }
+
+    const SdpRtpmapAttributeList& rtpmap = attrs.GetRtpmap();
+    if (!rtpmap.HasEntry(fmt)) {
+      return false;
+    }
+
+    const SdpRtpmapAttributeList::Rtpmap& entry = rtpmap.GetEntry(fmt);
+
     if (mType == remote_msection.GetMediaType()
-        && (mName == rtpmap.name)
-        && (mClock == rtpmap.clock)
-        && (mChannels == rtpmap.channels)) {
-      return Matches(FindParameters(rtpmap.pt, remote_msection));
+        && (mName == entry.name)
+        && (mClock == entry.clock)
+        && (mChannels == entry.channels)) {
+      return Matches(FindParameters(entry.pt, remote_msection));
     }
     return false;
   }
@@ -75,10 +87,10 @@ struct JsepCodecDescription {
 
   virtual JsepCodecDescription* MakeNegotiatedCodec(
       const mozilla::SdpMediaSection& remote_msection,
-      const mozilla::SdpRtpmapAttributeList::Rtpmap& rtpmap,
+      const std::string& pt,
       bool sending) const {
     JsepCodecDescription* negotiated = Clone();
-    negotiated->mDefaultPt = rtpmap.pt;
+    negotiated->mDefaultPt = pt;
 
     const SdpAttributeList& attrs = remote_msection.GetAttributeList();
 
@@ -116,7 +128,12 @@ struct JsepCodecDescription {
 
   virtual void AddToMediaSection(SdpMediaSection& m_section) const {
     if (mEnabled && m_section.GetMediaType() == mType) {
-      m_section.AddCodec(mDefaultPt, mName, mClock, mChannels);
+      if (mType == SdpMediaSection::kApplication) {
+        // Hack: using mChannels for number of streams
+        m_section.AddDataChannel(mDefaultPt, mName, mChannels);
+      } else {
+        m_section.AddCodec(mDefaultPt, mName, mClock, mChannels);
+      }
       AddFmtps(m_section);
       AddRtcpFbs(m_section);
     }
@@ -372,6 +389,58 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
   uint32_t mMaxDpb;
   uint32_t mMaxBr;
   std::string mSpropParameterSets;
+};
+
+struct JsepApplicationCodecDescription : public JsepCodecDescription {
+  JsepApplicationCodecDescription(const std::string& default_pt,
+                            const std::string& name,
+                            uint16_t channels,
+                            bool enabled = true) :
+      JsepCodecDescription(mozilla::SdpMediaSection::kApplication,
+                           default_pt, name, 0, channels, enabled) {}
+
+  virtual void AddFmtps(SdpFmtpAttributeList& fmtp) const MOZ_OVERRIDE {
+    // TODO: Is there anything to do here?
+  }
+
+  virtual void AddRtcpFbs(SdpRtcpFbAttributeList& rtcpfb) const MOZ_OVERRIDE {
+    // Nothing to do here.
+  }
+
+  virtual bool LoadFmtps(
+      const SdpFmtpAttributeList::Parameters& params) MOZ_OVERRIDE {
+    // TODO: Is there anything to do here?
+    return true;
+  }
+
+  virtual bool LoadRtcpFbs(
+      const SdpRtcpFbAttributeList::Feedback& feedback) MOZ_OVERRIDE {
+    // Nothing to do
+    return true;
+  }
+
+  JSEP_CODEC_CLONE(JsepApplicationCodecDescription)
+
+  // Override, uses sctpmap instead of rtpmap
+  virtual bool Matches(const std::string& fmt,
+                       const SdpMediaSection& remote_msection) const {
+    auto& attrs = remote_msection.GetAttributeList();
+    if (!attrs.HasAttribute(SdpAttribute::kSctpmapAttribute)) {
+      return false;
+    }
+
+    const SdpSctpmapAttributeList& sctpmap = attrs.GetSctpmap();
+    if (!sctpmap.HasEntry(fmt)) {
+      return false;
+    }
+
+    const SdpSctpmapAttributeList::Sctpmap& entry = sctpmap.GetEntry(fmt);
+
+    if (mType == remote_msection.GetMediaType() && (mName == entry.name)) {
+      return true;
+    }
+    return false;
+  }
 };
 
 }  // namespace jsep
