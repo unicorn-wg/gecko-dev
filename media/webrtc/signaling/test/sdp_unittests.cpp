@@ -885,6 +885,18 @@ class NewSdpTest : public ::testing::Test,
       ASSERT_EQ(channels, attr.channels);
     }
 
+    void CheckSctpmap(const std::string& expected_pt,
+                      const std::string& name,
+                      uint16_t streams,
+                      const std::string& search_pt,
+                      const SdpSctpmapAttributeList& sctpmaps) {
+      ASSERT_TRUE(sctpmaps.HasEntry(search_pt));
+      auto attr = sctpmaps.GetEntry(search_pt);
+      ASSERT_EQ(expected_pt, attr.pt);
+      ASSERT_EQ(name, attr.name);
+      ASSERT_EQ(streams, attr.streams);
+    }
+
     void CheckRtcpFb(const SdpRtcpFbAttributeList::Feedback& feedback,
                      const std::string& pt,
                      SdpRtcpFbAttributeList::Type type,
@@ -1830,6 +1842,30 @@ TEST_P(NewSdpTest, CheckRtcpFb) {
   CheckRtcpFb(rtcpfbs[15], "97",  SdpRtcpFbAttributeList::kNack, "");
   CheckRtcpFb(rtcpfbs[16], "97",  SdpRtcpFbAttributeList::kNack, "pli");
   CheckRtcpFb(rtcpfbs[17], "97", SdpRtcpFbAttributeList::kCcm, "fir");
+}
+
+TEST_P(NewSdpTest, CheckSctpmap) {
+  ParseSdp(kBasicAudioVideoDataOffer);
+  ASSERT_TRUE(mSdp) << "Parse failed: " << GetParseErrors();
+  ASSERT_EQ(3U, mSdp->GetMediaSectionCount())
+    << "Wrong number of media sections";
+
+  const SdpMediaSection& appsec = mSdp->GetMediaSection(2);
+  ASSERT_TRUE(
+      appsec.GetAttributeList().HasAttribute(SdpAttribute::kSctpmapAttribute));
+  const SdpSctpmapAttributeList& sctpmap =
+    appsec.GetAttributeList().GetSctpmap();
+
+  ASSERT_EQ(1U, sctpmap.mSctpmaps.size())
+    << "Wrong number of sctpmap attributes";
+  ASSERT_EQ(1U, appsec.GetFormats().size());
+
+  // Need to know name of type
+  CheckSctpmap("5000",
+              "webrtc-datachannel",
+              16,
+              appsec.GetFormats()[0],
+              sctpmap);
 }
 
 // TODO: Tests that parse above SDP, and check various things
