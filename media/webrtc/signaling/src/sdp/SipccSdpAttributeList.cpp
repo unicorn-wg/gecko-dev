@@ -68,6 +68,18 @@ void SipccSdpAttributeList::RemoveAttribute(AttributeType type) {
 }
 
 void
+SipccSdpAttributeList::Clear() {
+  for (size_t i = 0; i < kMaxAttributeIndex; ++i) {
+    RemoveAttribute(static_cast<AttributeType>(i));
+  }
+
+  for (auto i = mOtherAttributes.begin(); i != mOtherAttributes.end(); ++i) {
+    delete *i;
+  }
+  mOtherAttributes.clear();
+}
+
+void
 SipccSdpAttributeList::SetAttribute(SdpAttribute* attr) {
   if (attr->GetType() == SdpAttribute::kOtherAttribute) {
     mOtherAttributes.push_back(attr);
