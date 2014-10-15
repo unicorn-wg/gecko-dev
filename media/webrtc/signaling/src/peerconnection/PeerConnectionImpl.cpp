@@ -1541,7 +1541,6 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     // a new stream id, go through the rest of the tracks and deal with
     // them at once.
     size_t num_tracks = mJsepSession->num_remote_tracks();
-    MOZ_ASSERT(num_tracks <= 3);
     bool hasAudio = false;
     bool hasVideo = false;
 
