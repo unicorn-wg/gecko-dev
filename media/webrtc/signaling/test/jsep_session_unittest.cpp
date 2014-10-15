@@ -150,6 +150,27 @@ protected:
     }
   }
 
+  void EnsureNegotiationFailure(SdpMediaSection::MediaType type,
+                                const std::string& codecName) {
+    for (auto i = mSessionOff.Codecs().begin();
+        i != mSessionOff.Codecs().end();
+        ++i) {
+      auto *codec = *i;
+      if (codec->mType == type && codec->mName != codecName) {
+        codec->mEnabled = false;
+      }
+    }
+
+    for (auto i = mSessionAns.Codecs().begin();
+        i != mSessionAns.Codecs().end();
+        ++i) {
+      auto *codec = *i;
+      if (codec->mType == type && codec->mName == codecName) {
+        codec->mEnabled = false;
+      }
+    }
+  }
+
   std::string CreateAnswer() {
     JsepAnswerOptions options;
     std::string answer;
@@ -363,6 +384,11 @@ private:
     ASSERT_TRUE(sdp) << "Should have valid SDP";
     size_t num_m_sections = sdp->GetMediaSectionCount();
     for (size_t i =0; i < num_m_sections; ++i) {
+      if (sdp->GetMediaSection(i).GetPort() == 0) {
+        // Maybe validate that no attributes are present except rtpmap and
+        // inactive?
+        continue;
+      }
       const SdpAttributeList& attrs = sdp->GetMediaSection(i).
           GetAttributeList();
       ASSERT_EQ(source.mIceUfrag, attrs.GetIceUfrag());
@@ -754,6 +780,66 @@ TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
   ASSERT_EQ((uint32_t)0x42a00d, parsed_h264_0_params.profile_level_id);
   ASSERT_TRUE(parsed_h264_0_params.level_asymmetry_allowed);
   ASSERT_EQ(0U, parsed_h264_0_params.packetization_mode);
+}
+
+TEST_P(JsepSessionTest, TestRejectMline) {
+  AddTracks(&mSessionOff);
+  AddTracks(&mSessionAns);
+
+  switch(types.front()) {
+    case SdpMediaSection::kAudio:
+      // Sabotage audio
+      EnsureNegotiationFailure(types.front(), "opus");
+      break;
+    case SdpMediaSection::kVideo:
+      // Sabotage video
+      EnsureNegotiationFailure(types.front(), "H264");
+      break;
+    case SdpMediaSection::kApplication:
+      // Sabotage datachannel
+      EnsureNegotiationFailure(types.front(), "webrtc-datachannel");
+      break;
+    default:
+      ASSERT_TRUE(false) << "Unknown media type";
+  }
+
+  std::string offer = CreateOffer();
+  mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
+  mSessionAns.SetRemoteDescription(jsep::kJsepSdpOffer, offer);
+
+  std::string answer = CreateAnswer();
+
+  SipccSdpParser parser;
+  auto outputSdp = mozilla::Move(parser.Parse(answer));
+  ASSERT_TRUE(outputSdp) << "Should have valid SDP";
+
+  ASSERT_NE(0U, outputSdp->GetMediaSectionCount());
+  SdpMediaSection* failed_section = nullptr;
+
+  for (size_t i = 0; i < outputSdp->GetMediaSectionCount(); ++i) {
+    if (outputSdp->GetMediaSection(i).GetMediaType() == types.front()) {
+      failed_section = &outputSdp->GetMediaSection(i);
+    }
+  }
+
+  ASSERT_TRUE(failed_section) << "Failed type was entirely absent from SDP";
+  auto& failed_attrs = failed_section->GetAttributeList();
+  ASSERT_EQ(SdpDirectionAttribute::kInactive, failed_attrs.GetDirection());
+  ASSERT_EQ(0U, failed_section->GetPort());
+
+  mSessionAns.SetLocalDescription(jsep::kJsepSdpAnswer, answer);
+  mSessionOff.SetRemoteDescription(jsep::kJsepSdpAnswer, answer);
+
+  ASSERT_EQ(types.size() - 1, mSessionOff.num_negotiated_track_pairs());
+  ASSERT_EQ(types.size() - 1, mSessionAns.num_negotiated_track_pairs());
+
+  ASSERT_EQ(types.size(), mSessionOff.num_transports());
+  ASSERT_EQ(types.size(), mSessionOff.num_local_tracks());
+  ASSERT_EQ(types.size() - 1, mSessionOff.num_remote_tracks());
+
+  ASSERT_EQ(types.size(), mSessionAns.num_transports());
+  ASSERT_EQ(types.size(), mSessionAns.num_local_tracks());
+  ASSERT_EQ(types.size(), mSessionAns.num_remote_tracks());
 }
 
 } // namespace mozilla
