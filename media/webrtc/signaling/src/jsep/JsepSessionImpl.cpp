@@ -366,33 +366,40 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
   rv = AddTransportAttributes(msection, kJsepSdpAnswer, role);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  bool matched = false;
+  SdpDirectionAttribute::Direction remote_direction =
+    remote_msection.GetDirectionAttribute().mValue;
+  SdpDirectionAttribute::Direction local_direction =
+    SdpDirectionAttribute::kInactive;
 
-  if (remote_msection.GetMediaType() == SdpMediaSection::kApplication) {
-    // If we are offered datachannel, we need to play along even if no track
-    // for it has been added yet.
-    matched = true;
-  } else {
-    for (auto track = mLocalTracks.begin();
-         track != mLocalTracks.end(); ++track) {
-      if (track->mAssignedMLine.isSome())
-        continue;
-      if (track->mTrack->media_type() != remote_msection.GetMediaType())
-        continue;
+  if (remote_direction & SdpDirectionAttribute::kRecvFlag) {
+    // Only attempt to match up local tracks if the offerer has elected to
+    // receive traffic.
+    if (remote_msection.GetMediaType() == SdpMediaSection::kApplication) {
+      // If we are offered datachannel, we need to play along even if no track
+      // for it has been added yet.
+      local_direction = SdpDirectionAttribute::kSendonly;
+    } else {
+      for (auto track = mLocalTracks.begin();
+           track != mLocalTracks.end(); ++track) {
+        if (track->mAssignedMLine.isSome())
+          continue;
+        if (track->mTrack->media_type() != remote_msection.GetMediaType())
+          continue;
 
-      matched = true;
-      track->mAssignedMLine = Some(mline_index);
-      break;
+        local_direction = SdpDirectionAttribute::kSendonly;
+        track->mAssignedMLine = Some(mline_index);
+        break;
+      }
     }
   }
 
-  // If we matched, then it's sendrecv, else recvonly. No way to
-  // do sendonly here. inactive would be used if we had a codec
-  // mismatch, but we don't have that worked out yet.
+  if (remote_direction & SdpDirectionAttribute::kSendFlag) {
+    local_direction = static_cast<SdpDirectionAttribute::Direction>(
+          local_direction | SdpDirectionAttribute::kRecvFlag);
+  }
+
   msection->GetAttributeList().SetAttribute(
-      new SdpDirectionAttribute(matched ?
-                                SdpDirectionAttribute::kSendrecv :
-                                SdpDirectionAttribute::kRecvonly));
+      new SdpDirectionAttribute(local_direction));
 
   if (remote_msection.GetAttributeList().HasAttribute(
           SdpAttribute::kRtcpMuxAttribute)) {
