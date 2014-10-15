@@ -984,6 +984,21 @@ TEST_F(JsepSessionTest, TestIceLite) {
   ASSERT_FALSE(mSessionOff.RemoteIsIceLite());
 }
 
+TEST_F(JsepSessionTest, TestIceOptions) {
+  std::string offer = CreateOffer();
+  SetLocalOffer(offer);
+  SetRemoteOffer(offer);
+  std::string answer = CreateAnswer();
+  SetLocalAnswer(answer);
+  SetRemoteAnswer(answer);
+
+  ASSERT_EQ(1U, mSessionOff.GetIceOptions().size());
+  ASSERT_EQ("trickle", mSessionOff.GetIceOptions()[0]);
+
+  ASSERT_EQ(1U, mSessionAns.GetIceOptions().size());
+  ASSERT_EQ("trickle", mSessionAns.GetIceOptions()[0]);
+}
+
 } // namespace mozilla
 
 int main(int argc, char **argv) {
