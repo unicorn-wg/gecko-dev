@@ -118,32 +118,47 @@ protected:
   void AddTracks(JsepSessionImpl* side) {
     // Add tracks.
     if (types.empty()) {
-      std::string param = GetParam();
-      size_t ptr = 0;
+      types = BuildTypes(GetParam());
+    }
+    AddTracks(side, types);
+  }
 
-      for(;;) {
-        size_t comma = param.find(',', ptr);
-        std::string chunk = param.substr(ptr, comma - ptr);
+  void AddTracks(JsepSessionImpl* side, const std::string& mediatypes) {
+    AddTracks(side, BuildTypes(mediatypes));
+  }
 
-        SdpMediaSection::MediaType type;
-        if (chunk == "audio") {
-          type = SdpMediaSection::kAudio;
-        } else if (chunk == "video") {
-          type = SdpMediaSection::kVideo;
-        } else if (chunk == "datachannel") {
-          type = SdpMediaSection::kApplication;
-        } else {
-          MOZ_CRASH();
-        }
-        types.push_back(type);
+  std::vector<SdpMediaSection::MediaType> BuildTypes(
+      const std::string& mediatypes) {
+    std::vector<SdpMediaSection::MediaType> result;
+    size_t ptr = 0;
 
-        if (comma == std::string::npos)
-          break;
-        ptr = comma + 1;
+    for(;;) {
+      size_t comma = mediatypes.find(',', ptr);
+      std::string chunk = mediatypes.substr(ptr, comma - ptr);
+
+      SdpMediaSection::MediaType type;
+      if (chunk == "audio") {
+        type = SdpMediaSection::kAudio;
+      } else if (chunk == "video") {
+        type = SdpMediaSection::kVideo;
+      } else if (chunk == "datachannel") {
+        type = SdpMediaSection::kApplication;
+      } else {
+        MOZ_CRASH();
       }
+      result.push_back(type);
+
+      if (comma == std::string::npos)
+        break;
+      ptr = comma + 1;
     }
 
-    for (auto track = types.begin(); track != types.end(); ++track) {
+    return result;
+  }
+
+  void AddTracks(JsepSessionImpl* side,
+                 const std::vector<SdpMediaSection::MediaType>& mediatypes) {
+    for (auto track = mediatypes.begin(); track != mediatypes.end(); ++track) {
       RefPtr<JsepMediaStreamTrack> mst(new JsepMediaStreamTrackFake(
             *track));
       side->AddTrack(mst);
@@ -163,24 +178,41 @@ protected:
     return answer;
   }
 
+  static const uint32_t NO_CHECKS = 0;
+  static const uint32_t CHECK_SUCCESS = 1;
+  static const uint32_t CHECK_TRACKS = 1 << 2;
+  static const uint32_t ALL_CHECKS = CHECK_SUCCESS | CHECK_TRACKS;
 
-  void SetLocalOffer(const std::string& offer) {
+  void SetLocalOffer(const std::string& offer,
+                     uint32_t checkFlags = ALL_CHECKS) {
     nsresult rv = mSessionOff.SetLocalDescription(jsep::kJsepSdpOffer, offer);
-    // Check that the transports exist.
-    ASSERT_EQ(types.size(), mSessionOff.num_transports());
-    ASSERT_EQ(NS_OK, rv);
+
+    if (checkFlags & CHECK_SUCCESS) {
+      ASSERT_EQ(NS_OK, rv);
+    }
+
+    if (checkFlags & CHECK_TRACKS) {
+      // Check that the transports exist.
+      ASSERT_EQ(types.size(), mSessionOff.num_transports());
+    }
   }
 
-  void SetRemoteOffer(const std::string& offer) {
+  void SetRemoteOffer(const std::string& offer,
+                      uint32_t checkFlags = ALL_CHECKS) {
     nsresult rv = mSessionAns.SetRemoteDescription(jsep::kJsepSdpOffer, offer);
-    ASSERT_EQ(NS_OK, rv);
 
-    // Now verify that the right stuff is in the tracks.
-    ASSERT_EQ(types.size(), mSessionAns.num_remote_tracks());
-    for (size_t i = 0; i < types.size(); ++i) {
-      RefPtr<JsepMediaStreamTrack> rtrack;
-      ASSERT_EQ(NS_OK, mSessionAns.remote_track(i, &rtrack));
-      ASSERT_EQ(types[i], rtrack->media_type());
+    if (checkFlags & CHECK_SUCCESS) {
+      ASSERT_EQ(NS_OK, rv);
+    }
+
+    if (checkFlags & CHECK_TRACKS) {
+      // Now verify that the right stuff is in the tracks.
+      ASSERT_EQ(types.size(), mSessionAns.num_remote_tracks());
+      for (size_t i = 0; i < types.size(); ++i) {
+        RefPtr<JsepMediaStreamTrack> rtrack;
+        ASSERT_EQ(NS_OK, mSessionAns.remote_track(i, &rtrack));
+        ASSERT_EQ(types[i], rtrack->media_type());
+      }
     }
   }
 
@@ -468,7 +500,7 @@ INSTANTIATE_TEST_CASE_P(Variants, JsepSessionTest,
 
 // offerToReceiveXxx variants
 
-TEST_F(JsepSessionTest, CreateOfferRecvOnlyLines) {
+TEST_F(JsepSessionTest, OfferAnswerRecvOnlyLines) {
   JsepOfferOptions options;
   options.mOfferToReceiveAudio = Some(static_cast<size_t>(1U));
   options.mOfferToReceiveVideo = Some(static_cast<size_t>(2U));
@@ -499,18 +531,32 @@ TEST_F(JsepSessionTest, CreateOfferRecvOnlyLines) {
         SdpAttribute::kRtcpMuxAttribute));
   ASSERT_TRUE(outputSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
         SdpAttribute::kRtcpMuxAttribute));
+
+  SetLocalOffer(offer, CHECK_SUCCESS);
+
+  AddTracks(&mSessionAns, "audio,video");
+  SetRemoteOffer(offer, CHECK_SUCCESS);
+
+  std::string answer = CreateAnswer();
+  outputSdp = mozilla::Move(parser.Parse(answer));
+
+  ASSERT_EQ(3U, outputSdp->GetMediaSectionCount());
+  ASSERT_EQ(SdpMediaSection::kAudio, outputSdp->GetMediaSection(0)
+            .GetMediaType());
+  ASSERT_EQ(SdpDirectionAttribute::kSendonly, outputSdp->GetMediaSection(0)
+            .GetAttributeList().GetDirection());
+  ASSERT_EQ(SdpMediaSection::kVideo, outputSdp->GetMediaSection(1)
+            .GetMediaType());
+  ASSERT_EQ(SdpDirectionAttribute::kSendonly, outputSdp->GetMediaSection(1)
+            .GetAttributeList().GetDirection());
+  ASSERT_EQ(SdpMediaSection::kVideo, outputSdp->GetMediaSection(2)
+            .GetMediaType());
+  ASSERT_EQ(SdpDirectionAttribute::kInactive, outputSdp->GetMediaSection(2)
+            .GetAttributeList().GetDirection());
 }
 
-TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
-  RefPtr<JsepMediaStreamTrack> msta(new JsepMediaStreamTrackFake(
-      SdpMediaSection::kAudio));
-  mSessionOff.AddTrack(msta);
-  RefPtr<JsepMediaStreamTrack> mstv1(new JsepMediaStreamTrackFake(
-      SdpMediaSection::kVideo));
-  mSessionOff.AddTrack(mstv1);
-  RefPtr<JsepMediaStreamTrack> mstv2(new JsepMediaStreamTrackFake(
-      SdpMediaSection::kVideo));
-  mSessionOff.AddTrack(mstv2);
+TEST_F(JsepSessionTest, OfferAnswerSendOnlyLines) {
+  AddTracks(&mSessionOff, "audio,video,video");
 
   JsepOfferOptions options;
   options.mOfferToReceiveAudio = Some(static_cast<size_t>(0U));
@@ -542,6 +588,28 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
         SdpAttribute::kRtcpMuxAttribute));
   ASSERT_TRUE(outputSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
         SdpAttribute::kRtcpMuxAttribute));
+
+  SetLocalOffer(offer, CHECK_SUCCESS);
+
+  AddTracks(&mSessionAns, "audio,video");
+  SetRemoteOffer(offer, CHECK_SUCCESS);
+
+  std::string answer = CreateAnswer();
+  outputSdp = mozilla::Move(parser.Parse(answer));
+
+  ASSERT_EQ(3U, outputSdp->GetMediaSectionCount());
+  ASSERT_EQ(SdpMediaSection::kAudio, outputSdp->GetMediaSection(0)
+            .GetMediaType());
+  ASSERT_EQ(SdpDirectionAttribute::kRecvonly, outputSdp->GetMediaSection(0)
+            .GetAttributeList().GetDirection());
+  ASSERT_EQ(SdpMediaSection::kVideo, outputSdp->GetMediaSection(1)
+            .GetMediaType());
+  ASSERT_EQ(SdpDirectionAttribute::kSendrecv, outputSdp->GetMediaSection(1)
+            .GetAttributeList().GetDirection());
+  ASSERT_EQ(SdpMediaSection::kVideo, outputSdp->GetMediaSection(2)
+            .GetMediaType());
+  ASSERT_EQ(SdpDirectionAttribute::kRecvonly, outputSdp->GetMediaSection(2)
+            .GetAttributeList().GetDirection());
 }
 
 TEST_F(JsepSessionTest, CreateOfferNoDatachannelDefault) {
