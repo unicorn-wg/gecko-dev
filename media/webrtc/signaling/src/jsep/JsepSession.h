@@ -48,7 +48,7 @@ struct JsepAnswerOptions : public JsepOAOptions {};
 
 class JsepSession {
  public:
-  JsepSession(const std::string& name)
+  explicit JsepSession(const std::string& name)
       : mName(name),
         mState(kJsepStateStable) {}
   virtual ~JsepSession() {}
@@ -62,6 +62,8 @@ class JsepSession {
   // Set up the ICE And DTLS data.
   virtual nsresult SetIceCredentials(const std::string& ufrag,
                                      const std::string& pwd) = 0;
+  virtual bool RemoteIsIceLite() const = 0;
+
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::vector<uint8_t>& value) = 0;
 

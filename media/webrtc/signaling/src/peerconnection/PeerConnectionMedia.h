@@ -461,6 +461,7 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
                               const std::string& ufrag,
                               const std::string& password,
                               const std::vector<std::string>& candidates);
+  void SetGlobalICEParams_s(bool iceLite);
   void EnsureIceGathering();
   void StartIceChecks_s(bool controlling,
                         const std::vector<size_t>& num_components_by_level);

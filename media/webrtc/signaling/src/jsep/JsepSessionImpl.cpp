@@ -624,6 +624,9 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
+  bool iceLite = parsed->GetAttributeList().HasAttribute(
+      SdpAttribute::kIceLiteAttribute);
+
   // TODO: What additional validation should we do here? Issue 161.
   switch (type) {
     case kJsepSdpOffer:
@@ -633,6 +636,10 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
     case kJsepSdpPranswer:
       rv = SetRemoteDescriptionAnswer(type, Move(parsed));
       break;
+  }
+
+  if (NS_SUCCEEDED(rv)) {
+    mRemoteIsIceLite = iceLite;
   }
 
   return rv;
@@ -869,7 +876,6 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
                                          transport) {
   UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
 
-  // TODO(ekr@rtfm.com): ICE lite, ICE trickle. Issue 163.
   // We do sanity-checking for these in ParseSdp
   ice->mUfrag = remote.GetIceUfrag();
   ice->mPwd = remote.GetIcePwd();
