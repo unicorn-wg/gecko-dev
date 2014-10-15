@@ -967,6 +967,23 @@ TEST_F(JsepSessionTest, CreateOfferNoMlines) {
   ASSERT_NE("", mSessionOff.last_error());
 }
 
+TEST_F(JsepSessionTest, TestIceLite) {
+  std::string offer = CreateOffer();
+  SetLocalOffer(offer);
+
+  SipccSdpParser parser;
+  UniquePtr<Sdp> parsedOffer = parser.Parse(offer);
+  parsedOffer->GetAttributeList().SetAttribute(
+      new SdpFlagAttribute(SdpAttribute::kIceLiteAttribute));
+
+  std::ostringstream os;
+  parsedOffer->Serialize(os);
+  SetRemoteOffer(os.str());
+
+  ASSERT_TRUE(mSessionAns.RemoteIsIceLite());
+  ASSERT_FALSE(mSessionOff.RemoteIsIceLite());
+}
+
 } // namespace mozilla
 
 int main(int argc, char **argv) {
