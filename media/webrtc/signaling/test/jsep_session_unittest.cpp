@@ -492,6 +492,13 @@ TEST_F(JsepSessionTest, CreateOfferRecvOnlyLines) {
             .GetMediaType());
   ASSERT_EQ(SdpDirectionAttribute::kRecvonly, outputSdp->GetMediaSection(2)
             .GetAttributeList().GetDirection());
+
+  ASSERT_TRUE(outputSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kRtcpMuxAttribute));
+  ASSERT_TRUE(outputSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+        SdpAttribute::kRtcpMuxAttribute));
+  ASSERT_TRUE(outputSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+        SdpAttribute::kRtcpMuxAttribute));
 }
 
 TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
@@ -528,6 +535,13 @@ TEST_F(JsepSessionTest, CreateOfferSendOnlyLines) {
             .GetMediaType());
   ASSERT_EQ(SdpDirectionAttribute::kSendonly, outputSdp->GetMediaSection(2)
             .GetAttributeList().GetDirection());
+
+  ASSERT_TRUE(outputSdp->GetMediaSection(0).GetAttributeList().HasAttribute(
+        SdpAttribute::kRtcpMuxAttribute));
+  ASSERT_TRUE(outputSdp->GetMediaSection(1).GetAttributeList().HasAttribute(
+        SdpAttribute::kRtcpMuxAttribute));
+  ASSERT_TRUE(outputSdp->GetMediaSection(2).GetAttributeList().HasAttribute(
+        SdpAttribute::kRtcpMuxAttribute));
 }
 
 TEST_F(JsepSessionTest, CreateOfferNoDatachannelDefault) {
