@@ -177,6 +177,12 @@ class JsepSessionImpl : public JsepSession {
   nsresult AddTransportAttributes(SdpMediaSection* msection,
                                   JsepSdpType type,
                                   SdpSetupAttribute::Role dtls_role);
+  nsresult CreateOfferMSection(const JsepOfferOptions& options,
+                               SdpMediaSection::MediaType type,
+                               SdpDirectionAttribute::Direction direction,
+                               SdpMediaSection::Protocol proto,
+                               Sdp* sdp,
+                               SdpMediaSection** msection);
   nsresult CreateAnswerMSection(const JsepAnswerOptions& options,
                                 size_t mline_index,
                                 const SdpMediaSection& remote_msection,
