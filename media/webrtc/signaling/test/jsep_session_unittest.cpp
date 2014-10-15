@@ -385,6 +385,8 @@ private:
     size_t num_m_sections = sdp->GetMediaSectionCount();
     for (size_t i =0; i < num_m_sections; ++i) {
       if (sdp->GetMediaSection(i).GetPort() == 0) {
+        ASSERT_EQ(SdpDirectionAttribute::kInactive,
+                  sdp->GetMediaSection(i).GetDirectionAttribute().mValue);
         // Maybe validate that no attributes are present except rtpmap and
         // inactive?
         continue;
