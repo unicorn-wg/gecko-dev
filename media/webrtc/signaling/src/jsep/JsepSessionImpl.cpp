@@ -168,24 +168,16 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
       MOZ_CRASH("Unknown media type");
     }
 
-    SdpMediaSection& msection = sdp->AddMediaSection(mediatype,
-                                                     dir,
-                                                     9,
-                                                     proto,
-                                                     sdp::kIPv4,
-                                                     "0.0.0.0");
+    SdpMediaSection* msection;
 
-    if (mediatype != SdpMediaSection::kApplication) {
-      // Set RTCP-MUX.
-      msection.GetAttributeList().SetAttribute(
-          new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
-    }
+    rv = CreateOfferMSection(options,
+                             mediatype,
+                             dir,
+                             proto,
+                             sdp.get(),
+                             &msection);
 
-    rv = AddTransportAttributes(&msection, kJsepSdpOffer,
-                                SdpSetupAttribute::kActpass);
     NS_ENSURE_SUCCESS(rv, rv);
-
-    AddCodecs(mediatype, &msection);
 
     track->mAssignedMLine = Some(mline_index);
     ++mline_index;
@@ -193,21 +185,25 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
 
   while (options.mOfferToReceiveAudio.isSome() &&
          nAudio < *options.mOfferToReceiveAudio) {
-    SdpMediaSection& msection = sdp->AddMediaSection(
-        SdpMediaSection::kAudio, SdpDirectionAttribute::kRecvonly);
-    AddCodecs(SdpMediaSection::kAudio, &msection);
-    rv = AddTransportAttributes(&msection, kJsepSdpOffer,
-                                SdpSetupAttribute::kActpass);
+    rv = CreateOfferMSection(options,
+                             SdpMediaSection::kAudio,
+                             SdpDirectionAttribute::kRecvonly,
+                             SdpMediaSection::kUdpTlsRtpSavpf,
+                             sdp.get(),
+                             nullptr);
+
     NS_ENSURE_SUCCESS(rv, rv);
     ++nAudio;
   }
   while (options.mOfferToReceiveVideo.isSome() && nVideo <
          *options.mOfferToReceiveVideo) {
-    SdpMediaSection& msection = sdp->AddMediaSection(
-        SdpMediaSection::kVideo, SdpDirectionAttribute::kRecvonly);
-    AddCodecs(SdpMediaSection::kVideo, &msection);
-    rv = AddTransportAttributes(&msection, kJsepSdpOffer,
-                                SdpSetupAttribute::kActpass);
+    rv = CreateOfferMSection(options,
+                             SdpMediaSection::kVideo,
+                             SdpDirectionAttribute::kRecvonly,
+                             SdpMediaSection::kUdpTlsRtpSavpf,
+                             sdp.get(),
+                             nullptr);
+
     NS_ENSURE_SUCCESS(rv, rv);
     ++nVideo;
   }
@@ -317,6 +313,42 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
   *answer = sdp->toString();
   mGeneratedLocalDescription = Move(sdp);
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::CreateOfferMSection(
+    const JsepOfferOptions& options,
+    SdpMediaSection::MediaType mediatype,
+    SdpDirectionAttribute::Direction dir,
+    SdpMediaSection::Protocol proto,
+    Sdp* sdp,
+    SdpMediaSection** msection_outparam) {
+
+  nsresult rv;
+
+  SdpMediaSection* msection = &sdp->AddMediaSection(mediatype,
+                                    dir,
+                                    9,
+                                    proto,
+                                    sdp::kIPv4,
+                                    "0.0.0.0");
+
+  if (mediatype != SdpMediaSection::kApplication) {
+    // Set RTCP-MUX.
+    msection->GetAttributeList().SetAttribute(
+        new SdpFlagAttribute(SdpAttribute::kRtcpMuxAttribute));
+  }
+
+  rv = AddTransportAttributes(msection, kJsepSdpOffer,
+                              SdpSetupAttribute::kActpass);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  AddCodecs(mediatype, msection);
+
+  if (msection_outparam) {
+    *msection_outparam = msection;
+  }
 
   return NS_OK;
 }
