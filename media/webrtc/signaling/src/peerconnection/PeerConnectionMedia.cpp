@@ -522,11 +522,6 @@ PeerConnectionMedia::AddStream(nsIDOMMediaStream* aMediaStream,
 
   for (uint32_t u = 0; u < mLocalSourceStreams.Length(); u++) {
     auto& lss = mLocalSourceStreams[u];
-    if (((hints & DOMMediaStream::HINT_CONTENTS_AUDIO) && lss->AudioTrackCount()) ||
-        ((hints & DOMMediaStream::HINT_CONTENTS_VIDEO) && lss->VideoTrackCount())) {
-      CSFLogError(logTag, "Only one stream of any given type allowed");
-      return NS_ERROR_FAILURE;
-    }
     if (stream == lss->GetMediaStream()) {
       localSourceStream = lss;
       *stream_id = lss->GetId();
