@@ -63,6 +63,7 @@ class JsepSession {
   virtual nsresult SetIceCredentials(const std::string& ufrag,
                                      const std::string& pwd) = 0;
   virtual bool RemoteIsIceLite() const = 0;
+  virtual std::vector<std::string> GetIceOptions() const = 0;
 
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::vector<uint8_t>& value) = 0;

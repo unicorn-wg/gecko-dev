@@ -53,6 +53,10 @@ class JsepSessionImpl : public JsepSession {
     return mRemoteIsIceLite;
   }
 
+  virtual std::vector<std::string> GetIceOptions() const MOZ_OVERRIDE {
+    return mIceOptions;
+  }
+
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::vector<uint8_t>& value) MOZ_OVERRIDE;
   virtual nsresult AddAudioRtpExtension(
@@ -270,6 +274,7 @@ class JsepSessionImpl : public JsepSession {
   std::string mIceUfrag;
   std::string mIcePwd;
   bool mRemoteIsIceLite;
+  std::vector<std::string> mIceOptions;
   std::vector<JsepDtlsFingerprint> mDtlsFingerprints;
   uint64_t mSessionId;
   uint64_t mSessionVersion;

@@ -267,12 +267,16 @@ nsresult PeerConnectionMedia::Init(const std::vector<NrIceStunServer>& stun_serv
 void
 PeerConnectionMedia::UpdateTransports(
     const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+
   // Global ICE stuff
-  RUN_ON_THREAD(GetSTSThread(),
-                WrapRunnable(RefPtr<PeerConnectionMedia>(this),
-                             &PeerConnectionMedia::SetGlobalICEParams_s,
-                             session->RemoteIsIceLite()),
-                NS_DISPATCH_NORMAL);
+  RUN_ON_THREAD(
+      GetSTSThread(),
+      WrapRunnable(RefPtr<PeerConnectionMedia>(this),
+                   &PeerConnectionMedia::SetGlobalICEParams_s,
+                   session->RemoteIsIceLite(),
+                   // Copy, just in case API changes to return a ref
+                   std::vector<std::string>(session->GetIceOptions())),
+      NS_DISPATCH_NORMAL);
 
 
   size_t num_transports = session->num_transports();
@@ -494,11 +498,22 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
 }
 
 void
-PeerConnectionMedia::SetGlobalICEParams_s(bool iceLite) {
+PeerConnectionMedia::SetGlobalICEParams_s(
+    bool iceLite,
+    const std::vector<std::string>& iceOptions) {
+
   std::vector<std::string> attributes;
   if (iceLite) {
     attributes.push_back("ice-lite");
   }
+
+  if (!iceOptions.empty()) {
+    attributes.push_back("ice-options:");
+    for (auto i = iceOptions.begin(); i != iceOptions.end(); ++i) {
+      attributes.back() += *i + ' ';
+    }
+  }
+
   nsresult rv = mIceCtx->ParseGlobalAttributes(attributes);
   if (NS_FAILED(rv)) {
     CSFLogError(logTag, "%s: couldn't parse global parameters", __FUNCTION__ );
