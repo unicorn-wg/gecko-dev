@@ -39,10 +39,13 @@ SipccSdpAttributeList::~SipccSdpAttributeList() {
 bool
 SipccSdpAttributeList::HasAttribute(AttributeType type, bool sessionFallback) const {
   bool isHere = mAttributes[static_cast<size_t>(type)] != nullptr;
+  // Only do fallback when the attribute can appear at both the media and
+  // session level
   if (!isHere &&
       !AtSessionLevel() &&
       sessionFallback &&
-      SdpAttribute::IsAllowedAtSessionLevel(type)) {
+      SdpAttribute::IsAllowedAtSessionLevel(type) &&
+      SdpAttribute::IsAllowedAtMediaLevel(type)) {
     return mSessionLevel->HasAttribute(type, false);
   }
   return isHere;
@@ -51,10 +54,13 @@ SipccSdpAttributeList::HasAttribute(AttributeType type, bool sessionFallback) co
 const SdpAttribute*
 SipccSdpAttributeList::GetAttribute(AttributeType type, bool sessionFallback) const {
   const SdpAttribute* value = mAttributes[static_cast<size_t>(type)];
+  // Only do fallback when the attribute can appear at both the media and
+  // session level
   if (!value &&
       !AtSessionLevel() &&
       sessionFallback &&
-      SdpAttribute::IsAllowedAtSessionLevel(type)) {
+      SdpAttribute::IsAllowedAtSessionLevel(type) &&
+      SdpAttribute::IsAllowedAtMediaLevel(type)) {
     return mSessionLevel->GetAttribute(type);
   }
   return value;
@@ -234,13 +240,18 @@ SipccSdpAttributeList::LoadIceAttributes(sdp_t* sdp, uint16_t level) {
                                         std::string(value)));
   }
 
-  const char* iceOptVal = sdp_attr_get_simple_string(sdp, SDP_ATTR_ICE_OPTIONS,
-                                                     level, 0, 1);
-  if (iceOptVal) {
-    auto* iceOptions =
-        new SdpOptionsAttribute(SdpAttribute::kIceOptionsAttribute);
-    iceOptions->Load(iceOptVal);
-    SetAttribute(iceOptions);
+  if (AtSessionLevel()) {
+    const char* iceOptVal = sdp_attr_get_simple_string(sdp,
+                                                       SDP_ATTR_ICE_OPTIONS,
+                                                       level,
+                                                       0,
+                                                       1);
+    if (iceOptVal) {
+      auto* iceOptions =
+          new SdpOptionsAttribute(SdpAttribute::kIceOptionsAttribute);
+      iceOptions->Load(iceOptVal);
+      SetAttribute(iceOptions);
+    }
   }
 }
 
