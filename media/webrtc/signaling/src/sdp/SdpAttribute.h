@@ -308,11 +308,14 @@ inline std::ostream& operator <<(std::ostream& os,
 class SdpDirectionAttribute : public SdpAttribute
 {
  public:
+  static const unsigned kSendFlag = 1;
+  static const unsigned kRecvFlag = 1 << 1;
+
   enum Direction {
-    kSendrecv,
-    kSendonly,
-    kRecvonly,
-    kInactive
+    kInactive = 0,
+    kSendonly = kSendFlag,
+    kRecvonly = kRecvFlag,
+    kSendrecv = kSendFlag | kRecvFlag
   };
 
   SdpDirectionAttribute(Direction value)
