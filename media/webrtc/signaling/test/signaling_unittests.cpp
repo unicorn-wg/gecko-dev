@@ -4621,6 +4621,89 @@ TEST_F(SignalingTest, UseNonPrefferedPayloadTypeOnAnswer)
   a2_->CloseReceiveStreams();
 }
 
+TEST_F(SignalingTest, VideoNegotiationFails)
+{
+  EnsureInit();
+
+  sipcc::OfferOptions options;
+
+  a1_->CreateOffer(options, OFFER_AV, SHOULD_SENDRECV_AV);
+  a1_->SetLocal(TestObserver::OFFER, a1_->offer());
+
+  ParsedSDP parsedOffer(a1_->offer());
+  parsedOffer.DeleteLines("a=rtcp-fb:120");
+  parsedOffer.DeleteLines("a=rtcp-fb:126");
+  parsedOffer.DeleteLines("a=rtcp-fb:97");
+  parsedOffer.DeleteLines("a=rtpmap:120");
+  parsedOffer.DeleteLines("a=rtpmap:126");
+  parsedOffer.DeleteLines("a=rtpmap:97");
+  parsedOffer.AddLine("a=rtpmap:120 VP9/90000");
+  parsedOffer.AddLine("a=rtpmap:126 VP10/90000");
+  parsedOffer.AddLine("a=rtpmap:97 H265/90000");
+
+  a2_->SetRemote(TestObserver::OFFER, parsedOffer.getSdp(), false);
+  a2_->CreateAnswer(OFFER_AV|ANSWER_AUDIO,
+                    SHOULD_SENDRECV_AUDIO | SHOULD_REJECT_VIDEO);
+
+  a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
+
+  ASSERT_EQ(a2_->pObserver->lastStatusCode,
+            sipcc::PeerConnectionImpl::kNoError);
+
+  a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
+
+  ASSERT_EQ(a1_->pObserver->lastStatusCode,
+            sipcc::PeerConnectionImpl::kNoError);
+
+  WaitForCompleted();
+
+  // Wait for some data to get written
+  ASSERT_TRUE_WAIT(a1_->GetPacketsSent(0) >= 10 &&
+                   a2_->GetPacketsReceived(0) >= 10, kDefaultTimeout * 2);
+
+  a1_->CloseSendStreams();
+  a2_->CloseReceiveStreams();
+}
+
+TEST_F(SignalingTest, AudioNegotiationFails)
+{
+  EnsureInit();
+
+  sipcc::OfferOptions options;
+
+  a1_->CreateOffer(options, OFFER_AV, SHOULD_SENDRECV_AV);
+  a1_->SetLocal(TestObserver::OFFER, a1_->offer());
+
+  ParsedSDP parsedOffer(a1_->offer());
+  parsedOffer.DeleteLines("a=rtpmap:0");
+  parsedOffer.DeleteLines("a=rtpmap:8");
+  parsedOffer.DeleteLines("a=rtpmap:9");
+  parsedOffer.DeleteLines("a=rtpmap:109");
+  parsedOffer.AddLine("a=rtpmap:0 G728/8000");
+  parsedOffer.AddLine("a=rtpmap:8 G729/8000");
+  parsedOffer.AddLine("a=rtpmap:9 GSM/8000");
+  parsedOffer.AddLine("a=rtpmap:109 LPC/8000");
+
+  a2_->SetRemote(TestObserver::OFFER, parsedOffer.getSdp(), false);
+  a2_->CreateAnswer(OFFER_AV|ANSWER_VIDEO,
+                    SHOULD_SENDRECV_VIDEO | SHOULD_REJECT_AUDIO);
+
+  a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
+
+  ASSERT_EQ(a2_->pObserver->lastStatusCode,
+            sipcc::PeerConnectionImpl::kNoError);
+
+  a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
+
+  ASSERT_EQ(a1_->pObserver->lastStatusCode,
+            sipcc::PeerConnectionImpl::kNoError);
+
+  WaitForCompleted();
+
+  a1_->CloseSendStreams();
+  a2_->CloseReceiveStreams();
+}
+
 } // End namespace test.
 
 bool is_color_terminal(const char *terminal) {
