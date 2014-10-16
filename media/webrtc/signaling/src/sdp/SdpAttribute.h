@@ -485,7 +485,7 @@ public:
   std::vector<Fingerprint> mFingerprints;
 
   static std::string FormatFingerprint(const std::vector<uint8_t>& fp);
-  static std::vector<uint8_t> ParseFingerprint(const std::string str);
+  static std::vector<uint8_t> ParseFingerprint(const std::string& str);
 };
 
 inline std::ostream& operator <<(std::ostream& os,

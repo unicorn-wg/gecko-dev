@@ -59,47 +59,38 @@ SdpFingerprintAttributeList::FormatFingerprint(const std::vector<uint8_t>& fp) {
   return os.str().substr(1);
 }
 
+static uint8_t FromUppercaseHex(char ch) {
+  if ((ch >= '0') && (ch <= '9')) {
+    return ch - '0';
+  }
+  if ((ch >= 'A') && (ch <= 'F')) {
+    return ch - 'A' + 10;
+  }
+  return 16; // invalid
+}
+
 // Parse the fingerprint from RFC 4572 Section 5 attribute format
 std::vector<uint8_t>
-SdpFingerprintAttributeList::ParseFingerprint(const std::string str) {
+SdpFingerprintAttributeList::ParseFingerprint(const std::string& str) {
   size_t targetSize = (str.length() + 1) / 3;
   std::vector<uint8_t> fp(targetSize);
-  bool top_half = true;
-  uint8_t val = 0;
   size_t fpIndex = 0;
 
-  for (size_t i = 0; i < str.length(); ++i) {
-    if (str[i] == ':') {
-      if (!top_half) {
-        fp.clear(); // error
-        return fp;
-      }
-      continue;
-    }
+  if (str.length() % 3 != 2) {
+    fp.clear();
+    return fp;
+  }
 
-    if ((str[i] >= '0') && (str[i] <= '9')) {
-      val |= str[i] - '0';
-    } else if ((str[i] >= 'A') && (str[i] <= 'F')) {
-      val |= str[i] - 'A' + 10;
-    } else {
-      fp.clear();
+  for (size_t i = 0; i < str.length(); i += 3) {
+    uint8_t high = FromUppercaseHex(str[i]);
+    uint8_t low = FromUppercaseHex(str[i + 1]);
+    if (high > 0xf || low > 0xf ||
+        (i + 2 < str.length() && str[i + 2] != ':')) {
+      fp.clear(); // error
       return fp;
     }
-
-    if (top_half) {
-      val <<= 4;
-      top_half = false;
-    } else {
-      fp[fpIndex++] = val;
-      top_half = true;
-      val = 0;
-    }
+    fp[fpIndex++] = high << 4 | low;
   }
-
-  if (targetSize != fpIndex) {
-    fp.clear();
-  }
-
   return fp;
 }
 
