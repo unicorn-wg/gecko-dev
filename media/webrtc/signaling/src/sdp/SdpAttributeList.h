@@ -24,6 +24,7 @@ public:
   // The setter takes an attribute of any type, and takes ownership
   virtual void SetAttribute(SdpAttribute* attr) = 0;
   virtual void RemoveAttribute(AttributeType type) = 0;
+  virtual void Clear() = 0;
 
   virtual const SdpConnectionAttribute& GetConnection() const = 0;
   virtual const SdpOptionsAttribute& GetIceOptions() const = 0;

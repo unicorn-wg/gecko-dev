@@ -28,6 +28,7 @@ public:
                                            bool sessionFallback = true) const MOZ_OVERRIDE;
   virtual void SetAttribute(SdpAttribute* attr) MOZ_OVERRIDE;
   virtual void RemoveAttribute(AttributeType type) MOZ_OVERRIDE;
+  virtual void Clear() MOZ_OVERRIDE;
 
   virtual const SdpConnectionAttribute& GetConnection() const MOZ_OVERRIDE;
   virtual const SdpFingerprintAttributeList& GetFingerprint() const MOZ_OVERRIDE;

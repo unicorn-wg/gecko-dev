@@ -408,8 +408,23 @@ nsresult JsepSessionImpl::CreateAnswerMSection(const JsepAnswerOptions& options,
   }
 
   // Now add the codecs.
-  // TODO(ekr@rtfm.com): Detect mismatch and mark things inactive. Issue 158.
   AddCommonCodecs(remote_msection, msection);
+
+  if (msection->GetFormats().empty()) {
+    // Could not negotiate anything.
+
+    // Clear out attributes.
+    msection->GetAttributeList().Clear();
+
+    // We need to have something here to fit the grammar
+    msection->AddCodec("111", "NULL", 0, 0);
+
+    // Just specify a direction attribute
+    auto* direction =
+      new SdpDirectionAttribute(SdpDirectionAttribute::kInactive);
+    msection->GetAttributeList().SetAttribute(direction);
+    msection->SetPort(0);
+  }
 
   return NS_OK;
 }
@@ -939,6 +954,11 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
   }
 
   for (size_t i = 0; i < parsed->GetMediaSectionCount(); ++i) {
+    if (parsed->GetMediaSection(i).GetPort() == 0) {
+      // Disabled, let this stuff slide.
+      continue;
+    }
+
     if (parsed->GetMediaSection(i).GetAttributeList().GetIceUfrag().empty()) {
       mLastError = "Invalid description, no ice-ufrag attribute";
       return NS_ERROR_INVALID_ARG;
