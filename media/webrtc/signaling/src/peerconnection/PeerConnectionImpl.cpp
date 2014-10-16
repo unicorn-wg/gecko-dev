@@ -1659,7 +1659,12 @@ PeerConnectionImpl::AddIceCandidate(const char* aCandidate, const char* aMid, un
   nsresult res = mJsepSession->AddRemoteIceCandidate(aCandidate, aMid, aLevel);
 
   if (NS_SUCCEEDED(res)) {
-    mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
+    // We do not bother PCMedia about this before offer/answer concludes.
+    // Once offer/answer concludes, PCMedia will extract these candidates from
+    // the remote SDP.
+    if (mSignalingState == PCImplSignalingState::SignalingStable) {
+      mMedia->AddIceCandidate(aCandidate, aMid, aLevel);
+    }
     pco->OnAddIceCandidateSuccess(rv);
   } else {
     Error error;
