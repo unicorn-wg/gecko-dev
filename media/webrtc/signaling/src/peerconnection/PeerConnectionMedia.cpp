@@ -34,6 +34,8 @@
 using namespace mozilla;
 using namespace mozilla::dom;
 
+using mozilla::jsep::JsepTransport;
+
 namespace sipcc {
 
 static const char* logTag = "PeerConnectionMedia";
@@ -207,7 +209,6 @@ PeerConnectionMedia::PeerConnectionMedia(PeerConnectionImpl *parent)
       mParentName(parent->GetName()),
       mAllowIceLoopback(false),
       mIceCtx(nullptr),
-      mDeferRemoteCandidates(true),
       mDNSResolver(new mozilla::NrIceResolver()),
       mMainThread(mParent->GetMainThread()),
       mSTSThread(mParent->GetSTSThread()) {
@@ -272,7 +273,7 @@ PeerConnectionMedia::UpdateTransports(
     const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
   size_t num_transports = session->num_transports();
   for (size_t i = 0; i < num_transports; ++i) {
-    RefPtr<mozilla::jsep::JsepTransport> transport;
+    RefPtr<JsepTransport> transport;
 
     nsresult rv = session->transport(i, &transport);
     MOZ_ASSERT(NS_SUCCEEDED(rv));
@@ -349,33 +350,58 @@ nsresult PeerConnectionMedia::UpdateMediaPipelines(
 void
 PeerConnectionMedia::StartIceChecks(
     const mozilla::UniquePtr<mozilla::jsep::JsepSession>& session) {
+
+  std::vector<size_t> num_components_by_level;
+  for (size_t i = 0; i < session->num_transports(); ++i) {
+    RefPtr<JsepTransport> transport;
+    nsresult rv = session->transport(i, &transport);
+    if (NS_FAILED(rv)) {
+      CSFLogError(logTag, "JsepSession::transport() failed: %u",
+                          static_cast<unsigned>(rv));
+      MOZ_ASSERT(false, "JsepSession::transport() failed!");
+      break;
+    }
+
+    if (transport->mState == JsepTransport::kJsepTransportClosed) {
+      num_components_by_level.push_back(0);
+    } else {
+      num_components_by_level.push_back(transport->mComponents);
+    }
+  }
+
   RUN_ON_THREAD(GetSTSThread(),
                 WrapRunnable(
                   RefPtr<PeerConnectionMedia>(this),
                   &PeerConnectionMedia::StartIceChecks_s,
-                  session->ice_controlling()),
+                  session->ice_controlling(),
+                  num_components_by_level),
                 NS_DISPATCH_NORMAL);
 }
 
 void
-PeerConnectionMedia::StartIceChecks_s(bool controlling) {
+PeerConnectionMedia::StartIceChecks_s(
+    bool controlling,
+    const std::vector<size_t>& num_components_by_level) {
   // Need to add candidates, etc.
   CSFLogDebug(logTag, "Starting ICE Checking");
   mIceCtx->SetControlling(controlling ?
                           NrIceCtx::ICE_CONTROLLING :
                           NrIceCtx::ICE_CONTROLLED);
 
-  // TODO: Before we start checks, we need to disable unneeded rtcp components
-  // Issue 182
-  mIceCtx->StartChecks();
+  for (size_t i = 0; i < num_components_by_level.size(); ++i) {
+    RefPtr<NrIceMediaStream> stream(mIceCtx->GetStream(i));
+    if (!stream) {
+      MOZ_ASSERT(false, "JsepSession has more streams than the ICE ctx");
+      break;
+    }
 
-  mDeferRemoteCandidates = false;
-
-  for (auto i = mDeferredRemoteCandidates.begin();
-       i != mDeferredRemoteCandidates.end();
-       ++i) {
-    AddIceCandidate_s(i->candidate, i->mid, i->level);
+    for (size_t c = num_components_by_level[i]; c < stream->components(); ++c) {
+      // components are 1-indexed
+      stream->DisableComponent(c + 1);
+    }
   }
+
+  mIceCtx->StartChecks();
 }
 
 void
@@ -399,13 +425,6 @@ void
 PeerConnectionMedia::AddIceCandidate_s(const std::string& candidate,
                                        const std::string& mid,
                                        uint32_t level) {
-  if (mDeferRemoteCandidates) {
-    mDeferredRemoteCandidates.push_back({candidate,
-                                         mid,
-                                         static_cast<uint16_t>(level)});
-    return;
-  }
-
   if (level >= mIceStreams.size()) {
     CSFLogError(logTag, "Couldn't process ICE candidate for bogus level %u",
                 level);

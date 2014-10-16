@@ -153,7 +153,7 @@ class NrIceMediaStream {
                          NrIceCandidate** local, NrIceCandidate** remote);
 
   // The number of components
-  int components() const { return components_; }
+  size_t components() const { return components_; }
 
   // The underlying nICEr stream
   nr_ice_media_stream *stream() { return stream_; }
@@ -190,7 +190,7 @@ class NrIceMediaStream {
 
  private:
   NrIceMediaStream(NrIceCtx *ctx,  const std::string& name,
-                   int components) :
+                   size_t components) :
       state_(ICE_CONNECTING),
       ctx_(ctx),
       name_(name),
@@ -205,7 +205,7 @@ class NrIceMediaStream {
   State state_;
   NrIceCtx *ctx_;
   const std::string name_;
-  const int components_;
+  const size_t components_;
   nr_ice_media_stream *stream_;
   uint16_t level_;
 };

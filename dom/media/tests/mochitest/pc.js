@@ -2564,7 +2564,7 @@ PeerConnectionWrapper.prototype = {
 
   /**
    * Compares amount of established ICE connection according to ICE candidate
-   * pairs in the RTCP reporting with the expected amount of connection based
+   * pairs in the stats reporting with the expected amount of connection based
    * on the constraints.
    *
    * @param {object} stats
@@ -2574,25 +2574,25 @@ PeerConnectionWrapper.prototype = {
    * @param {object} answer
    *        The SDP answer to check for SDP bundle support
    */
-  checkRtcpIceConnections : function PCW_checkRtcpIceConnections(stats,
+  checkStatsIceConnections : function PCW_checkStatsIceConnections(stats,
       counters, answer) {
     var iceConnections = 0;
     Object.keys(stats).forEach(function(name) {
       if ((stats[name].type === "candidatepair") &&
-         (stats[name].state === "succeeded")) {
+         (stats[name].selected === true)) {
         iceConnections += 1;
       }
     });
-    info("ICE connections according to RTCP: " + iceConnections);
+    info("ICE connections according to stats: " + iceConnections);
     if (answer.sdp.contains('a=group:BUNDLE')) {
-      is(iceConnections, 1, "RTCP reports exactly 1 ICE connection");
+      is(iceConnections, 1, "stats reports exactly 1 ICE connection");
     } else {
       var audioTracks = Math.max(counters.constraintsAudioTracks, counters.optionsAudioTracks);
       var videoTracks = Math.max(counters.constraintsVideoTracks, counters.optionsVideoTracks);
       var dataTracks = counters.dataTracks;
       var audioVideoDataTracks = audioTracks + videoTracks + dataTracks;
       info("expected audio + video + data tracks: " + audioVideoDataTracks);
-      is(audioVideoDataTracks, iceConnections, "RTCP ICE connections matches expected A/V tracks");
+      is(audioVideoDataTracks, iceConnections, "stats ICE connections matches expected A/V tracks");
     }
   },
 
