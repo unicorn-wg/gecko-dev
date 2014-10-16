@@ -1935,11 +1935,11 @@ PeerConnectionImpl::CalculateFingerprint(
   size_t len = 0;
   nsresult rv = mIdentity->ComputeFingerprint(algorithm, &buf[0], sizeof(buf),
                                               &len);
-  if (NS_FAILED(rv) || len == 0 ||
-      len > DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH) {
+  if (NS_FAILED(rv)) {
     CSFLogError(logTag, "Unable to calculate certificate fingerprint");
     return NS_ERROR_UNEXPECTED;
   }
+  MOZ_ASSERT(len > 0 && len <= DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH);
   fingerprint.assign(buf, buf + len);
   return NS_OK;
 }
