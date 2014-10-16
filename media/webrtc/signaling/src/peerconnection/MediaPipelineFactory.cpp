@@ -401,7 +401,7 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
           stream->GetMediaStream(),
           pc_track_id,
           trackPair.mLevel,
-          false,
+          track->media_type() == SdpMediaSection::kVideo,
           conduit, rtp_flow, rtcp_flow);
 
 #ifdef MOZILLA_INTERNAL_API
