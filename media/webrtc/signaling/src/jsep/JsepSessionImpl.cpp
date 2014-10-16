@@ -841,6 +841,14 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
 
   transport->mIce = Move(ice);
   transport->mDtls = Move(dtls);
+
+  // TODO: If we are doing bundle, and this is not the bundle level, we
+  // should be marking this Closed, right?
+
+  if (answer.HasAttribute(SdpAttribute::kRtcpMuxAttribute)) {
+    transport->mComponents = 1;
+  }
+
   transport->mState = JsepTransport::kJsepTransportAccepted;
 
   return NS_OK;

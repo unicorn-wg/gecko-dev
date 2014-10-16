@@ -449,7 +449,8 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
                               const std::string& password,
                               const std::vector<std::string>& candidates);
   void EnsureIceGathering();
-  void StartIceChecks_s(bool controlling);
+  void StartIceChecks_s(bool controlling,
+                        const std::vector<size_t>& num_components_by_level);
 
   // Process a trickle ICE candidate.
   void AddIceCandidate_s(const std::string& candidate, const std::string& mid,
@@ -498,17 +499,6 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   // ICE objects
   mozilla::RefPtr<mozilla::NrIceCtx> mIceCtx;
   std::vector<mozilla::RefPtr<mozilla::NrIceMediaStream> > mIceStreams;
-
-  struct DeferredRemoteIceCandidate {
-    std::string candidate;
-    std::string mid;
-    uint16_t level;
-  };
-
-  // Holding tank for remote candidates that arrive before the ICE stack fires
-  // up.
-  std::vector<DeferredRemoteIceCandidate> mDeferredRemoteCandidates;
-  bool mDeferRemoteCandidates;
 
   // DNS
   nsRefPtr<mozilla::NrIceResolver> mDNSResolver;
