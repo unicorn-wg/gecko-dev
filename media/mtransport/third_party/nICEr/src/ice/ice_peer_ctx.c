@@ -220,6 +220,9 @@ static int nr_ice_ctx_parse_candidate(nr_ice_peer_ctx *pctx, nr_ice_media_stream
 
     TAILQ_INSERT_TAIL(&comp->candidates,cand,entry_comp);
 
+    r_log(LOG_ICE,LOG_DEBUG,"ICE-PEER(%s)/CAND(%s): creating peer candidate",
+      pctx->label,cand->label);
+
     _status=0;
  abort:
     if (_status) {
