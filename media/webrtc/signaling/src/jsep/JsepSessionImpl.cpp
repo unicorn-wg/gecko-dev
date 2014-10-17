@@ -208,6 +208,12 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
     ++nVideo;
   }
 
+  if (!sdp->GetMediaSectionCount()) {
+    mLastError = "Cannot create an offer with no local tracks, "
+                 "no offerToReceiveAudio/Video, and no DataChannel.";
+    return NS_ERROR_INVALID_ARG;
+  }
+
   // TODO(ekr@rtfm.com): Do renegotiation. Issue 155.
   *offer = sdp->toString();
   mGeneratedLocalDescription = Move(sdp);
