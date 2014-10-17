@@ -919,6 +919,14 @@ TEST_P(JsepSessionTest, TestRejectMline) {
   ASSERT_EQ(types.size(), mSessionAns.num_remote_tracks());
 }
 
+TEST_F(JsepSessionTest, CreateOfferNoMlines) {
+  JsepOfferOptions options;
+  std::string offer;
+  nsresult rv = mSessionOff.CreateOffer(options, &offer);
+  ASSERT_NE(NS_OK, rv);
+  ASSERT_NE("", mSessionOff.last_error());
+}
+
 } // namespace mozilla
 
 int main(int argc, char **argv) {
