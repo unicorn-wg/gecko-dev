@@ -6,6 +6,8 @@
 
 #include "signaling/src/sdp/SdpAttribute.h"
 
+#include <iomanip>
+
 #ifdef CRLF
 #undef CRLF
 #endif
@@ -41,9 +43,57 @@ void SdpFingerprintAttributeList::Serialize(std::ostream& os) const
 {
   for (auto i = mFingerprints.begin(); i != mFingerprints.end(); ++i) {
     os << "a=" << mType << ":" << i->hashFunc
-      << " " << i->fingerprint << CRLF;
+       << " " << FormatFingerprint(i->fingerprint) << CRLF;
   }
 }
+
+// Format the fingerprint in RFC 4572 Section 5 attribute format
+std::string
+SdpFingerprintAttributeList::FormatFingerprint(const std::vector<uint8_t>& fp) {
+  std::ostringstream os;
+  for (auto i = fp.begin(); i != fp.end(); ++i) {
+    os << ":"
+       << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+       << static_cast<uint32_t>(*i);
+  }
+  return os.str().substr(1);
+}
+
+static uint8_t FromUppercaseHex(char ch) {
+  if ((ch >= '0') && (ch <= '9')) {
+    return ch - '0';
+  }
+  if ((ch >= 'A') && (ch <= 'F')) {
+    return ch - 'A' + 10;
+  }
+  return 16; // invalid
+}
+
+// Parse the fingerprint from RFC 4572 Section 5 attribute format
+std::vector<uint8_t>
+SdpFingerprintAttributeList::ParseFingerprint(const std::string& str) {
+  size_t targetSize = (str.length() + 1) / 3;
+  std::vector<uint8_t> fp(targetSize);
+  size_t fpIndex = 0;
+
+  if (str.length() % 3 != 2) {
+    fp.clear();
+    return fp;
+  }
+
+  for (size_t i = 0; i < str.length(); i += 3) {
+    uint8_t high = FromUppercaseHex(str[i]);
+    uint8_t low = FromUppercaseHex(str[i + 1]);
+    if (high > 0xf || low > 0xf ||
+        (i + 2 < str.length() && str[i + 2] != ':')) {
+      fp.clear(); // error
+      return fp;
+    }
+    fp[fpIndex++] = high << 4 | low;
+  }
+  return fp;
+}
+
 
 void SdpFmtpAttributeList::Serialize(std::ostream& os) const
 {

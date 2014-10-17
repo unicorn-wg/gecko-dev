@@ -299,9 +299,6 @@ public:
 
   // Get the DTLS identity (local side)
   mozilla::RefPtr<DtlsIdentity> const GetIdentity() const;
-  std::string GetFingerprint() const;
-  std::string GetFingerprintAlgorithm() const;
-  std::string GetFingerprintHexValue() const;
 
   // Create a fake media stream
   nsresult CreateFakeMediaStream(uint32_t hint, mozilla::DOMMediaStream** retval);
@@ -603,6 +600,8 @@ private:
                            const IceConfiguration* aConfiguration,
                            const RTCConfiguration* aRTCConfiguration,
                            nsISupports* aThread);
+  nsresult CalculateFingerprint(const std::string& algorithm,
+                                std::vector<uint8_t>& fingerprint) const;
   nsresult ConfigureJsepSessionCodecs();
 
   NS_IMETHODIMP EnsureDataConnection(uint16_t aNumstreams);
@@ -639,13 +638,9 @@ private:
                                       const std::string& candidate);
   void FoundIceCandidate(const std::string& candidate, uint16_t level);
 
-  NS_IMETHOD FingerprintSplitHelper(
-      std::string& fingerprint, size_t& spaceIdx) const;
-
   nsresult GetDatachannelCodec(
       const mozilla::jsep::JsepApplicationCodecDescription** codec,
       uint16_t* level) const;
-
 
 #ifdef MOZILLA_INTERNAL_API
   static void GetStatsForPCObserver_s(

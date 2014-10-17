@@ -106,7 +106,7 @@ static nsresult JsepCodecDescToCodecConfig(const
     h264_config = new VideoCodecConfigH264;
     strncpy(h264_config->sprop_parameter_sets,
             desc.mSpropParameterSets.c_str(),
-            sizeof(h264_config->sprop_parameter_sets)); 
+            sizeof(h264_config->sprop_parameter_sets));
     h264_config->packetization_mode = desc.mPacketizationMode;
     h264_config->profile_level_id = desc.mProfileLevelId;
     h264_config->max_mbps = desc.mMaxMbps;
@@ -173,19 +173,8 @@ nsresult MediaPipelineFactory::CreateOrGetTransportFlow(
        fp != fingerprints.mFingerprints.end(); ++fp) {
     std::ostringstream ss;
     ss << fp->hashFunc;
-
-    unsigned char remote_digest[TransportLayerDtls::kMaxDigestLength];
-    size_t digest_len;
-    rv = DtlsIdentity::ParseFingerprint(fp->fingerprint,
-                                        remote_digest,
-                                        sizeof(remote_digest),
-                                        &digest_len);
-    if (NS_FAILED(rv)) {
-      MOZ_MTLOG(ML_ERROR, "Could not convert fingerprint");
-      return rv;
-    }
-
-    rv = dtls->SetVerificationDigest(ss.str(), remote_digest, digest_len);
+    rv = dtls->SetVerificationDigest(ss.str(), &fp->fingerprint[0],
+                                     fp->fingerprint.size());
     if (NS_FAILED(rv)) {
       MOZ_MTLOG(ML_ERROR, "Could not set fingerprint");
       return rv;

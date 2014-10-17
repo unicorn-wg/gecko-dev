@@ -272,7 +272,6 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
       // sipcc does not expose parse code for this
       const char * const start = fingerprints[0].c_str();
       const char *c = start;
-      const size_t size = fingerprints[0].size();
 
       while (*c != '\0') {
         if (*c == ' ' || *c == '\t') {
@@ -290,7 +289,12 @@ SipccSdpAttributeList::LoadFingerprint(sdp_t* sdp, uint16_t level) {
         ++c;
       }
 
-      std::string fingerprint(fingerprints[0].substr(c - start, size));
+      std::string fpString(fingerprints[0].substr(c - start));
+      std::vector<uint8_t> fingerprint =
+          SdpFingerprintAttributeList::ParseFingerprint(fpString);
+      if (fingerprint.size() == 0) {
+        continue; // skip the bad ones
+      }
 
       fingerprint_attrs->PushEntry(algorithm_str, fingerprint);
     }
