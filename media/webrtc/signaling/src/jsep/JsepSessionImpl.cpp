@@ -81,7 +81,7 @@ nsresult JsepSessionImpl::SetIceCredentials(const std::string& ufrag,
   return NS_OK;
 }
 nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
-                                             const std::string& value) {
+                                             const std::vector<uint8_t>& value) {
   JsepDtlsFingerprint fp;
 
   fp.mAlgorithm = algorithm;
@@ -914,12 +914,6 @@ nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection,
     return NS_ERROR_FAILURE;
   }
 
-  if (mDtlsFingerprints.empty()) {
-    MOZ_MTLOG(ML_ERROR, "Missing DTLS fingerprint");
-    mLastError = "Missing DTLS fingerprint";
-    return NS_ERROR_FAILURE;
-  }
-
   SdpAttributeList& attrList = msection->GetAttributeList();
   attrList.SetAttribute(new SdpStringAttribute(
       SdpAttribute::kIceUfragAttribute, mIceUfrag));
@@ -929,14 +923,6 @@ nsresult JsepSessionImpl::AddTransportAttributes(SdpMediaSection* msection,
       = new SdpOptionsAttribute(SdpAttribute::kIceOptionsAttribute);
   iceOptions->PushEntry("trickle");
   attrList.SetAttribute(iceOptions);
-
-  UniquePtr<SdpFingerprintAttributeList> fpl =
-      MakeUnique<SdpFingerprintAttributeList>();
-  for (auto fp = mDtlsFingerprints.begin();
-       fp != mDtlsFingerprints.end(); ++fp) {
-    fpl->PushEntry(fp->mAlgorithm, fp->mValue);
-  }
-  msection->GetAttributeList().SetAttribute(fpl.release());
 
   msection->GetAttributeList().SetAttribute(new SdpSetupAttribute(dtls_role));
 
@@ -1057,6 +1043,21 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
                                       "0.0.0.0");
 
   UniquePtr<Sdp> sdp = MakeUnique<SipccSdp>(origin.release());
+
+
+  if (mDtlsFingerprints.empty()) {
+    MOZ_MTLOG(ML_ERROR, "Missing DTLS fingerprint");
+    mLastError = "Missing DTLS fingerprint";
+    return NS_ERROR_FAILURE;
+  }
+
+  UniquePtr<SdpFingerprintAttributeList> fpl =
+      MakeUnique<SdpFingerprintAttributeList>();
+  for (auto fp = mDtlsFingerprints.begin();
+       fp != mDtlsFingerprints.end(); ++fp) {
+    fpl->PushEntry(fp->mAlgorithm, fp->mValue);
+  }
+  sdp->GetAttributeList().SetAttribute(fpl.release());
 
   *sdpp = Move(sdp);
   return NS_OK;

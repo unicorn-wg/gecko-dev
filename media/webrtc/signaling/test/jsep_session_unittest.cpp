@@ -72,21 +72,14 @@ protected:
   struct TransportData {
     std::string mIceUfrag;
     std::string mIcePwd;
-    std::map<std::string, std::string> mFingerprints;
+    std::map<std::string, std::vector<uint8_t>> mFingerprints;
   };
 
   void AddDtlsFingerprint(const std::string& alg, JsepSessionImpl* session,
                           TransportData* tdata) {
-    std::string c = (session->name() == "Offerer") ? "4F" : "41";
-    size_t len = (alg == "sha-1") ? 20 : 32;
-    std::string fp;
-
-    for (size_t i = 0; i < len; ++i) {
-      if (!fp.empty()) {
-        fp += ":";
-      }
-      fp += c;
-    }
+    std::vector<uint8_t> fp;
+    fp.assign((alg == "sha-1") ? 20 : 32,
+              (session->name() == "Offerer") ? 0x4f : 0x41);
     session->AddDtlsFingerprint(alg, fp);
     tdata->mFingerprints[alg] = fp;
   }
