@@ -308,9 +308,13 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 
   for (size_t i = 0; i < num_m_lines; ++i) {
     const SdpMediaSection& remote_msection = offer.GetMediaSection(i);
-    // TODO(ekr@rtfm.com): Reflect protocol value. Issue 157.
     SdpMediaSection& msection =
-      sdp->AddMediaSection(remote_msection.GetMediaType());
+      sdp->AddMediaSection(remote_msection.GetMediaType(),
+                           SdpDirectionAttribute::kSendrecv,
+                           9,
+                           remote_msection.GetProtocol(),
+                           sdp::kIPv4,
+                           "0.0.0.0");
 
     rv = CreateAnswerMSection(
         options, i, remote_msection, &msection, sdp.get());
