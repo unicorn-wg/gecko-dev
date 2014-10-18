@@ -409,15 +409,22 @@ private:
     ASSERT_TRUE(sdp) << "Should have valid SDP";
     size_t num_m_sections = sdp->GetMediaSectionCount();
     for (size_t i =0; i < num_m_sections; ++i) {
-      if (sdp->GetMediaSection(i).GetPort() == 0) {
+      auto& msection = sdp->GetMediaSection(i);
+
+      if (msection.GetMediaType() == SdpMediaSection::kApplication) {
+        ASSERT_EQ(SdpMediaSection::kDtlsSctp, msection.GetProtocol());
+      } else {
+        ASSERT_EQ(SdpMediaSection::kUdpTlsRtpSavpf, msection.GetProtocol());
+      }
+
+      if (msection.GetPort() == 0) {
         ASSERT_EQ(SdpDirectionAttribute::kInactive,
-                  sdp->GetMediaSection(i).GetDirectionAttribute().mValue);
+                  msection.GetDirectionAttribute().mValue);
         // Maybe validate that no attributes are present except rtpmap and
         // inactive?
         continue;
       }
-      const SdpAttributeList& attrs = sdp->GetMediaSection(i).
-          GetAttributeList();
+      const SdpAttributeList& attrs = msection.GetAttributeList();
       ASSERT_EQ(source.mIceUfrag, attrs.GetIceUfrag());
       ASSERT_EQ(source.mIcePwd, attrs.GetIcePwd());
       const SdpFingerprintAttributeList& fps =

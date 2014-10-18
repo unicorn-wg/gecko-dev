@@ -96,12 +96,12 @@ public:
   virtual SdpMediaSection &GetMediaSection(size_t level) = 0;
 
   virtual SdpMediaSection &AddMediaSection(
-      SdpMediaSection::MediaType media = SdpMediaSection::kAudio,
-      SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv,
-      uint16_t port = 9,
-      SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf,
-      sdp::AddrType addrType = sdp::kIPv4,
-      const std::string &addr = "0.0.0.0") = 0;
+      SdpMediaSection::MediaType media,
+      SdpDirectionAttribute::Direction dir,
+      uint16_t port,
+      SdpMediaSection::Protocol proto,
+      sdp::AddrType addrType,
+      const std::string &addr) = 0;
 
   virtual void Serialize(std::ostream&) const = 0;
 
