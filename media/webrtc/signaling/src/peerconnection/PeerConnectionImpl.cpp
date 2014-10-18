@@ -1952,7 +1952,10 @@ PeerConnectionImpl::GetFingerprint(char** fingerprint)
   std::vector<uint8_t> fp;
   nsresult rv = CalculateFingerprint(DtlsIdentity::DEFAULT_HASH_ALGORITHM, fp);
   NS_ENSURE_SUCCESS(rv, rv);
-  std::string fpStr = SdpFingerprintAttributeList::FormatFingerprint(fp);
+  std::ostringstream os;
+  os << DtlsIdentity::DEFAULT_HASH_ALGORITHM << ' '
+     << SdpFingerprintAttributeList::FormatFingerprint(fp);
+  std::string fpStr = os.str();
 
   char* tmp = new char[fpStr.size() + 1];
   std::copy(fpStr.begin(), fpStr.end(), tmp);
