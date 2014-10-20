@@ -2327,6 +2327,48 @@ TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnOfferRecvAudio)
               SHOULD_SEND_AUDIO | SHOULD_SENDRECV_VIDEO);
 }
 
+TEST_F(SignalingTest, OfferAnswerAudioInactive)
+{
+  sipcc::OfferOptions options;
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
+  OfferAnswer(options, OFFER_VIDEO | ANSWER_VIDEO,
+              false, SHOULD_SENDRECV_VIDEO | SHOULD_RECV_AUDIO,
+              SHOULD_SENDRECV_VIDEO | SHOULD_INACTIVE_AUDIO);
+}
+
+TEST_F(SignalingTest, OfferAnswerVideoInactive)
+{
+  sipcc::OfferOptions options;
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
+  OfferAnswer(options, OFFER_AUDIO | ANSWER_AUDIO,
+              false, SHOULD_SENDRECV_AUDIO | SHOULD_RECV_VIDEO,
+              SHOULD_SENDRECV_AUDIO | SHOULD_INACTIVE_VIDEO);
+
+  // Wait for some data to get written
+  ASSERT_TRUE_WAIT(a1_->GetPacketsSent(0) >= 40 &&
+                   a2_->GetPacketsReceived(0) >= 40, kDefaultTimeout * 2);
+
+  a1_->CloseSendStreams();
+  a2_->CloseReceiveStreams();
+  // Check that we wrote a bunch of data
+  ASSERT_GE(a1_->GetPacketsSent(0), 40);
+  //ASSERT_GE(a2_->GetPacketsSent(0), 40);
+  //ASSERT_GE(a1_->GetPacketsReceived(0), 40);
+  ASSERT_GE(a2_->GetPacketsReceived(0), 40);
+}
+
+TEST_F(SignalingTest, OfferAnswerBothInactive)
+{
+  sipcc::OfferOptions options;
+  options.setInt32Option("OfferToReceiveAudio", 1);
+  options.setInt32Option("OfferToReceiveVideo", 1);
+  OfferAnswer(options, OFFER_NONE,
+              false, SHOULD_RECV_AUDIO | SHOULD_RECV_VIDEO,
+              SHOULD_INACTIVE_AUDIO | SHOULD_INACTIVE_VIDEO);
+}
+
 // XXX reject streams has changed. Re-enable when we can stop() received stream
 TEST_F(SignalingTest, DISABLED_OfferAnswerDontAddAudioStreamOnOffer)
 {
