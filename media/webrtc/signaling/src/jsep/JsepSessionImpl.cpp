@@ -116,6 +116,57 @@ nsresult JsepSessionImpl::remote_track(
   return NS_OK;
 }
 
+nsresult JsepSessionImpl::AddOfferMSectionsByType(
+    SdpMediaSection::MediaType mediatype,
+    Maybe<size_t> offerToReceive,
+    Sdp* sdp) {
+
+  SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf;
+
+  if (mediatype == SdpMediaSection::kApplication) {
+    proto = SdpMediaSection::kDtlsSctp;
+  }
+
+  size_t added = 0;
+
+  for (auto track = mLocalTracks.begin();
+       track != mLocalTracks.end(); ++track) {
+    if (mediatype != track->mTrack->media_type()) {
+      continue;
+    }
+
+    SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
+
+    if (offerToReceive.isSome() && added > *offerToReceive) {
+      dir = SdpDirectionAttribute::kSendonly;
+    }
+
+    nsresult rv = CreateOfferMSection(mediatype,
+                                      dir,
+                                      proto,
+                                      sdp,
+                                      nullptr);
+
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    track->mAssignedMLine = Some(sdp->GetMediaSectionCount() - 1);
+    ++added;
+  }
+
+  while (offerToReceive.isSome() && added < *offerToReceive) {
+    nsresult rv = CreateOfferMSection(mediatype,
+                                      SdpDirectionAttribute::kRecvonly,
+                                      proto,
+                                      sdp,
+                                      nullptr);
+
+    NS_ENSURE_SUCCESS(rv, rv);
+    ++added;
+  }
+
+  return NS_OK;
+}
+
 nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
                                       std::string* offer) {
 
@@ -134,78 +185,25 @@ nsresult JsepSessionImpl::CreateOffer(const JsepOfferOptions& options,
   NS_ENSURE_SUCCESS(rv, rv);
 
   // Now add all the m-lines that we are attempting to negotiate.
-  size_t mline_index = 0;
-  size_t nAudio = 0;
-  size_t nVideo = 0;
+  rv = AddOfferMSectionsByType(SdpMediaSection::kAudio,
+                               options.mOfferToReceiveAudio,
+                               sdp.get());
 
-  for (auto track = mLocalTracks.begin();
-       track != mLocalTracks.end(); ++track) {
-    SdpMediaSection::MediaType mediatype = track->mTrack->media_type();
-    SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
-    SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf;
+  NS_ENSURE_SUCCESS(rv, rv);
 
-    if (mediatype == SdpMediaSection::kAudio) {
-      ++nAudio;
-      if (options.mOfferToReceiveAudio.isSome() &&
-          nAudio > *options.mOfferToReceiveAudio) {
-        dir = SdpDirectionAttribute::kSendonly;
-      }
-    } else if (mediatype == SdpMediaSection::kVideo) {
-      ++nVideo;
-      if (options.mOfferToReceiveVideo.isSome() &&
-          nVideo > *options.mOfferToReceiveVideo) {
-        dir = SdpDirectionAttribute::kSendonly;
-      }
-    } else if (mediatype == SdpMediaSection::kApplication) {
-      if (options.mDontOfferDataChannel.isSome() &&
-          *options.mDontOfferDataChannel) {
-        // We have a datachannel track, but the options override this
-        continue;
-      }
+  rv = AddOfferMSectionsByType(SdpMediaSection::kVideo,
+                               options.mOfferToReceiveVideo,
+                               sdp.get());
 
-      proto = SdpMediaSection::kDtlsSctp;
-    } else {
-      MOZ_CRASH("Unknown media type");
-    }
+  NS_ENSURE_SUCCESS(rv, rv);
 
-    SdpMediaSection* msection;
-
-    rv = CreateOfferMSection(options,
-                             mediatype,
-                             dir,
-                             proto,
-                             sdp.get(),
-                             &msection);
+  if (!options.mDontOfferDataChannel.isSome() ||
+      !(*options.mDontOfferDataChannel)) {
+    rv = AddOfferMSectionsByType(SdpMediaSection::kApplication,
+                                 Maybe<size_t>(),
+                                 sdp.get());
 
     NS_ENSURE_SUCCESS(rv, rv);
-
-    track->mAssignedMLine = Some(mline_index);
-    ++mline_index;
-  }
-
-  while (options.mOfferToReceiveAudio.isSome() &&
-         nAudio < *options.mOfferToReceiveAudio) {
-    rv = CreateOfferMSection(options,
-                             SdpMediaSection::kAudio,
-                             SdpDirectionAttribute::kRecvonly,
-                             SdpMediaSection::kUdpTlsRtpSavpf,
-                             sdp.get(),
-                             nullptr);
-
-    NS_ENSURE_SUCCESS(rv, rv);
-    ++nAudio;
-  }
-  while (options.mOfferToReceiveVideo.isSome() && nVideo <
-         *options.mOfferToReceiveVideo) {
-    rv = CreateOfferMSection(options,
-                             SdpMediaSection::kVideo,
-                             SdpDirectionAttribute::kRecvonly,
-                             SdpMediaSection::kUdpTlsRtpSavpf,
-                             sdp.get(),
-                             nullptr);
-
-    NS_ENSURE_SUCCESS(rv, rv);
-    ++nVideo;
   }
 
   if (!sdp->GetMediaSectionCount()) {
@@ -328,7 +326,6 @@ nsresult JsepSessionImpl::CreateAnswer(const JsepAnswerOptions& options,
 }
 
 nsresult JsepSessionImpl::CreateOfferMSection(
-    const JsepOfferOptions& options,
     SdpMediaSection::MediaType mediatype,
     SdpDirectionAttribute::Direction dir,
     SdpMediaSection::Protocol proto,

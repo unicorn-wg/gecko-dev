@@ -114,6 +114,11 @@ protected:
       types = BuildTypes(GetParam());
     }
     AddTracks(side, types);
+
+    // Now that we have added streams, we expect audio, then video, then
+    // application in the SDP, regardless of the order in which the streams were
+    // added.
+    std::sort(types.begin(), types.end());
   }
 
   void AddTracks(JsepSessionImpl* side, const std::string& mediatypes) {
