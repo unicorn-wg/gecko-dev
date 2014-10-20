@@ -337,9 +337,10 @@ nsresult PeerConnectionMedia::UpdateMediaPipelines(
     }
     if (pair->mReceiving) {
       rv = factory.CreateMediaPipeline(session, *pair, pair->mReceiving);
-      CSFLogError(logTag, "Failed to create receiving pipeline");
-      if (NS_FAILED(rv))
+      if (NS_FAILED(rv)) {
+        CSFLogError(logTag, "Failed to create receiving pipeline");
         return rv;
+      }
     }
   }
 
