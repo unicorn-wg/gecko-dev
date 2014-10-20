@@ -672,7 +672,8 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     // If the answer says it's inactive we're not doing anything with it.
     // TODO(ekr@rtfm.com): Need to handle renegotiation somehow. Issue 155.
     if (answer.GetDirectionAttribute().mValue ==
-        SdpDirectionAttribute::kInactive) {
+        SdpDirectionAttribute::kInactive &&
+        answer.GetPort() == 0) {
       transport->mState = JsepTransport::kJsepTransportClosed;
       continue;
     }
@@ -908,7 +909,7 @@ nsresult JsepSessionImpl::DetermineSendingDirection(
     }
 
   } else {
-    MOZ_CRASH(); // Can't happen.
+    *sending = false; *receiving = false;
   }
 
   return NS_OK;
