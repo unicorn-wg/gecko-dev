@@ -356,7 +356,10 @@ nsresult MediaPipelineFactory::CreateMediaPipelineReceiving(
     return rv;
   }
 
-  stream->StorePipeline(pc_track_id - 1, false, pipeline);
+  stream->StorePipeline(
+      pc_track_id - 1,
+      track->media_type() == mozilla::SdpMediaSection::kVideo,
+      pipeline);
   return NS_OK;
 }
 
