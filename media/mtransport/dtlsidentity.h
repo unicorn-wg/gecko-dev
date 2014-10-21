@@ -44,7 +44,9 @@ class DtlsIdentity {
                                      std::size_t size,
                                      std::size_t *digest_length);
   static const std::string DEFAULT_HASH_ALGORITHM;
-  static const size_t HASH_ALGORITHM_MAX_LENGTH;
+  enum {
+    HASH_ALGORITHM_MAX_LENGTH = 64
+  };
 
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(DtlsIdentity)
 
