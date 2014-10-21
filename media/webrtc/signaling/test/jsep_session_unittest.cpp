@@ -419,7 +419,7 @@ private:
       if (msection.GetMediaType() == SdpMediaSection::kApplication) {
         ASSERT_EQ(SdpMediaSection::kDtlsSctp, msection.GetProtocol());
       } else {
-        ASSERT_EQ(SdpMediaSection::kUdpTlsRtpSavpf, msection.GetProtocol());
+        ASSERT_EQ(SdpMediaSection::kRtpSavpf, msection.GetProtocol());
       }
 
       if (msection.GetPort() == 0) {

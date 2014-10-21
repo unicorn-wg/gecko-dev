@@ -121,7 +121,7 @@ nsresult JsepSessionImpl::AddOfferMSectionsByType(
     Maybe<size_t> offerToReceive,
     Sdp* sdp) {
 
-  SdpMediaSection::Protocol proto = SdpMediaSection::kUdpTlsRtpSavpf;
+  SdpMediaSection::Protocol proto = SdpMediaSection::kRtpSavpf;
 
   if (mediatype == SdpMediaSection::kApplication) {
     proto = SdpMediaSection::kDtlsSctp;
@@ -137,6 +137,7 @@ nsresult JsepSessionImpl::AddOfferMSectionsByType(
 
     SdpDirectionAttribute::Direction dir = SdpDirectionAttribute::kSendrecv;
 
+    ++added;
     if (offerToReceive.isSome() && added > *offerToReceive) {
       dir = SdpDirectionAttribute::kSendonly;
     }
@@ -150,7 +151,6 @@ nsresult JsepSessionImpl::AddOfferMSectionsByType(
     NS_ENSURE_SUCCESS(rv, rv);
 
     track->mAssignedMLine = Some(sdp->GetMediaSectionCount() - 1);
-    ++added;
   }
 
   while (offerToReceive.isSome() && added < *offerToReceive) {

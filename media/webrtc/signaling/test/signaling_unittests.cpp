@@ -2267,9 +2267,9 @@ TEST_F(SignalingTest, OfferAnswerNothingDisabledFullCycle)
   OfferAnswer(options, OFFER_AV | ANSWER_AV, true,
               SHOULD_SENDRECV_AV, SHOULD_SENDRECV_AV);
   // verify the default codec priorities
-  ASSERT_NE(a1_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 109 9 0 8\r"), std::string::npos);
+  ASSERT_NE(a1_->getLocalDescription().find("RTP/SAVPF 109 9 0 8\r"), std::string::npos);
   // verify that we echoed the same thing (as of SDParta we don't just pick one).
-  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 109 9 0 8\r"), std::string::npos);;
+  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 109 9 0 8\r"), std::string::npos);;
 }
 
 // XXX reject streams has changed. Re-enable when we can stop() received stream
@@ -2609,7 +2609,7 @@ TEST_F(SignalingTest, OfferAndAnswerWithExtraCodec)
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO, SHOULD_SENDRECV_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer());
   ParsedSDP sdpWrapper(a2_->answer());
-  sdpWrapper.ReplaceLine("m=audio", "m=audio 65375 UDP/TLS/RTP/SAVPF 109 8\r\n");
+  sdpWrapper.ReplaceLine("m=audio", "m=audio 65375 RTP/SAVPF 109 8\r\n");
   sdpWrapper.AddLine("a=rtpmap:8 PCMA/8000\r\n");
   std::cout << "Modified SDP " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
@@ -3451,14 +3451,14 @@ TEST_F(SignalingTest, AudioOnlyG722Only)
   a1_->SetLocal(TestObserver::OFFER, a1_->offer(), false);
   ParsedSDP sdpWrapper(a1_->offer());
   sdpWrapper.ReplaceLine("m=audio",
-                         "m=audio 65375 UDP/TLS/RTP/SAVPF 9\r\n");
+                         "m=audio 65375 RTP/SAVPF 9\r\n");
   std::cout << "Modified SDP " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 9\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 9\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
 
   WaitForCompleted();
@@ -3484,14 +3484,14 @@ TEST_F(SignalingTest, AudioOnlyG722MostPreferred)
   a1_->SetLocal(TestObserver::OFFER, a1_->offer(), false);
   ParsedSDP sdpWrapper(a1_->offer());
   sdpWrapper.ReplaceLine("m=audio",
-                         "m=audio 65375 UDP/TLS/RTP/SAVPF 9 0 8 109\r\n");
+                         "m=audio 65375 RTP/SAVPF 9 0 8 109\r\n");
   std::cout << "Modified SDP " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 9"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 9"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
 
   a1_->CloseSendStreams();
@@ -3510,14 +3510,14 @@ TEST_F(SignalingTest, AudioOnlyG722Rejected)
   a1_->SetLocal(TestObserver::OFFER, a1_->offer(), false);
   ParsedSDP sdpWrapper(a1_->offer());
   sdpWrapper.ReplaceLine("m=audio",
-                         "m=audio 65375 UDP/TLS/RTP/SAVPF 0 8\r\n");
+                         "m=audio 65375 RTP/SAVPF 0 8\r\n");
   std::cout << "Modified SDP offer " << std::endl
             << indent(sdpWrapper.getSdp()) << std::endl;
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
   a2_->CreateAnswer(OFFER_AUDIO | ANSWER_AUDIO);
   a2_->SetLocal(TestObserver::ANSWER, a2_->answer(), false);
   a1_->SetRemote(TestObserver::ANSWER, a2_->answer(), false);
-  ASSERT_NE(a2_->getLocalDescription().find("UDP/TLS/RTP/SAVPF 0 8\r"), std::string::npos);
+  ASSERT_NE(a2_->getLocalDescription().find("RTP/SAVPF 0 8\r"), std::string::npos);
   ASSERT_NE(a2_->getLocalDescription().find("a=rtpmap:0 PCMU/8000"), std::string::npos);
   ASSERT_EQ(a2_->getLocalDescription().find("a=rtpmap:109 opus/48000/2"), std::string::npos);
   ASSERT_EQ(a2_->getLocalDescription().find("a=rtpmap:9 G722/8000"), std::string::npos);
@@ -4292,9 +4292,9 @@ TEST_F(SignalingTest, ValidateMultipleVideoCodecsInOffer)
   std::string offer = a1_->offer();
 
 #ifdef H264_P0_SUPPORTED
-  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 120 126 97"), std::string::npos);
+  ASSERT_NE(offer.find("RTP/SAVPF 120 126 97"), std::string::npos);
 #else
-  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 120 126"), std::string::npos);
+  ASSERT_NE(offer.find("RTP/SAVPF 120 126"), std::string::npos);
 #endif
   ASSERT_NE(offer.find("a=rtpmap:120 VP8/90000"), std::string::npos);
   ASSERT_NE(offer.find("a=rtpmap:126 H264/90000"), std::string::npos);
@@ -4326,9 +4326,9 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
 
   // Remove VP8 from offer
   std::string offer = a1_->offer();
-  match = offer.find("UDP/TLS/RTP/SAVPF 120");
+  match = offer.find("RTP/SAVPF 120");
   ASSERT_NE(std::string::npos, match);
-  offer.replace(match, strlen("UDP/TLS/RTP/SAVPF 120"), "UDP/TLS/RTP/SAVPF");
+  offer.replace(match, strlen("RTP/SAVPF 120"), "RTP/SAVPF");
 
   match = offer.find("profile-level-id");
   ASSERT_NE(std::string::npos, match);
@@ -4344,7 +4344,7 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
             << indent(sdpWrapper.getSdp()) << std::endl;
 
   // P1 should be offered first
-  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 126"), std::string::npos);
+  ASSERT_NE(offer.find("RTP/SAVPF 126"), std::string::npos);
 
   a1_->SetLocal(TestObserver::OFFER, sdpWrapper.getSdp());
   a2_->SetRemote(TestObserver::OFFER, sdpWrapper.getSdp(), false);
@@ -4353,7 +4353,7 @@ TEST_F(SignalingTest, RemoveVP8FromOfferWithP1First)
   std::string answer(a2_->answer());
 
   // Validate answer SDP
-  ASSERT_NE(answer.find("UDP/TLS/RTP/SAVPF 126"), std::string::npos);
+  ASSERT_NE(answer.find("RTP/SAVPF 126"), std::string::npos);
   ASSERT_NE(answer.find("a=rtpmap:126 H264/90000"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack pli"), std::string::npos);
@@ -4376,17 +4376,17 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
   // Swap VP8 and P1 in offer
   std::string offer = a1_->offer();
 #ifdef H264_P0_SUPPORTED
-  match = offer.find("UDP/TLS/RTP/SAVPF 120 126 97");
+  match = offer.find("RTP/SAVPF 120 126 97");
   ASSERT_NE(std::string::npos, match);
   offer.replace(match,
-                strlen("UDP/TLS/RTP/SAVPF 126 120 97"),
-                "UDP/TLS/RTP/SAVPF 126 120 97");
+                strlen("RTP/SAVPF 126 120 97"),
+                "RTP/SAVPF 126 120 97");
 #else
-  match = offer.find("UDP/TLS/RTP/SAVPF 120 126");
+  match = offer.find("RTP/SAVPF 120 126");
   ASSERT_NE(std::string::npos, match);
   offer.replace(match,
-                strlen("UDP/TLS/RTP/SAVPF 126 120"),
-                "UDP/TLS/RTP/SAVPF 126 120");
+                strlen("RTP/SAVPF 126 120"),
+                "RTP/SAVPF 126 120");
 #endif
 
   match = offer.find("a=rtpmap:126 H264/90000");
@@ -4406,9 +4406,9 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
 
   // P1 should be offered first
 #ifdef H264_P0_SUPPORTED
-  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 126 120 97"), std::string::npos);
+  ASSERT_NE(offer.find("RTP/SAVPF 126 120 97"), std::string::npos);
 #else
-  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 126 120"), std::string::npos);
+  ASSERT_NE(offer.find("RTP/SAVPF 126 120"), std::string::npos);
 #endif
 
   a1_->SetLocal(TestObserver::OFFER, offer);
@@ -4418,7 +4418,7 @@ TEST_F(SignalingTest, OfferWithH264BeforeVP8)
   std::string answer(a2_->answer());
 
   // Validate answer SDP
-  ASSERT_NE(answer.find("UDP/TLS/RTP/SAVPF 126"), std::string::npos);
+  ASSERT_NE(answer.find("RTP/SAVPF 126"), std::string::npos);
   ASSERT_NE(answer.find("a=rtpmap:126 H264/90000"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:126 nack pli"), std::string::npos);
@@ -4438,11 +4438,11 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
 
   // Remove VP8 from offer
   std::string offer = a1_->offer();
-  match = offer.find("UDP/TLS/RTP/SAVPF 120 126");
+  match = offer.find("RTP/SAVPF 120 126");
   ASSERT_NE(std::string::npos, match);
   offer.replace(match,
-                strlen("UDP/TLS/RTP/SAVPF 120 126"),
-                "UDP/TLS/RTP/SAVPF");
+                strlen("RTP/SAVPF 120 126"),
+                "RTP/SAVPF");
 
   ParsedSDP sdpWrapper(offer);
   sdpWrapper.DeleteLines("a=rtcp-fb:120");
@@ -4460,7 +4460,7 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
   ASSERT_EQ(offer.find("a=rtpmap:120 VP8/90000"), std::string::npos);
 
   // P0 should be offered first
-  ASSERT_NE(offer.find("UDP/TLS/RTP/SAVPF 97"), std::string::npos);
+  ASSERT_NE(offer.find("RTP/SAVPF 97"), std::string::npos);
 
   a1_->SetLocal(TestObserver::OFFER, offer);
   a2_->SetRemote(TestObserver::OFFER, offer, false);
@@ -4469,7 +4469,7 @@ TEST_F(SignalingTest, OfferWithOnlyH264P0)
   std::string answer(a2_->answer());
 
   // validate answer SDP
-  ASSERT_NE(answer.find("UDP/TLS/RTP/SAVPF 97"), std::string::npos);
+  ASSERT_NE(answer.find("RTP/SAVPF 97"), std::string::npos);
   ASSERT_NE(answer.find("a=rtpmap:97 H264/90000"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:97 nack"), std::string::npos);
   ASSERT_NE(answer.find("a=rtcp-fb:97 nack pli"), std::string::npos);
@@ -4506,9 +4506,9 @@ TEST_F(SignalingTest, AnswerWithoutVP8)
   size_t match;
   answer = sdpWrapper.getSdp();
 
-  match = answer.find("UDP/TLS/RTP/SAVPF 120");
+  match = answer.find("RTP/SAVPF 120");
   ASSERT_NE(std::string::npos, match);
-  answer.replace(match, strlen("UDP/TLS/RTP/SAVPF 120"), "UDP/TLS/RTP/SAVPF 126");
+  answer.replace(match, strlen("RTP/SAVPF 120"), "RTP/SAVPF 126");
 
   match = answer.find("\r\na=rtpmap:120 VP8/90000");
   ASSERT_NE(std::string::npos, match);
@@ -4570,9 +4570,9 @@ TEST_F(SignalingTest, UseNonPrefferedPayloadTypeOnAnswer)
 
   // Replace VP8 Payload Type with a non preferred value
   size_t match;
-  match = answer.find("UDP/TLS/RTP/SAVPF 120");
+  match = answer.find("RTP/SAVPF 120");
   ASSERT_NE(std::string::npos, match);
-  answer.replace(match, strlen("UDP/TLS/RTP/SAVPF 121"), "UDP/TLS/RTP/SAVPF 121");
+  answer.replace(match, strlen("RTP/SAVPF 121"), "RTP/SAVPF 121");
 
   match = answer.find("\r\na=rtpmap:120 VP8/90000");
   ASSERT_NE(std::string::npos, match);
