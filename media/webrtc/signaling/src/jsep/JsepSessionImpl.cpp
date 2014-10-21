@@ -1110,8 +1110,8 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       90000
       );
   // Defaults for mandatory params
-  vp8->mMaxFs = 3600;
-  vp8->mMaxFr = 30;
+  vp8->mMaxFs = 12288;
+  vp8->mMaxFr = 60;
   mCodecs.push_back(vp8);
 
   JsepVideoCodecDescription* h264_1 = new JsepVideoCodecDescription(
