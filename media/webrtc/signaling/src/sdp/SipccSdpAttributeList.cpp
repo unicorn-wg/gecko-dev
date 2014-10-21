@@ -403,6 +403,7 @@ SipccSdpAttributeList::GetCodecType(rtp_ptype type) {
     case RTP_I420:
       return SdpRtpmapAttributeList::kOtherCodec;
   }
+  MOZ_CRASH();
 }
 
 bool
