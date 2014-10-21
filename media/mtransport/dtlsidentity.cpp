@@ -25,7 +25,6 @@ DtlsIdentity::~DtlsIdentity() {
 }
 
 const std::string DtlsIdentity::DEFAULT_HASH_ALGORITHM = "sha-256";
-const size_t DtlsIdentity::HASH_ALGORITHM_MAX_LENGTH = 64;
 
 TemporaryRef<DtlsIdentity> DtlsIdentity::Generate() {
 
