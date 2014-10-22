@@ -201,6 +201,7 @@ static bool ShouldSerializeChannels(SdpRtpmapAttributeList::CodecType type) {
     case SdpRtpmapAttributeList::kOtherCodec:
       return true;
   }
+  MOZ_CRASH();
 }
 
 void SdpRtpmapAttributeList::Serialize(std::ostream& os) const
