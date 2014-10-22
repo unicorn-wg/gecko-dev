@@ -288,21 +288,26 @@ MediaConduitErrorCode WebrtcVideoConduit::Init(WebrtcVideoConduit *other)
     if (branch)
     {
       int32_t temp;
-      NS_WARN_IF(NS_FAILED(branch->GetBoolPref("media.video.test_latency", &mVideoLatencyTestEnable)));
-      NS_WARN_IF(NS_FAILED(branch->GetIntPref("media.peerconnection.video.min_bitrate", &temp)));
+      rv = branch->GetBoolPref("media.video.test_latency", &mVideoLatencyTestEnable);
+      NS_WARN_IF(NS_FAILED(rv));
+      rv = branch->GetIntPref("media.peerconnection.video.min_bitrate", &temp);
+      NS_WARN_IF(NS_FAILED(rv));
       if (temp >= 0) {
         mMinBitrate = temp;
       }
-      NS_WARN_IF(NS_FAILED(branch->GetIntPref("media.peerconnection.video.start_bitrate", &temp)));
+      rv = branch->GetIntPref("media.peerconnection.video.start_bitrate", &temp);
+      NS_WARN_IF(NS_FAILED(rv));
       if (temp >= 0) {
         mStartBitrate = temp;
       }
-      NS_WARN_IF(NS_FAILED(branch->GetIntPref("media.peerconnection.video.max_bitrate", &temp)));
+      rv = branch->GetIntPref("media.peerconnection.video.max_bitrate", &temp);
+      NS_WARN_IF(NS_FAILED(rv));
       if (temp >= 0) {
         mMaxBitrate = temp;
       }
       bool use_loadmanager = false;
-      NS_WARN_IF(NS_FAILED(branch->GetBoolPref("media.navigator.load_adapt", &use_loadmanager)));
+      rv = branch->GetBoolPref("media.navigator.load_adapt", &use_loadmanager);
+      NS_WARN_IF(NS_FAILED(rv));
       if (use_loadmanager) {
         mLoadManager = LoadManagerBuild();
       }
