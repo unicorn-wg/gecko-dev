@@ -12,6 +12,8 @@
 #include "signaling/src/sdp/SdpMediaSection.h"
 #include "signaling/src/sdp/SipccSdpAttributeList.h"
 
+#include <map>
+
 extern "C" {
 #include "signaling/src/sdp/sipcc/sdp.h"
 }
