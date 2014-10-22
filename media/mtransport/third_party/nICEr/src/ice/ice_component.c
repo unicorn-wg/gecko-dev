@@ -793,6 +793,12 @@ int nr_ice_component_pair_candidate(nr_ice_peer_ctx *pctx, nr_ice_component *pco
            trickle candidates).
       */
       if (pair_all_remote || (pcand->state == NR_ICE_CAND_PEER_CANDIDATE_UNPAIRED)) {
+        if (pair_all_remote) {
+          /* When a remote candidate arrives after the start of checking, but
+           * before that gathering of local candidates, it can be in UNPAIRED */
+          pcand->state = NR_ICE_CAND_PEER_CANDIDATE_PAIRED;
+        }
+
         nr_ice_compute_codeword(pcand->label,strlen(pcand->label),codeword);
         r_log(LOG_ICE,LOG_DEBUG,"ICE-PEER(%s)/CAND(%s): Pairing with peer candidate %s", pctx->label, codeword, pcand->label);
 
