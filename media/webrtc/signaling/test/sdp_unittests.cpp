@@ -166,9 +166,9 @@ class SdpTest : public ::testing::Test {
       return final_level_;
     }
 
-    u16 AddNewRtcpFbAck(int level, sdp_rtcp_fb_ack_type_e type,
-                         u16 payload = SDP_ALL_PAYLOADS) {
-      u16 inst_num = 0;
+    uint16_t AddNewRtcpFbAck(int level, sdp_rtcp_fb_ack_type_e type,
+                         uint16_t payload = SDP_ALL_PAYLOADS) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_RTCP_FB,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_rtcp_fb_ack(sdp_ptr_, level, payload, inst_num,
@@ -176,9 +176,9 @@ class SdpTest : public ::testing::Test {
       return inst_num;
     }
 
-    u16 AddNewRtcpFbNack(int level, sdp_rtcp_fb_nack_type_e type,
-                         u16 payload = SDP_ALL_PAYLOADS) {
-      u16 inst_num = 0;
+    uint16_t AddNewRtcpFbNack(int level, sdp_rtcp_fb_nack_type_e type,
+                         uint16_t payload = SDP_ALL_PAYLOADS) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_RTCP_FB,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_rtcp_fb_nack(sdp_ptr_, level, payload, inst_num,
@@ -186,9 +186,9 @@ class SdpTest : public ::testing::Test {
       return inst_num;
     }
 
-    u16 AddNewRtcpFbTrrInt(int level, u32 interval,
-                         u16 payload = SDP_ALL_PAYLOADS) {
-      u16 inst_num = 0;
+    uint16_t AddNewRtcpFbTrrInt(int level, uint32_t interval,
+                         uint16_t payload = SDP_ALL_PAYLOADS) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_RTCP_FB,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_rtcp_fb_trr_int(sdp_ptr_, level, payload, inst_num,
@@ -196,17 +196,17 @@ class SdpTest : public ::testing::Test {
       return inst_num;
     }
 
-    u16 AddNewRtcpFbCcm(int level, sdp_rtcp_fb_ccm_type_e type,
-                         u16 payload = SDP_ALL_PAYLOADS) {
-      u16 inst_num = 0;
+    uint16_t AddNewRtcpFbCcm(int level, sdp_rtcp_fb_ccm_type_e type,
+                         uint16_t payload = SDP_ALL_PAYLOADS) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_RTCP_FB,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_rtcp_fb_ccm(sdp_ptr_, level, payload, inst_num,
                                          type), SDP_SUCCESS);
       return inst_num;
     }
-    u16 AddNewExtMap(int level, const char* uri) {
-      u16 inst_num = 0;
+    uint16_t AddNewExtMap(int level, const char* uri) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_EXTMAP,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_extmap(sdp_ptr_, level, inst_num,
@@ -214,8 +214,8 @@ class SdpTest : public ::testing::Test {
       return inst_num;
     }
 
-    u16 AddNewFmtpMaxFs(int level, u32 max_fs) {
-      u16 inst_num = 0;
+    uint16_t AddNewFmtpMaxFs(int level, uint32_t max_fs) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_FMTP,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_fmtp_payload_type(sdp_ptr_, level, 0, inst_num,
@@ -225,8 +225,8 @@ class SdpTest : public ::testing::Test {
       return inst_num;
     }
 
-    u16 AddNewFmtpMaxFr(int level, u32 max_fr) {
-      u16 inst_num = 0;
+    uint16_t AddNewFmtpMaxFr(int level, uint32_t max_fr) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_FMTP,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_fmtp_payload_type(sdp_ptr_, level, 0, inst_num,
@@ -236,8 +236,8 @@ class SdpTest : public ::testing::Test {
       return inst_num;
     }
 
-     u16 AddNewFmtpMaxFsFr(int level, u32 max_fs, u32 max_fr) {
-      u16 inst_num = 0;
+     uint16_t AddNewFmtpMaxFsFr(int level, uint32_t max_fs, uint32_t max_fr) {
+      uint16_t inst_num = 0;
       EXPECT_EQ(sdp_add_new_attr(sdp_ptr_, level, 0, SDP_ATTR_FMTP,
                                  &inst_num), SDP_SUCCESS);
       EXPECT_EQ(sdp_attr_set_fmtp_payload_type(sdp_ptr_, level, 0, inst_num,
@@ -757,13 +757,13 @@ class SdpTest : public ::testing::Test {
 //}
 //
 //TEST_F(SdpTest, parseFmtpMaxFs) {
-//  u32 val = 0;
+//  uint32_t val = 0;
 //  ParseSdp(kVideoSdp + "a=fmtp:120 max-fs=300;max-fr=30\r\n");
 //  ASSERT_EQ(sdp_attr_get_fmtp_max_fs(sdp_ptr_, 1, 0, 1, &val), SDP_SUCCESS);
 //  ASSERT_EQ(val, 300);
 //}
 //TEST_F(SdpTest, parseFmtpMaxFr) {
-//  u32 val = 0;
+//  uint32_t val = 0;
 //  ParseSdp(kVideoSdp + "a=fmtp:120 max-fs=300;max-fr=30\r\n");
 //  ASSERT_EQ(sdp_attr_get_fmtp_max_fr(sdp_ptr_, 1, 0, 1, &val), SDP_SUCCESS);
 //  ASSERT_EQ(val, 30);
