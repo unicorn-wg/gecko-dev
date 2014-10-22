@@ -347,7 +347,8 @@ PeerConnectionImpl::~PeerConnectionImpl()
 
   CSFLogInfo(logTag, "%s: PeerConnectionImpl destructor invoked for %s",
              __FUNCTION__, mHandle.c_str());
-  CloseInt();
+
+  Close();
 
 #ifdef MOZILLA_INTERNAL_API
   {
@@ -2070,9 +2071,9 @@ PeerConnectionImpl::Close()
   CSFLogDebug(logTag, "%s: for %s", __FUNCTION__, mHandle.c_str());
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
 
-  nsresult res = CloseInt();
+  SetSignalingState_m(PCImplSignalingState::SignalingClosed);
 
-  return res;
+  return NS_OK;
 }
 
 bool
@@ -2152,12 +2153,6 @@ nsresult
 PeerConnectionImpl::CloseInt()
 {
   PC_AUTO_ENTER_API_CALL_NO_CHECK();
-
-  if (IsClosed()) {
-    return NS_OK;
-  }
-
-  SetSignalingState_m(PCImplSignalingState::SignalingClosed);
 
   // We do this at the end of the call because we want to make sure we've waited
   // for all trickle ICE candidates to come in; this can happen well after we've
@@ -2240,6 +2235,7 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
   }
 
   mSignalingState = aSignalingState;
+
   if (mSignalingState == PCImplSignalingState::SignalingHaveLocalOffer ||
       mSignalingState == PCImplSignalingState::SignalingStable) {
     mMedia->UpdateTransports(mJsepSession);
@@ -2249,6 +2245,10 @@ PeerConnectionImpl::SetSignalingState_m(PCImplSignalingState aSignalingState)
     mMedia->UpdateMediaPipelines(mJsepSession);
     InitializeDataChannel();
     mMedia->StartIceChecks(mJsepSession);
+  }
+
+  if (mSignalingState == PCImplSignalingState::SignalingClosed) {
+    CloseInt();
   }
 
   nsRefPtr<PeerConnectionObserver> pco = do_QueryObjectReferent(mPCObserver);
@@ -2286,12 +2286,8 @@ PeerConnectionImpl::UpdateSignalingState() {
     default:
       MOZ_CRASH();
   }
-  if (newState == PCImplSignalingState::SignalingClosed) {
-    MOZ_CRASH();   // TODO(ekr@rtfm.com): Revisit this. Issue 178.
-    Close();
-  } else {
-    SetSignalingState_m(newState);
-  }
+
+  SetSignalingState_m(newState);
 }
 
 bool
