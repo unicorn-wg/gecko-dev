@@ -118,7 +118,7 @@ protected:
     const JsepOfferOptions& optionsRef = options ? *options : defaultOptions;
     std::string offer;
     nsresult rv = mSessionOff.CreateOffer(optionsRef, &offer);
-    EXPECT_EQ(NS_OK, rv);
+    EXPECT_EQ(NS_OK, rv) << mSessionOff.last_error();
 
     std::cerr << "OFFER: " << offer << std::endl;
 
@@ -262,38 +262,48 @@ protected:
     }
   }
 
-  void SetLocalAnswer(const std::string& answer) {
+  void SetLocalAnswer(const std::string& answer,
+                      uint32_t checkFlags = ALL_CHECKS) {
     nsresult rv = mSessionAns.SetLocalDescription(jsep::kJsepSdpAnswer,
                                                   answer);
-    ASSERT_EQ(NS_OK, rv);
+    if (checkFlags & CHECK_SUCCESS) {
+      ASSERT_EQ(NS_OK, rv);
+    }
 
-    // Verify that the right stuff is in the tracks.
-    ASSERT_EQ(types.size(), mSessionAns.num_negotiated_track_pairs());
-    for (size_t i = 0; i < types.size(); ++i) {
-      const JsepTrackPair* pair;
-      ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
-      ASSERT_TRUE(pair->mSending);
-      ASSERT_EQ(types[i], pair->mSending->media_type());
-      ASSERT_TRUE(pair->mReceiving);
-      ASSERT_EQ(types[i], pair->mReceiving->media_type());
+    if (checkFlags & CHECK_TRACKS) {
+      // Verify that the right stuff is in the tracks.
+      ASSERT_EQ(types.size(), mSessionAns.num_negotiated_track_pairs());
+      for (size_t i = 0; i < types.size(); ++i) {
+        const JsepTrackPair* pair;
+        ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
+        ASSERT_TRUE(pair->mSending);
+        ASSERT_EQ(types[i], pair->mSending->media_type());
+        ASSERT_TRUE(pair->mReceiving);
+        ASSERT_EQ(types[i], pair->mReceiving->media_type());
+      }
     }
     DumpTrackPairs(mSessionOff);
   }
 
-  void SetRemoteAnswer(const std::string& answer) {
+  void SetRemoteAnswer(const std::string& answer,
+                       uint32_t checkFlags = ALL_CHECKS) {
     nsresult rv = mSessionOff.SetRemoteDescription(jsep::kJsepSdpAnswer,
                                                    answer);
-    ASSERT_EQ(NS_OK, rv);
+    if (checkFlags & CHECK_SUCCESS) {
+      ASSERT_EQ(NS_OK, rv);
+    }
 
-    // Verify that the right stuff is in the tracks.
-    ASSERT_EQ(types.size(), mSessionAns.num_negotiated_track_pairs());
-    for (size_t i = 0; i < types.size(); ++i) {
-      const JsepTrackPair* pair;
-      ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
-      ASSERT_TRUE(pair->mSending);
-      ASSERT_EQ(types[i], pair->mSending->media_type());
-      ASSERT_TRUE(pair->mReceiving);
-      ASSERT_EQ(types[i], pair->mReceiving->media_type());
+    if (checkFlags & CHECK_TRACKS) {
+      // Verify that the right stuff is in the tracks.
+      ASSERT_EQ(types.size(), mSessionAns.num_negotiated_track_pairs());
+      for (size_t i = 0; i < types.size(); ++i) {
+        const JsepTrackPair* pair;
+        ASSERT_EQ(NS_OK, mSessionAns.negotiated_track_pair(i, &pair));
+        ASSERT_TRUE(pair->mSending);
+        ASSERT_EQ(types[i], pair->mSending->media_type());
+        ASSERT_TRUE(pair->mReceiving);
+        ASSERT_EQ(types[i], pair->mReceiving->media_type());
+      }
     }
     DumpTrackPairs(mSessionAns);
   }
@@ -752,8 +762,8 @@ TEST_F(JsepSessionTest, ValidateOfferedCodecParams) {
     *static_cast<const SdpFmtpAttributeList::VP8Parameters*>(
         fmtps[0].parameters.get());
 
-  ASSERT_EQ((uint32_t)3600, parsed_vp8_params.max_fs);
-  ASSERT_EQ((uint32_t)30, parsed_vp8_params.max_fr);
+  ASSERT_EQ((uint32_t)12288, parsed_vp8_params.max_fs);
+  ASSERT_EQ((uint32_t)60, parsed_vp8_params.max_fr);
 
   // H264 packetization mode 1
   ASSERT_EQ("126", fmtps[1].format);
@@ -869,8 +879,8 @@ TEST_F(JsepSessionTest, ValidateAnsweredCodecParams) {
     *static_cast<const SdpFmtpAttributeList::VP8Parameters*>(
         fmtps[0].parameters.get());
 
-  ASSERT_EQ((uint32_t)3600, parsed_vp8_params.max_fs);
-  ASSERT_EQ((uint32_t)30, parsed_vp8_params.max_fr);
+  ASSERT_EQ((uint32_t)12288, parsed_vp8_params.max_fs);
+  ASSERT_EQ((uint32_t)60, parsed_vp8_params.max_fr);
 
   // H264 packetization mode 1
   ASSERT_EQ("126", fmtps[1].format);
@@ -968,8 +978,10 @@ TEST_F(JsepSessionTest, CreateOfferNoMlines) {
 }
 
 TEST_F(JsepSessionTest, TestIceLite) {
+  AddTracks(&mSessionOff, "audio");
+  AddTracks(&mSessionAns, "audio");
   std::string offer = CreateOffer();
-  SetLocalOffer(offer);
+  SetLocalOffer(offer, CHECK_SUCCESS);
 
   SipccSdpParser parser;
   UniquePtr<Sdp> parsedOffer = parser.Parse(offer);
@@ -978,19 +990,21 @@ TEST_F(JsepSessionTest, TestIceLite) {
 
   std::ostringstream os;
   parsedOffer->Serialize(os);
-  SetRemoteOffer(os.str());
+  SetRemoteOffer(os.str(), CHECK_SUCCESS);
 
   ASSERT_TRUE(mSessionAns.RemoteIsIceLite());
   ASSERT_FALSE(mSessionOff.RemoteIsIceLite());
 }
 
 TEST_F(JsepSessionTest, TestIceOptions) {
+  AddTracks(&mSessionOff, "audio");
+  AddTracks(&mSessionAns, "audio");
   std::string offer = CreateOffer();
-  SetLocalOffer(offer);
-  SetRemoteOffer(offer);
+  SetLocalOffer(offer, CHECK_SUCCESS);
+  SetRemoteOffer(offer, CHECK_SUCCESS);
   std::string answer = CreateAnswer();
-  SetLocalAnswer(answer);
-  SetRemoteAnswer(answer);
+  SetLocalAnswer(answer, CHECK_SUCCESS);
+  SetRemoteAnswer(answer, CHECK_SUCCESS);
 
   ASSERT_EQ(1U, mSessionOff.GetIceOptions().size());
   ASSERT_EQ("trickle", mSessionOff.GetIceOptions()[0]);
