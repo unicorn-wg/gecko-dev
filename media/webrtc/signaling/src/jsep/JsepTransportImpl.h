@@ -29,7 +29,7 @@ class JsepDtlsTransportImpl : public JsepDtlsTransport {
   }
 
  private:
-  friend JsepSessionImpl;
+  friend class JsepSessionImpl;
 
   SdpFingerprintAttributeList mFingerprints;
   Role mRole;
@@ -51,7 +51,7 @@ class JsepIceTransportImpl : public JsepIceTransport {
   // }
 
  private:
-  friend JsepSessionImpl;
+  friend class JsepSessionImpl;
 
   std::string mUfrag;
   std::string mPwd;
