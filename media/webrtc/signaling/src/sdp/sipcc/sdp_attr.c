@@ -2132,6 +2132,7 @@ sdp_build_attr_fmtp_params (sdp_t *sdp_p, sdp_fmtp_t *fmtp_p, flex_string *fs)
 sdp_result_e sdp_build_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string *fs)
 {
   sdp_fmtp_t *fmtp_p;
+  sdp_result_e result;
 
   flex_string_sprintf(fs, "a=%s:%u ",
     sdp_attr[attr_p->type].name,
@@ -2139,7 +2140,7 @@ sdp_result_e sdp_build_attr_fmtp (sdp_t *sdp_p, sdp_attr_t *attr_p, flex_string 
 
   fmtp_p = &(attr_p->attr.fmtp);
 
-  sdp_result_e result = sdp_build_attr_fmtp_params(sdp_p, fmtp_p, fs);
+  result = sdp_build_attr_fmtp_params(sdp_p, fmtp_p, fs);
 
   if (result != SDP_SUCCESS) {
     return result;
@@ -5230,8 +5231,8 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
     }
 
     if (*ptr == '/') {
-        ++ptr; /* Skip over '/' */
         char direction[SDP_MAX_STRING_LEN+1];
+        ++ptr; /* Skip over '/' */
         ptr = sdp_getnextstrtok(ptr, direction,
                                 sizeof(direction), " \t", &result);
         if (result != SDP_SUCCESS) {
