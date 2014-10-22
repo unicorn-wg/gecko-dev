@@ -276,7 +276,7 @@ SipccSdpMediaSection::AddCodec(const std::string& pt, const std::string& name,
       }
     }
 
-    fmtps->PushEntry(pt, fmtp, nullptr);
+    fmtps->PushEntry(pt, fmtp, UniquePtr<SdpFmtpAttributeList::Parameters>());
     mAttributeList.SetAttribute(fmtps);
   }
 }
