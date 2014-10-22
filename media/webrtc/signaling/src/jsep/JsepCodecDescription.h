@@ -58,12 +58,12 @@ struct JsepCodecDescription {
         && (mName == entry.name)
         && (mClock == entry.clock)
         && (mChannels == entry.channels)) {
-      return Matches(FindParameters(entry.pt, remote_msection));
+      return ParametersMatch(FindParameters(entry.pt, remote_msection));
     }
     return false;
   }
 
-  virtual bool Matches(
+  virtual bool ParametersMatch(
       const SdpFmtpAttributeList::Parameters* fmtp) const {
     return true;
   }
@@ -134,12 +134,12 @@ struct JsepCodecDescription {
       } else {
         m_section.AddCodec(mDefaultPt, mName, mClock, mChannels);
       }
-      AddFmtps(m_section);
-      AddRtcpFbs(m_section);
+      AddFmtpsToMSection(m_section);
+      AddRtcpFbsToMSection(m_section);
     }
   }
 
-  virtual void AddFmtps(SdpMediaSection& m_section) const {
+  virtual void AddFmtpsToMSection(SdpMediaSection& m_section) const {
     SdpAttributeList& attrs = m_section.GetAttributeList();
 
     SdpFmtpAttributeList* fmtps;
@@ -159,7 +159,7 @@ struct JsepCodecDescription {
     }
   }
 
-  virtual void AddRtcpFbs(SdpMediaSection& m_section) const {
+  virtual void AddRtcpFbsToMSection(SdpMediaSection& m_section) const {
     SdpAttributeList& attrs = m_section.GetAttributeList();
 
     SdpRtcpFbAttributeList* rtcpfbs;
@@ -323,7 +323,7 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
     return true;
   }
 
-  virtual bool Matches(
+  virtual bool ParametersMatch(
       const SdpFmtpAttributeList::Parameters* fmtp) const MOZ_OVERRIDE {
     if (mName == "H264") {
       if (!fmtp) {
@@ -422,8 +422,9 @@ struct JsepApplicationCodecDescription : public JsepCodecDescription {
   JSEP_CODEC_CLONE(JsepApplicationCodecDescription)
 
   // Override, uses sctpmap instead of rtpmap
-  virtual bool Matches(const std::string& fmt,
-                       const SdpMediaSection& remote_msection) const {
+  virtual bool Matches(
+      const std::string& fmt,
+      const SdpMediaSection& remote_msection) const MOZ_OVERRIDE {
     auto& attrs = remote_msection.GetAttributeList();
     if (!attrs.HasAttribute(SdpAttribute::kSctpmapAttribute)) {
       return false;
