@@ -4,6 +4,14 @@
 
 #include <stdarg.h>
 
+/* Warning 4005 happens when you redef a macro. Unfortunately, the unholy
+ * fusion of webrtc.org's gyp build system and moz.build results in clashing
+ * definitions for some windows-related macros. */
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4005)
+#endif // _MSC_VER
+
 #include "mozilla/Assertions.h"
 #include "cpr_types.h"
 #include "cpr_string.h"
@@ -11,6 +19,10 @@
 
 /* From cpr_stdlib.h */
 #include "mozilla/mozalloc.h"
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif // _MSC_VER
 
 #define cpr_malloc(a) moz_xmalloc(a)
 #define cpr_calloc(a, b) moz_xcalloc(a, b)
