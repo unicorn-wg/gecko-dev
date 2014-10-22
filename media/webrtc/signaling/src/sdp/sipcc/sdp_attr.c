@@ -10,7 +10,6 @@
 #include "sdp.h"
 #include "sdp_private.h"
 #include "sdp_base64.h"
-#include "mozilla/Assertions.h"
 #include "CSFLog.h"
 
 // TODO(ekr@rtfm.com): Somehow make sure this matches DataChannelProtocol.h
@@ -2202,8 +2201,6 @@ sdp_result_e sdp_parse_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
 sdp_result_e sdp_build_attr_sctpmap(sdp_t *sdp_p, sdp_attr_t *attr_p,
                                     flex_string *fs)
 {
-    MOZ_ASSERT(strlen(attr_p->attr.sctpmap.protocol) > 0);
-
     flex_string_sprintf(fs, "a=%s:%u %s %u\r\n",
         sdp_attr[attr_p->type].name,
         attr_p->attr.sctpmap.port,
