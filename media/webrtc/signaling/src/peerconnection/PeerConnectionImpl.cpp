@@ -1522,8 +1522,7 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
 #endif
     pco->OnSetRemoteDescriptionSuccess(jrv);
 #ifdef MOZILLA_INTERNAL_API
-    // TODO(ekr@rtfm.com): This is crashing. Issue 176.
-    // startCallTelem();
+    startCallTelem();
 #endif
   }
 
@@ -3073,12 +3072,10 @@ PeerConnectionImpl::startCallTelem() {
   mStartTime = TimeStamp::Now();
 
   // Increment session call counter
-#ifdef MOZILLA_INTERNAL_API
   int &cnt = PeerConnectionCtx::GetInstance()->mConnectionCounter;
   Telemetry::GetHistogramById(Telemetry::WEBRTC_CALL_COUNT)->Subtract(cnt);
   cnt++;
   Telemetry::GetHistogramById(Telemetry::WEBRTC_CALL_COUNT)->Add(cnt);
-#endif
 }
 #endif
 
