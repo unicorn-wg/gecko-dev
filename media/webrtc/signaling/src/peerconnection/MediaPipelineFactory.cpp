@@ -55,12 +55,10 @@ static nsresult JsepCodecDescToCodecConfig(const
   const jsep::JsepAudioCodecDescription& desc =
       static_cast<const jsep::JsepAudioCodecDescription&>(d);
 
-  char* end;
-  long int pt = strtol(desc.mDefaultPt.c_str(), &end, 10);
-  size_t length = static_cast<size_t>(end - desc.mDefaultPt.c_str());
-  if ((pt < 0) ||
-      (pt > UINT16_MAX) ||
-      (length != desc.mDefaultPt.size())) {
+
+  uint16_t pt;
+
+  if (!desc.GetPtAsInt(&pt)) {
     MOZ_MTLOG(ML_ERROR, "Invalid payload type: " << desc.mDefaultPt);
     return NS_ERROR_INVALID_ARG;
   }
