@@ -111,6 +111,11 @@
 #endif
 #include "mozilla/dom/PeerConnectionObserverEnumsBinding.h"
 
+#ifdef MOZ_WEBRTC_OMX
+#include "OMXVideoCodec.h"
+#include "OMXCodecWrapper.h"
+#endif
+
 #define ICE_PARSING "In RTCConfiguration passed to RTCPeerConnection constructor"
 
 using namespace mozilla;
@@ -741,7 +746,7 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
   }
 
 
-  bool hardware264Enabled = false;
+  bool hardwareH264Enabled = false;
 
 #ifdef MOZ_WEBRTC_OMX
 
@@ -754,9 +759,9 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
 
   // This pref is a misnomer; it is solely for h264 _hardware_ support.
   branch->GetBoolPref("media.peerconnection.video.h264_enabled",
-                      &hardware264Enabled);
+                      &hardwareH264Enabled);
 
-  if (hardware264Enabled) {
+  if (hardwareH264Enabled) {
     // Ok, it is preffed on. Can we actually do it?
     hardwareH264Enabled = false;
     android::sp<android::OMXCodecReservation> encode = new android::OMXCodecReservation(true);
@@ -767,7 +772,7 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
     // if we try to add a person to a 2-way call to make a 3-way mesh call
     if (encode->ReserveOMXCodec() && decode->ReserveOMXCodec()) {
       CSFLogDebug( logTag, "%s: H264 hardware codec available", __FUNCTION__);
-      hardware264Enabled = true;
+      hardwareH264Enabled = true;
     }
   }
 
@@ -780,7 +785,7 @@ PeerConnectionImpl::ConfigureJsepSessionCodecs() {
   bool softwareH264Enabled = true;
 #endif
 
-  bool h264Enabled = hardware264Enabled || softwareH264Enabled;
+  bool h264Enabled = hardwareH264Enabled || softwareH264Enabled;
 
   auto codecs = mJsepSession->Codecs();
 
