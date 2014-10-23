@@ -1524,10 +1524,12 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
       }
       if (track->media_type() == mozilla::SdpMediaSection::kAudio) {
         MOZ_ASSERT(!hasAudio);
+        (void)hasAudio;
         hasAudio = true;
         info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
       } else if (track->media_type() == mozilla::SdpMediaSection::kVideo) {
         MOZ_ASSERT(!hasVideo);
+        (void)hasVideo;
         hasVideo = true;
         info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_VIDEO;
       } else {
