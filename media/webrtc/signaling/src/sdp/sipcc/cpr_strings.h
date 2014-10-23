@@ -16,6 +16,7 @@ __BEGIN_DECLS
 
 #define cpr_strcasecmp _stricmp
 #define cpr_strncasecmp _strnicmp
+#define snprintf _snprintf
 
 #else // _MSC_VER
 

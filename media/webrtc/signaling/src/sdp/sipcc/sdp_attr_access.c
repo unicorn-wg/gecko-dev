@@ -639,13 +639,13 @@ void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
         dst_attr_p->attr.srtp_context.master_salt_size_bytes =
                     src_attr_p->attr.srtp_context.master_salt_size_bytes;
 
-        bcopy(src_attr_p->attr.srtp_context.master_key,
-              dst_attr_p->attr.srtp_context.master_key,
-              SDP_SRTP_MAX_KEY_SIZE_BYTES);
+        memcpy(dst_attr_p->attr.srtp_context.master_key,
+               src_attr_p->attr.srtp_context.master_key,
+               SDP_SRTP_MAX_KEY_SIZE_BYTES);
 
-        bcopy(src_attr_p->attr.srtp_context.master_salt,
-              dst_attr_p->attr.srtp_context.master_salt,
-              SDP_SRTP_MAX_SALT_SIZE_BYTES);
+        memcpy(dst_attr_p->attr.srtp_context.master_salt,
+               src_attr_p->attr.srtp_context.master_salt,
+               SDP_SRTP_MAX_SALT_SIZE_BYTES);
 
 
         sstrncpy((char*)dst_attr_p->attr.srtp_context.master_key_lifetime,
@@ -1054,13 +1054,13 @@ sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
         new_attr_p->attr.srtp_context.master_salt_size_bytes =
                     src_attr_p->attr.srtp_context.master_salt_size_bytes;
 
-        bcopy(src_attr_p->attr.srtp_context.master_key,
-              new_attr_p->attr.srtp_context.master_key,
-              SDP_SRTP_MAX_KEY_SIZE_BYTES);
+        memcpy(new_attr_p->attr.srtp_context.master_key,
+               src_attr_p->attr.srtp_context.master_key,
+               SDP_SRTP_MAX_KEY_SIZE_BYTES);
 
-        bcopy(src_attr_p->attr.srtp_context.master_salt,
-              new_attr_p->attr.srtp_context.master_salt,
-              SDP_SRTP_MAX_SALT_SIZE_BYTES);
+        memcpy(new_attr_p->attr.srtp_context.master_salt,
+               src_attr_p->attr.srtp_context.master_salt,
+               SDP_SRTP_MAX_SALT_SIZE_BYTES);
 
 
         sstrncpy((char*)new_attr_p->attr.srtp_context.master_key_lifetime,
@@ -11980,8 +11980,9 @@ sdp_attr_set_sdescriptions_key (void *sdp_ptr, uint16_t level,
 
     }
 
-    bcopy(key, attr_p->attr.srtp_context.master_key,
-          SDP_SRTP_MAX_KEY_SIZE_BYTES);
+    memcpy(attr_p->attr.srtp_context.master_key,
+           key,
+           SDP_SRTP_MAX_KEY_SIZE_BYTES);
 
     return SDP_SUCCESS;
 
@@ -12038,8 +12039,9 @@ sdp_attr_set_sdescriptions_salt (void *sdp_ptr, uint16_t level,
 
     }
 
-    bcopy(salt, attr_p->attr.srtp_context.master_salt,
-          SDP_SRTP_MAX_SALT_SIZE_BYTES);
+    memcpy(attr_p->attr.srtp_context.master_salt,
+           salt,
+           SDP_SRTP_MAX_SALT_SIZE_BYTES);
 
     return SDP_SUCCESS;
 }
