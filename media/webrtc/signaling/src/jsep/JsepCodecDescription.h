@@ -40,6 +40,17 @@ struct JsepCodecDescription {
   virtual bool LoadRtcpFbs(
       const SdpRtcpFbAttributeList::Feedback& feedback) = 0;
 
+  bool GetPtAsInt(uint16_t* pt_outparam) const {
+    char* end;
+    int pt = strtol(mDefaultPt.c_str(), &end, 10);
+    size_t length = static_cast<size_t>(end - mDefaultPt.c_str());
+    if ((pt < 0) || (pt > UINT16_MAX) || (length != mDefaultPt.size())) {
+      return false;
+    }
+    *pt_outparam = pt;
+    return true;
+  }
+
   virtual bool Matches(const std::string& fmt,
                        const SdpMediaSection& remote_msection) const {
     auto& attrs = remote_msection.GetAttributeList();
@@ -393,9 +404,9 @@ struct JsepVideoCodecDescription : public JsepCodecDescription {
 
 struct JsepApplicationCodecDescription : public JsepCodecDescription {
   JsepApplicationCodecDescription(const std::string& default_pt,
-                            const std::string& name,
-                            uint16_t channels,
-                            bool enabled = true) :
+                                  const std::string& name,
+                                  uint16_t channels,
+                                  bool enabled = true) :
       JsepCodecDescription(mozilla::SdpMediaSection::kApplication,
                            default_pt, name, 0, channels, enabled) {}
 
