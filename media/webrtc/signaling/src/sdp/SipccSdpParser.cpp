@@ -5,6 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "signaling/src/sdp/SipccSdpParser.h"
+#include "signaling/src/sdp/SipccSdp.h"
 
 #include <utility>
 extern "C" {
