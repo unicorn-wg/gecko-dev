@@ -3832,10 +3832,12 @@ sdp_result_e sdp_build_attr_srtpcontext (sdp_t *sdp_p, sdp_attr_t *attr_p,
     output_len = MAX_BASE64_ENCODE_SIZE_BYTES;
 
     /* Append master and salt keys */
-    bcopy(attr_p->attr.srtp_context.master_key, base64_encoded_input,
-            key_size );
-    bcopy(attr_p->attr.srtp_context.master_salt,
-            base64_encoded_input + key_size, salt_size );
+    memcpy(base64_encoded_input,
+           attr_p->attr.srtp_context.master_key,
+           key_size );
+    memcpy(base64_encoded_input + key_size,
+           attr_p->attr.srtp_context.master_salt,
+           salt_size );
 
     if ((status = base64_encode(base64_encoded_input, key_size + salt_size,
                       base64_encoded_data, &output_len)) != BASE64_SUCCESS) {
@@ -4494,10 +4496,13 @@ sdp_parse_sdescriptions_key_param (const char *str, sdp_attr_t *attr_p,
             return(FALSE);
         }
 
-            bcopy(base64decodeData, attr_p->attr.srtp_context.master_key, keySize);
+            memcpy(attr_p->attr.srtp_context.master_key,
+                   base64decodeData,
+                   keySize);
 
-            bcopy(base64decodeData + keySize,
-                  attr_p->attr.srtp_context.master_salt, saltSize);
+            memcpy(attr_p->attr.srtp_context.master_salt,
+                   base64decodeData + keySize,
+                   saltSize);
 
             /* Used only for MGCP */
             SDP_SRTP_CONTEXT_SET_MASTER_KEY
@@ -4552,11 +4557,13 @@ sdp_build_attr_sdescriptions (sdp_t *sdp_p, sdp_attr_t *attr_p,
     saltSize = attr_p->attr.srtp_context.master_salt_size_bytes;
 
     /* concatenate the master key + salt then base64 encode it */
-    bcopy(attr_p->attr.srtp_context.master_key,
-          base64_encoded_input, keySize);
+    memcpy(base64_encoded_input,
+           attr_p->attr.srtp_context.master_key,
+           keySize);
 
-    bcopy(attr_p->attr.srtp_context.master_salt,
-          base64_encoded_input + keySize, saltSize);
+    memcpy(base64_encoded_input + keySize,
+           attr_p->attr.srtp_context.master_salt,
+           saltSize);
 
     outputLen = MAX_BASE64_STRING_LEN;
     status = base64_encode(base64_encoded_input, keySize + saltSize,

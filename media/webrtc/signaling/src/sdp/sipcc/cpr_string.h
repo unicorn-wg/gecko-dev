@@ -12,21 +12,6 @@
 
 __BEGIN_DECLS
 
-#if 0
-// TODO(ekr@rtfm.com): Uncomment this if we need these functions. Issue 190.
-
-#if defined SIP_OS_LINUX
-#include "../linux/cpr_linux_string.h"
-#elif defined SIP_OS_WINDOWS
-#include "../win32/cpr_win_string.h"
-#define cpr_strdup _strdup
-#elif defined SIP_OS_OSX
-#include "../darwin/cpr_darwin_string.h"
-#endif
-
-#endif
-
-
 /**
  * sstrncpy
  *
