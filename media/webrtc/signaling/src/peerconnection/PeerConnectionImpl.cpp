@@ -1024,12 +1024,37 @@ PeerConnectionImpl::InitializeDataChannel()
 #ifdef MOZILLA_INTERNAL_API
   rv = EnsureDataConnection(codec->mChannels);
   if (NS_SUCCEEDED(rv)) {
+    uint16_t localport = 5000;
+    uint16_t remoteport = 0;
+
+    for (size_t i = 0; i != mJsepSession->num_negotiated_track_pairs(); ++i) {
+      const JsepTrackPair* trackPair;
+      rv = mJsepSession->negotiated_track_pair(i, &trackPair);
+      NS_ENSURE_SUCCESS(rv, rv);
+      if (trackPair->mSending &&
+          trackPair->mSending->media_type() == SdpMediaSection::kApplication) {
+
+        NS_ENSURE_TRUE(trackPair->mSending->num_codecs() > 0,
+                       NS_ERROR_FAILURE);
+
+        const JsepCodecDescription* codec;
+
+        rv = trackPair->mSending->get_codec(0, &codec);
+        NS_ENSURE_SUCCESS(rv, rv);
+        if (!codec->GetPtAsInt(&remoteport)) {
+          // TODO: We should be validating this in SetRemote (issue #161)
+          return NS_ERROR_FAILURE;
+        }
+      }
+    }
+
     // use the specified TransportFlow
     nsRefPtr<TransportFlow> flow = mMedia->GetTransportFlow(level, false).get();
     CSFLogDebug(logTag, "Transportflow[%d] = %p", level, flow.get());
     if (flow) {
-      // TODO: Do these ports matter at all? If not, can we remove the args?
-      if (mDataConnection->ConnectViaTransportFlow(flow, 9, 9)) {
+      if (mDataConnection->ConnectViaTransportFlow(flow,
+                                                   localport,
+                                                   remoteport)) {
         return NS_OK;
       }
     }
