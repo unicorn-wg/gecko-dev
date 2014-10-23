@@ -9,19 +9,7 @@
 #include "sdp.h"
 #include "sdp_private.h"
 
-/* Warning 4005 happens when you redef a macro. Unfortunately, the unholy
- * fusion of webrtc.org's gyp build system and moz.build results in clashing
- * definitions for some windows-related macros. */
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4005)
-#endif // _MSC_VER
-
 #include "CSFLog.h"
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER
 
 #define MKI_BUF_LEN 4
 

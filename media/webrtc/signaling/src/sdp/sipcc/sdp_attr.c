@@ -12,19 +12,7 @@
 #include "sdp_private.h"
 #include "sdp_base64.h"
 
-/* Warning 4005 happens when you redef a macro. Unfortunately, the unholy
- * fusion of webrtc.org's gyp build system and moz.build results in clashing
- * definitions for some windows-related macros. */
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4005)
-#endif // _MSC_VER
-
 #include "CSFLog.h"
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER
 
 // TODO(ekr@rtfm.com): Somehow make sure this matches DataChannelProtocol.h
 #define MAX_SCTP_NUM_STREAMS 2048 //Issue 191.
