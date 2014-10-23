@@ -3800,7 +3800,7 @@ tinybool sdp_parse_context_crypto_suite(char * str,  sdp_attr_t *attr_p, sdp_t *
 
        /* Check crypto suites */
        for(i=0; i<SDP_SRTP_MAX_NUM_CRYPTO_SUITES; i++) {
-         if (!strcasecmp(sdp_srtp_crypto_suite_array[i].crypto_suite_str, str)) {
+         if (!cpr_strcasecmp(sdp_srtp_crypto_suite_array[i].crypto_suite_str, str)) {
            attr_p->attr.srtp_context.suite = sdp_srtp_crypto_suite_array[i].crypto_suite_val;
            attr_p->attr.srtp_context.master_key_size_bytes =
                sdp_srtp_crypto_suite_array[i].key_size_bytes;
@@ -5242,13 +5242,13 @@ sdp_result_e sdp_parse_attr_extmap(sdp_t *sdp_p,
             return (SDP_INVALID_PARAMETER);
         }
 
-        if (!strcasecmp(direction, "sendrecv")) {
+        if (!cpr_strcasecmp(direction, "sendrecv")) {
           attr_p->attr.extmap.media_direction = SDP_DIRECTION_SENDRECV;
-        } else if (!strcasecmp(direction, "sendonly")) {
+        } else if (!cpr_strcasecmp(direction, "sendonly")) {
           attr_p->attr.extmap.media_direction = SDP_DIRECTION_SENDONLY;
-        } else if (!strcasecmp(direction, "recvonly")) {
+        } else if (!cpr_strcasecmp(direction, "recvonly")) {
           attr_p->attr.extmap.media_direction = SDP_DIRECTION_RECVONLY;
-        } else if (!strcasecmp(direction, "inactive")) {
+        } else if (!cpr_strcasecmp(direction, "inactive")) {
           attr_p->attr.extmap.media_direction = SDP_DIRECTION_INACTIVE;
         } else {
             sdp_parse_error(sdp_p,
