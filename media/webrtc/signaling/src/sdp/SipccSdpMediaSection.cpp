@@ -93,7 +93,7 @@ SipccSdpMediaSection::Load(sdp_t* sdp, uint16_t level,
   }
 
   mPort = sdp_get_media_portnum(sdp, level);
-  int32 pc =  sdp_get_media_portcount(sdp, level);
+  int32_t pc =  sdp_get_media_portcount(sdp, level);
   if (pc == SDP_INVALID_VALUE) {
     mPortCount = 0;
   } else {
@@ -276,7 +276,7 @@ SipccSdpMediaSection::AddCodec(const std::string& pt, const std::string& name,
       }
     }
 
-    fmtps->PushEntry(pt, fmtp, nullptr);
+    fmtps->PushEntry(pt, fmtp, UniquePtr<SdpFmtpAttributeList::Parameters>());
     mAttributeList.SetAttribute(fmtps);
   }
 }

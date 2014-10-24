@@ -10,49 +10,20 @@
 __BEGIN_DECLS
 
 
-// TODO(ekr@rtfm.com): Are there platforms where we can't use
-// CPR_USE_OS_STRCASECMP? Issue 190.
-#define CPR_USE_OS_STRCASECMP
-
-#ifdef CPR_USE_OS_STRCASECMP
 #include <string.h>
 
-/* Use standard library types */
+#ifdef _MSC_VER
+
+#define cpr_strcasecmp _stricmp
+#define cpr_strncasecmp _strnicmp
+#define snprintf _snprintf
+
+#else // _MSC_VER
+
 #define cpr_strcasecmp  strcasecmp
 #define cpr_strncasecmp strncasecmp
-#else
-/* Prototypes */
-/**
- * cpr_strcasecmp
- *
- * @brief The CPR wrapper for strcasecmp
- *
- * The cpr_strcasecmp performs case insensitive string comparison of the "s1"
- * and the "s2" strings.
- *
- * @param[in] s1  - The first string
- * @param[in] s2  - The second string
- *
- * @return integer <,=,> 0 depending on whether s1 is <,=,> s2
- */
-int cpr_strcasecmp(const char *s1, const char *s2);
 
-/**
- * cpr_strncasecmp
- *
- * @brief The CPR wrapper for strncasecmp
- *
- * The cpr_strncasecmp performs case insensitive string comparison for specific
- * length "len".
- *
- * @param[in] s1  - The first string
- * @param[in] s2  - The second string
- * @param[in] len  - The length to be compared
- *
- * @return integer <,=,> 0 depending on whether s1 is <,=,> s2
- */
-int cpr_strncasecmp(const char *s1, const char *s2, size_t len);
-#endif
+#endif // _MSC_VER
 
 __END_DECLS
 

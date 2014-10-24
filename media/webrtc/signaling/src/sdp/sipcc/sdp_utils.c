@@ -8,13 +8,14 @@
 #include "sdp_os_defs.h"
 #include "sdp.h"
 #include "sdp_private.h"
+
 #include "CSFLog.h"
 
 #define MKI_BUF_LEN 4
 
 static const char* logTag = "sdp_utils";
 
-sdp_mca_t *sdp_alloc_mca (u32 line) {
+sdp_mca_t *sdp_alloc_mca (uint32_t line) {
     sdp_mca_t           *mca_p;
 
     /* Allocate resource for new media stream. */
@@ -138,7 +139,7 @@ static sdp_result_e next_token(const char **string_of_tokens, char *token, unsig
  */
 
 tinybool
-verify_sdescriptions_mki (char *buf, char *mkiVal, u16 *mkiLen)
+verify_sdescriptions_mki (char *buf, char *mkiVal, uint16_t *mkiLen)
 {
 
     char       *ptr,
@@ -199,7 +200,7 @@ verify_sdescriptions_mki (char *buf, char *mkiVal, u16 *mkiLen)
       return FALSE;
     }
 
-    *mkiLen = (u16) strtoul_result;
+    *mkiLen = (uint16_t) strtoul_result;
     sstrncpy(mkiVal, mkiValBuf, MKI_BUF_LEN);
 
     return TRUE;
@@ -340,7 +341,7 @@ const char *sdp_getnextstrtok (const char *str, char *tokenstr, unsigned tokenst
  * a new line char or the end of the string.  Skip any delimiters before
  * the token.
  */
-u32 sdp_getnextnumtok_or_null (const char *str, const char **str_end,
+uint32_t sdp_getnextnumtok_or_null (const char *str, const char **str_end,
                                const char *delim, tinybool *null_ind,
                                sdp_result_e *result)
 {
@@ -382,7 +383,7 @@ u32 sdp_getnextnumtok_or_null (const char *str, const char **str_end,
 
   *result = SDP_SUCCESS;
   *str_end = token_list;
-  return (u32) numval;
+  return (uint32_t) numval;
 }
 
 
@@ -390,7 +391,7 @@ u32 sdp_getnextnumtok_or_null (const char *str, const char **str_end,
  * passed in as a param.  The token also will not go past a new line char
  * or the end of the string.  Skip any delimiters before the token.
  */
-u32 sdp_getnextnumtok (const char *str, const char **str_end,
+uint32_t sdp_getnextnumtok (const char *str, const char **str_end,
                        const char *delim, sdp_result_e *result)
 {
   const char *token_list = str;
@@ -421,7 +422,7 @@ u32 sdp_getnextnumtok (const char *str, const char **str_end,
 
   *result = SDP_SUCCESS;
   *str_end = token_list;
-  return (u32) numval;
+  return (uint32_t) numval;
 }
 
 

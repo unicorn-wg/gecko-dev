@@ -5,6 +5,7 @@
 #include "sdp_os_defs.h"
 #include "sdp.h"
 #include "sdp_private.h"
+
 #include "CSFLog.h"
 
 // TODO(ekr@rtfm.com): Harmonize this with DataChannelProtocol.h. Issue 192.
@@ -159,16 +160,16 @@ static const char* logTag = "sdp_attr_access";
  *              cap_num     The capability number associated with the
  *                          attribute if any.  If none, should be zero.
  *              attr_type   The type of attribute to add.
- *              inst_num    Pointer to a u16 in which to return the instance
+ *              inst_num    Pointer to a uint16_t in which to return the instance
  *                          number of the newly added attribute.
  * Returns:     SDP_SUCCESS            Attribute was added successfully.
  *              SDP_NO_RESOURCE        No memory avail for new attribute.
  *              SDP_INVALID_PARAMETER  Specified media line is not defined.
  */
-sdp_result_e sdp_add_new_attr (void *sdp_ptr, u16 level, u8 cap_num,
-                               sdp_attr_e attr_type, u16 *inst_num)
+sdp_result_e sdp_add_new_attr (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                               sdp_attr_e attr_type, uint16_t *inst_num)
 {
-    u16          i;
+    uint16_t          i;
     sdp_mca_t   *mca_p;
     sdp_mca_t   *cap_p;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -336,7 +337,7 @@ sdp_result_e sdp_add_new_attr (void *sdp_ptr, u16 level, u8 cap_num,
  */
 void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
 {
-    u16 i;
+    uint16_t i;
 
     /* Copy over all the attribute information. */
     dst_attr_p->type = src_attr_p->type;
@@ -638,13 +639,13 @@ void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
         dst_attr_p->attr.srtp_context.master_salt_size_bytes =
                     src_attr_p->attr.srtp_context.master_salt_size_bytes;
 
-        bcopy(src_attr_p->attr.srtp_context.master_key,
-              dst_attr_p->attr.srtp_context.master_key,
-              SDP_SRTP_MAX_KEY_SIZE_BYTES);
+        memcpy(dst_attr_p->attr.srtp_context.master_key,
+               src_attr_p->attr.srtp_context.master_key,
+               SDP_SRTP_MAX_KEY_SIZE_BYTES);
 
-        bcopy(src_attr_p->attr.srtp_context.master_salt,
-              dst_attr_p->attr.srtp_context.master_salt,
-              SDP_SRTP_MAX_SALT_SIZE_BYTES);
+        memcpy(dst_attr_p->attr.srtp_context.master_salt,
+               src_attr_p->attr.srtp_context.master_salt,
+               SDP_SRTP_MAX_SALT_SIZE_BYTES);
 
 
         sstrncpy((char*)dst_attr_p->attr.srtp_context.master_key_lifetime,
@@ -695,11 +696,11 @@ void sdp_copy_attr_fields (sdp_attr_t *src_attr_p, sdp_attr_t *dst_attr_p)
  * Returns:     SDP_SUCCESS    Attribute was successfully copied.
  */
 sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
-                            u16 src_level, u16 dst_level,
-                            u8 src_cap_num, u8 dst_cap_num,
-                            sdp_attr_e src_attr_type, u16 src_inst_num)
+                            uint16_t src_level, uint16_t dst_level,
+                            uint8_t src_cap_num, uint8_t dst_cap_num,
+                            sdp_attr_e src_attr_type, uint16_t src_inst_num)
 {
-    u16          i;
+    uint16_t          i;
     sdp_mca_t   *mca_p;
     sdp_mca_t   *cap_p;
     sdp_t       *src_sdp_p = (sdp_t *)src_sdp_ptr;
@@ -1053,13 +1054,13 @@ sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
         new_attr_p->attr.srtp_context.master_salt_size_bytes =
                     src_attr_p->attr.srtp_context.master_salt_size_bytes;
 
-        bcopy(src_attr_p->attr.srtp_context.master_key,
-              new_attr_p->attr.srtp_context.master_key,
-              SDP_SRTP_MAX_KEY_SIZE_BYTES);
+        memcpy(new_attr_p->attr.srtp_context.master_key,
+               src_attr_p->attr.srtp_context.master_key,
+               SDP_SRTP_MAX_KEY_SIZE_BYTES);
 
-        bcopy(src_attr_p->attr.srtp_context.master_salt,
-              new_attr_p->attr.srtp_context.master_salt,
-              SDP_SRTP_MAX_SALT_SIZE_BYTES);
+        memcpy(new_attr_p->attr.srtp_context.master_salt,
+               src_attr_p->attr.srtp_context.master_salt,
+               SDP_SRTP_MAX_SALT_SIZE_BYTES);
 
 
         sstrncpy((char*)new_attr_p->attr.srtp_context.master_key_lifetime,
@@ -1147,7 +1148,7 @@ sdp_result_e sdp_copy_attr (void *src_sdp_ptr, void *dst_sdp_ptr,
  * Returns:     SDP_SUCCESS    Attributes were successfully copied.
  */
 sdp_result_e sdp_copy_all_attrs (void *src_sdp_ptr, void *dst_sdp_ptr,
-                                 u16 src_level, u16 dst_level)
+                                 uint16_t src_level, uint16_t dst_level)
 {
     int i;
     sdp_mca_t   *mca_p = NULL;
@@ -1318,13 +1319,13 @@ sdp_result_e sdp_copy_all_attrs (void *src_sdp_ptr, void *dst_sdp_ptr,
  *              cap_num     The capability number associated with the
  *                          attribute if any.  If none, should be zero.
  *              attr_type   The type of attribute to add.
- *              num_attr_inst Pointer to a u16 in which to return the
+ *              num_attr_inst Pointer to a uint16_t in which to return the
  *                          number of attributes.
  * Returns:     SDP_SUCCESS            Attribute was added successfully.
  *              SDP_INVALID_PARAMETER  Specified media line is not defined.
  */
-sdp_result_e sdp_attr_num_instances (void *sdp_ptr, u16 level, u8 cap_num,
-                                     sdp_attr_e attr_type, u16 *num_attr_inst)
+sdp_result_e sdp_attr_num_instances (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                     sdp_attr_e attr_type, uint16_t *num_attr_inst)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -1360,13 +1361,13 @@ sdp_result_e sdp_attr_num_instances (void *sdp_ptr, u16 level, u8 cap_num,
  *              level       The level to check for the attribute.
  *              cap_num     The capability number associated with the
  *                          attribute if any.  If none, should be zero.
- *              num_attrs   Pointer to a u16 in which to return the
+ *              num_attrs   Pointer to a uint16_t in which to return the
  *                          number of attributes.
  * Returns:     SDP_SUCCESS            Attribute was added successfully.
  *              SDP_INVALID_PARAMETER  Specified media line is not defined.
  */
-sdp_result_e sdp_get_total_attrs (void *sdp_ptr, u16 level, u8 cap_num,
-                                  u16 *num_attrs)
+sdp_result_e sdp_get_total_attrs (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                  uint16_t *num_attrs)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -1408,12 +1409,12 @@ sdp_result_e sdp_get_total_attrs (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS            Attribute was added successfully.
  *              SDP_INVALID_PARAMETER  Specified media line is not defined.
  */
-sdp_result_e sdp_get_attr_type (void *sdp_ptr, u16 level, u8 cap_num,
-                           u16 attr_num, sdp_attr_e *attr_type, u16 *inst_num)
+sdp_result_e sdp_get_attr_type (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                           uint16_t attr_num, sdp_attr_e *attr_type, uint16_t *inst_num)
 {
     int          i;
-    u16          attr_total_count=0;
-    u16          attr_count[SDP_MAX_ATTR_TYPES];
+    uint16_t          attr_total_count=0;
+    uint16_t          attr_count[SDP_MAX_ATTR_TYPES];
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_result_e rc;
@@ -1515,10 +1516,10 @@ void sdp_free_attr (sdp_attr_t *attr_p)
  * Returns:     SDP_SUCCESS            Attribute was deleted successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_delete_attr (void *sdp_ptr, u16 level, u8 cap_num,
-                              sdp_attr_e attr_type, u16 inst_num)
+sdp_result_e sdp_delete_attr (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                              sdp_attr_e attr_type, uint16_t inst_num)
 {
-    u16          attr_count=0;
+    uint16_t          attr_count=0;
     sdp_mca_t   *mca_p;
     sdp_mca_t   *cap_p;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -1635,7 +1636,7 @@ sdp_result_e sdp_delete_attr (void *sdp_ptr, u16 level, u8 cap_num,
  *                          attribute if any.  If none, should be zero.
  * Returns:     SDP_SUCCESS            Attributes were deleted successfully.
  */
-sdp_result_e sdp_delete_all_attrs (void *sdp_ptr, u16 level, u8 cap_num)
+sdp_result_e sdp_delete_all_attrs (void *sdp_ptr, uint16_t level, uint8_t cap_num)
 {
     sdp_mca_t   *mca_p;
     sdp_mca_t   *cap_p;
@@ -1709,7 +1710,7 @@ sdp_result_e sdp_delete_all_attrs (void *sdp_ptr, u16 level, u8 cap_num)
  *              SDP_INVALID_CAPABILITY
  *              SDP_FAILURE
  */
-sdp_result_e sdp_find_attr_list (sdp_t *sdp_p, u16 level, u8 cap_num,
+sdp_result_e sdp_find_attr_list (sdp_t *sdp_p, uint16_t level, uint8_t cap_num,
                                  sdp_attr_t **attr_p, char *fname)
 {
     sdp_mca_t   *mca_p;
@@ -1751,9 +1752,9 @@ sdp_result_e sdp_find_attr_list (sdp_t *sdp_p, u16 level, u8 cap_num,
 }
 
 /* Find fmtp inst_num with correct payload value or -1 for failure */
-int sdp_find_fmtp_inst (sdp_t *sdp_p, u16 level, u16 payload_num)
+int sdp_find_fmtp_inst (sdp_t *sdp_p, uint16_t level, uint16_t payload_num)
 {
-    u16          attr_count=0;
+    uint16_t          attr_count=0;
     sdp_mca_t   *mca_p;
     sdp_attr_t  *attr_p;
 
@@ -1790,10 +1791,10 @@ int sdp_find_fmtp_inst (sdp_t *sdp_p, u16 level, u16 payload_num)
  *                          particular type of attribute at this level).
  * Returns:     Pointer to the attribute or NULL if not found.
  */
-sdp_attr_t *sdp_find_attr (sdp_t *sdp_p, u16 level, u8 cap_num,
-                           sdp_attr_e attr_type, u16 inst_num)
+sdp_attr_t *sdp_find_attr (sdp_t *sdp_p, uint16_t level, uint8_t cap_num,
+                           sdp_attr_e attr_type, uint16_t inst_num)
 {
-    u16          attr_count=0;
+    uint16_t          attr_count=0;
     sdp_mca_t   *mca_p;
     sdp_mca_t   *cap_p;
     sdp_attr_t  *attr_p;
@@ -1859,9 +1860,9 @@ sdp_attr_t *sdp_find_attr (sdp_t *sdp_p, u16 level, u8 cap_num,
  *              cap_num     The capability number to locate.
  * Returns:     Pointer to the capability attribute or NULL if not found.
  */
-sdp_attr_t *sdp_find_capability (sdp_t *sdp_p, u16 level, u8 cap_num)
+sdp_attr_t *sdp_find_capability (sdp_t *sdp_p, uint16_t level, uint8_t cap_num)
 {
-    u8           cur_cap_num=0;
+    uint8_t           cur_cap_num=0;
     sdp_mca_t   *mca_p;
     sdp_mca_t   *cap_p;
     sdp_attr_t  *attr_p;
@@ -1919,8 +1920,8 @@ sdp_attr_t *sdp_find_capability (sdp_t *sdp_p, u16 level, u8 cap_num)
  *              inst_num    The attribute instance number to check.
  * Returns:     TRUE or FALSE.
  */
-tinybool sdp_attr_valid (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
-                         u8 cap_num, u16 inst_num)
+tinybool sdp_attr_valid (void *sdp_ptr, sdp_attr_e attr_type, uint16_t level,
+                         uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
 
@@ -1947,8 +1948,8 @@ tinybool sdp_attr_valid (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     line number, or 0 if an error
  */
-u32 sdp_attr_line_number (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
-                          u8 cap_num, u16 inst_num)
+uint32_t sdp_attr_line_number (void *sdp_ptr, sdp_attr_e attr_type, uint16_t level,
+                          uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -1983,7 +1984,7 @@ u32 sdp_attr_line_number (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
  * Returns:     Pointer to the parameter value.
  */
 const char *sdp_attr_get_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
-                                        u16 level, u8 cap_num, u16 inst_num)
+                                        uint16_t level, uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2048,8 +2049,8 @@ const char *sdp_attr_get_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e sdp_attr_set_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
-                                         u16 level, u8 cap_num,
-                                         u16 inst_num, const char *string_parm)
+                                         uint16_t level, uint8_t cap_num,
+                                         uint16_t inst_num, const char *string_parm)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2099,25 +2100,25 @@ sdp_result_e sdp_attr_set_simple_string (void *sdp_ptr, sdp_attr_e attr_type,
 /* Function:    sdp_attr_get_simple_u32
  * Description: Returns an unsigned 32-bit attribute parameter.  This
  *              routine can only be called for attributes that have just
- *              one u32 parameter.  If the given attribute is not defined,
+ *              one uint32_t parameter.  If the given attribute is not defined,
  *              zero will be returned.  There is no way for the application
  *              to determine if zero is the actual value or the attribute
  *              wasn't defined, so the application must use the
  *              sdp_attr_valid function to determine this.
- *              Attributes with a simple u32 parameter currently include:
+ *              Attributes with a simple uint32_t parameter currently include:
  *              eecid, ptime, T38FaxVersion, T38maxBitRate, T38FaxMaxBuffer,
  *              T38FaxMaxDatagram, X-sqn, TC1PayloadBytes, TC1WindowSize,
  *              TC2PayloadBytes, TC2WindowSize, rtcp.
  * Parameters:  sdp_ptr     The SDP handle returned by sdp_init_description.
- *              attr_type   The simple u32 attribute type.
+ *              attr_type   The simple uint32_t attribute type.
  *              level       The level to check for the attribute.
  *              cap_num     The capability number associated with the
  *                          attribute if any.  If none, should be zero.
  *              inst_num    The attribute instance number to check.
- * Returns:     u32 parameter value.
+ * Returns:     uint32_t parameter value.
  */
-u32 sdp_attr_get_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
-                             u8 cap_num, u16 inst_num)
+uint32_t sdp_attr_get_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2141,7 +2142,7 @@ u32 sdp_attr_get_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
         (attr_type != SDP_ATTR_RTCP) &&
         (attr_type != SDP_ATTR_FRAMERATE)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
-            CSFLogError(logTag, "%s Attribute type is not a simple u32 (%s)",
+            CSFLogError(logTag, "%s Attribute type is not a simple uint32_t (%s)",
                       sdp_p->debug_str, sdp_get_attr_name(attr_type));
         }
         sdp_p->conf_p->num_invalid_param++;
@@ -2165,23 +2166,23 @@ u32 sdp_attr_get_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
 /* Function:    sdp_attr_set_simple_u32
  * Description: Sets the value of an unsigned 32-bit attribute parameter.
  *              This routine can only be called for attributes that have just
- *              one u32 parameter.
- *              Attributes with a simple u32 parameter currently include:
+ *              one uint32_t parameter.
+ *              Attributes with a simple uint32_t parameter currently include:
  *              eecid, ptime, T38FaxVersion, T38maxBitRate, T38FaxMaxBuffer,
  *              T38FaxMaxDatagram, X-sqn, TC1PayloadBytes, TC1WindowSize,
  *              TC2PayloadBytes, TC2WindowSize, rtcp.
  * Parameters:  sdp_ptr     The SDP handle returned by sdp_init_description.
- *              attr_type   The simple u32 attribute type.
+ *              attr_type   The simple uint32_t attribute type.
  *              level       The level to check for the attribute.
  *              cap_num     The capability number associated with the
  *                          attribute if any.  If none, should be zero.
  *              inst_num    The attribute instance number to check.
- *              num_parm    New u32 parameter.
+ *              num_parm    New uint32_t parameter.
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e sdp_attr_set_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type,
-                           u16 level, u8 cap_num, u16 inst_num, u32 num_parm)
+                           uint16_t level, uint8_t cap_num, uint16_t inst_num, uint32_t num_parm)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2205,7 +2206,7 @@ sdp_result_e sdp_attr_set_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type,
         (attr_type != SDP_ATTR_RTCP) &&
         (attr_type != SDP_ATTR_FRAMERATE)) {
         if (sdp_p->debug_flag[SDP_DEBUG_ERRORS]) {
-            CSFLogError(logTag, "%s Attribute type is not a simple u32 (%s)",
+            CSFLogError(logTag, "%s Attribute type is not a simple uint32_t (%s)",
                       sdp_p->debug_str, sdp_get_attr_name(attr_type));
         }
         sdp_p->conf_p->num_invalid_param++;
@@ -2248,7 +2249,7 @@ sdp_result_e sdp_attr_set_simple_u32 (void *sdp_ptr, sdp_attr_e attr_type,
  * Returns:     Boolean value.
  */
 tinybool sdp_attr_get_simple_boolean (void *sdp_ptr, sdp_attr_e attr_type,
-                                      u16 level, u8 cap_num, u16 inst_num)
+                                      uint16_t level, uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2301,8 +2302,8 @@ tinybool sdp_attr_get_simple_boolean (void *sdp_ptr, sdp_attr_e attr_type,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e sdp_attr_set_simple_boolean (void *sdp_ptr, sdp_attr_e attr_type,
-                                          u16 level, u8 cap_num,
-                                          u16 inst_num, u32 bool_parm)
+                                          uint16_t level, uint8_t cap_num,
+                                          uint16_t inst_num, uint32_t bool_parm)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2352,7 +2353,7 @@ sdp_result_e sdp_attr_set_simple_boolean (void *sdp_ptr, sdp_attr_e attr_type,
  * OR null if the attribute does not exist.
  */
 const char*
-sdp_attr_get_maxprate (void *sdp_ptr, u16 level, u16 inst_num)
+sdp_attr_get_maxprate (void *sdp_ptr, uint16_t level, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2408,7 +2409,7 @@ sdp_attr_get_maxprate (void *sdp_ptr, u16 level, u16 inst_num)
  * SDP_SUCCESS - If we are successfully able to set the maxprate attribute.
  */
 sdp_result_e
-sdp_attr_set_maxprate (void *sdp_ptr, u16 level, u16 inst_num,
+sdp_attr_set_maxprate (void *sdp_ptr, uint16_t level, uint16_t inst_num,
                        const char *string_parm)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -2453,8 +2454,8 @@ sdp_attr_set_maxprate (void *sdp_ptr, u16 level, u16 inst_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Ratemgmt value.
  */
-sdp_t38_ratemgmt_e sdp_attr_get_t38ratemgmt (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num)
+sdp_t38_ratemgmt_e sdp_attr_get_t38ratemgmt (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2489,8 +2490,8 @@ sdp_t38_ratemgmt_e sdp_attr_get_t38ratemgmt (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_t38ratemgmt (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_t38ratemgmt (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        sdp_t38_ratemgmt_e t38ratemgmt)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -2527,8 +2528,8 @@ sdp_result_e sdp_attr_set_t38ratemgmt (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     UDP EC value.
  */
-sdp_t38_udpec_e sdp_attr_get_t38udpec (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num)
+sdp_t38_udpec_e sdp_attr_get_t38udpec (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2563,8 +2564,8 @@ sdp_t38_udpec_e sdp_attr_get_t38udpec (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_t38udpec (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_t38udpec (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num,
                                     sdp_t38_udpec_e t38udpec)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -2602,8 +2603,8 @@ sdp_result_e sdp_attr_set_t38udpec (void *sdp_ptr, u16 level,
  *                          attribute if any.  If none, should be zero.
  * Returns:     An SDP direction enum value.
  */
-sdp_direction_e sdp_get_media_direction (void *sdp_ptr, u16 level,
-                                         u8 cap_num)
+sdp_direction_e sdp_get_media_direction (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_mca_t   *mca_p;
@@ -2663,7 +2664,7 @@ sdp_direction_e sdp_get_media_direction (void *sdp_ptr, u16 level,
  * It can also be used to delete all attributes when the client wants to
  * advertise the default direction, i.e. a=sendrecv.
  */
-sdp_result_e sdp_delete_all_media_direction_attrs (void *sdp_ptr, u16 level)
+sdp_result_e sdp_delete_all_media_direction_attrs (void *sdp_ptr, uint16_t level)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_mca_t   *mca_p;
@@ -2767,8 +2768,8 @@ tinybool sdp_validate_qos_attr (sdp_attr_e qos_attr)
  *              inst_num    The attribute instance number to check.
  * Returns:     Qos strength value.
  */
-sdp_qos_strength_e sdp_attr_get_qos_strength (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+sdp_qos_strength_e sdp_attr_get_qos_strength (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2820,8 +2821,8 @@ sdp_qos_strength_e sdp_attr_get_qos_strength (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Qos direction value.
  */
-sdp_qos_dir_e sdp_attr_get_qos_direction (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+sdp_qos_dir_e sdp_attr_get_qos_direction (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2877,8 +2878,8 @@ sdp_qos_dir_e sdp_attr_get_qos_direction (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Qos direction value.
  */
-sdp_qos_status_types_e sdp_attr_get_qos_status_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+sdp_qos_status_types_e sdp_attr_get_qos_status_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2931,8 +2932,8 @@ sdp_qos_status_types_e sdp_attr_get_qos_status_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Boolean value.
  */
-tinybool sdp_attr_get_qos_confirm (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+tinybool sdp_attr_get_qos_confirm (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -2975,8 +2976,8 @@ tinybool sdp_attr_get_qos_confirm (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_qos_strength (void *sdp_ptr, u16 level, u8 cap_num,
-                                        sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_qos_strength (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                        sdp_attr_e qos_attr, uint16_t inst_num,
                                         sdp_qos_strength_e strength)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3031,8 +3032,8 @@ sdp_result_e sdp_attr_set_qos_strength (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Curr type value.
  */
-sdp_curr_type_e sdp_attr_get_curr_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+sdp_curr_type_e sdp_attr_get_curr_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3069,8 +3070,8 @@ sdp_curr_type_e sdp_attr_get_curr_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     DES type value.
  */
-sdp_des_type_e sdp_attr_get_des_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+sdp_des_type_e sdp_attr_get_des_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3107,8 +3108,8 @@ sdp_des_type_e sdp_attr_get_des_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     CONF type value.
  */
-sdp_conf_type_e sdp_attr_get_conf_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num)
+sdp_conf_type_e sdp_attr_get_conf_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3146,8 +3147,8 @@ sdp_conf_type_e sdp_attr_get_conf_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_curr_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_curr_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num,
                                 sdp_curr_type_e curr_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3194,8 +3195,8 @@ sdp_result_e sdp_attr_set_curr_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_des_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_des_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num,
                                 sdp_des_type_e des_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3243,8 +3244,8 @@ sdp_result_e sdp_attr_set_des_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_conf_type (void *sdp_ptr, u16 level,
-                                u8 cap_num, sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_conf_type (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, sdp_attr_e qos_attr, uint16_t inst_num,
                                 sdp_conf_type_e conf_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3289,8 +3290,8 @@ sdp_result_e sdp_attr_set_conf_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_qos_direction (void *sdp_ptr, u16 level, u8 cap_num,
-                                         sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_qos_direction (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                         sdp_attr_e qos_attr, uint16_t inst_num,
                                          sdp_qos_dir_e direction)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3350,8 +3351,8 @@ sdp_result_e sdp_attr_set_qos_direction (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_qos_status_type (void *sdp_ptr, u16 level, u8 cap_num,
-                                         sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_qos_status_type (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                         sdp_attr_e qos_attr, uint16_t inst_num,
                                          sdp_qos_status_types_e status_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3410,8 +3411,8 @@ sdp_result_e sdp_attr_set_qos_status_type (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_qos_confirm (void *sdp_ptr, u16 level, u8 cap_num,
-                                       sdp_attr_e qos_attr, u16 inst_num,
+sdp_result_e sdp_attr_set_qos_confirm (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                       sdp_attr_e qos_attr, uint16_t inst_num,
                                        tinybool qos_confirm)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3456,8 +3457,8 @@ sdp_result_e sdp_attr_set_qos_confirm (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Nettype value.
  */
-sdp_nettype_e sdp_attr_get_subnet_nettype (void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num)
+sdp_nettype_e sdp_attr_get_subnet_nettype (void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3491,8 +3492,8 @@ sdp_nettype_e sdp_attr_get_subnet_nettype (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Addrtype value.
  */
-sdp_addrtype_e sdp_attr_get_subnet_addrtype (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num)
+sdp_addrtype_e sdp_attr_get_subnet_addrtype (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3528,8 +3529,8 @@ sdp_addrtype_e sdp_attr_get_subnet_addrtype (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Pointer to address or NULL.
  */
-const char *sdp_attr_get_subnet_addr (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num)
+const char *sdp_attr_get_subnet_addr (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3565,8 +3566,8 @@ const char *sdp_attr_get_subnet_addr (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Prefix value or SDP_INVALID_PARAM.
  */
-int32 sdp_attr_get_subnet_prefix (void *sdp_ptr, u16 level,
-                                  u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_subnet_prefix (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3601,8 +3602,8 @@ int32 sdp_attr_get_subnet_prefix (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_subnet_nettype (void *sdp_ptr, u16 level,
-                                          u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_subnet_nettype (void *sdp_ptr, uint16_t level,
+                                          uint8_t cap_num, uint16_t inst_num,
                                           sdp_nettype_e nettype)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3639,8 +3640,8 @@ sdp_result_e sdp_attr_set_subnet_nettype (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_subnet_addrtype (void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_subnet_addrtype (void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num,
                                            sdp_addrtype_e sdp_addrtype)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3679,8 +3680,8 @@ sdp_result_e sdp_attr_set_subnet_addrtype (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_subnet_addr (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_subnet_addr (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        const char *addr)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -3718,9 +3719,9 @@ sdp_result_e sdp_attr_set_subnet_addr (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_subnet_prefix (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num,
-                                         int32 prefix)
+sdp_result_e sdp_attr_set_subnet_prefix (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num,
+                                         int32_t prefix)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3758,13 +3759,13 @@ sdp_result_e sdp_attr_set_subnet_prefix (void *sdp_ptr, u16 level,
  *                          found is returned via this param.
  * Returns:     TRUE or FALSE.
  */
-tinybool sdp_attr_rtpmap_payload_valid (void *sdp_ptr, u16 level, u8 cap_num,
-                                        u16 *inst_num, u16 payload_type)
+tinybool sdp_attr_rtpmap_payload_valid (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                        uint16_t *inst_num, uint16_t payload_type)
 {
-    u16          i;
+    uint16_t          i;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
-    u16          num_instances;
+    uint16_t          num_instances;
 
     *inst_num = 0;
 
@@ -3800,8 +3801,8 @@ tinybool sdp_attr_rtpmap_payload_valid (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Payload type value.
  */
-u16 sdp_attr_get_rtpmap_payload_type (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_rtpmap_payload_type (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3836,8 +3837,8 @@ u16 sdp_attr_get_rtpmap_payload_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Codec value or SDP_CODEC_INVALID.
  */
-const char *sdp_attr_get_rtpmap_encname (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num)
+const char *sdp_attr_get_rtpmap_encname (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3870,8 +3871,8 @@ const char *sdp_attr_get_rtpmap_encname (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Clockrate value.
  */
-u32 sdp_attr_get_rtpmap_clockrate (void *sdp_ptr, u16 level,
-                                   u8 cap_num, u16 inst_num)
+uint32_t sdp_attr_get_rtpmap_clockrate (void *sdp_ptr, uint16_t level,
+                                   uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3904,8 +3905,8 @@ u32 sdp_attr_get_rtpmap_clockrate (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Number of channels param or zero.
  */
-u16 sdp_attr_get_rtpmap_num_chan (void *sdp_ptr, u16 level,
-                                  u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_rtpmap_num_chan (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3939,9 +3940,9 @@ u16 sdp_attr_get_rtpmap_num_chan (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_rtpmap_payload_type (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
-                                               u16 payload_num)
+sdp_result_e sdp_attr_set_rtpmap_payload_type (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
+                                               uint16_t payload_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -3976,8 +3977,8 @@ sdp_result_e sdp_attr_set_rtpmap_payload_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_rtpmap_encname (void *sdp_ptr, u16 level, u8 cap_num,
-                                          u16 inst_num, const char *encname)
+sdp_result_e sdp_attr_set_rtpmap_encname (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                          uint16_t inst_num, const char *encname)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4018,8 +4019,8 @@ sdp_result_e sdp_attr_set_rtpmap_encname (void *sdp_ptr, u16 level, u8 cap_num,
  *              SDP_INVALID_PARAMETER Specified attribute is not defined.
  */
 
-sdp_result_e sdp_attr_get_ice_attribute (void *sdp_ptr, u16 level,
-                                  u8 cap_num, sdp_attr_e sdp_attr, u16 inst_num,
+sdp_result_e sdp_attr_get_ice_attribute (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, sdp_attr_e sdp_attr, uint16_t inst_num,
                                   char **out)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -4057,8 +4058,8 @@ sdp_result_e sdp_attr_get_ice_attribute (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_ice_attribute(void *sdp_ptr, u16 level,
-                              u8 cap_num, sdp_attr_e sdp_attr, u16 inst_num, const char *ice_attrib)
+sdp_result_e sdp_attr_set_ice_attribute(void *sdp_ptr, uint16_t level,
+                              uint8_t cap_num, sdp_attr_e sdp_attr, uint16_t inst_num, const char *ice_attrib)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4098,8 +4099,8 @@ sdp_result_e sdp_attr_set_ice_attribute(void *sdp_ptr, u16 level,
  *              Boolean value.
  */
 
-tinybool sdp_attr_is_present (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
-                              u8 cap_num)
+tinybool sdp_attr_is_present (void *sdp_ptr, sdp_attr_e attr_type, uint16_t level,
+                              uint8_t cap_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4136,8 +4137,8 @@ tinybool sdp_attr_is_present (void *sdp_ptr, sdp_attr_e attr_type, u16 level,
  *              SDP_INVALID_SDP_PTR   SDP pointer invalid
  *              SDP_INVALID_PARAMETER Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_get_rtcp_mux_attribute (void *sdp_ptr, u16 level,
-                                  u8 cap_num, sdp_attr_e sdp_attr, u16 inst_num,
+sdp_result_e sdp_attr_get_rtcp_mux_attribute (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, sdp_attr_e sdp_attr, uint16_t inst_num,
                                   tinybool *rtcp_mux)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -4175,8 +4176,8 @@ sdp_result_e sdp_attr_get_rtcp_mux_attribute (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_rtcp_mux_attribute(void *sdp_ptr, u16 level,
-                              u8 cap_num, sdp_attr_e sdp_attr, u16 inst_num, const tinybool rtcp_mux)
+sdp_result_e sdp_attr_set_rtcp_mux_attribute(void *sdp_ptr, uint16_t level,
+                              uint8_t cap_num, sdp_attr_e sdp_attr, uint16_t inst_num, const tinybool rtcp_mux)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4214,8 +4215,8 @@ sdp_result_e sdp_attr_set_rtcp_mux_attribute(void *sdp_ptr, u16 level,
  *              SDP_INVALID_SDP_PTR   SDP pointer invalid
  *              SDP_INVALID_PARAMETER Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_get_setup_attribute (void *sdp_ptr, u16 level,
-    u8 cap_num, u16 inst_num, sdp_setup_type_e *setup_type)
+sdp_result_e sdp_attr_get_setup_attribute (void *sdp_ptr, uint16_t level,
+    uint8_t cap_num, uint16_t inst_num, sdp_setup_type_e *setup_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4253,8 +4254,8 @@ sdp_result_e sdp_attr_get_setup_attribute (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_setup_attribute(void *sdp_ptr, u16 level,
-    u8 cap_num, u16 inst_num, sdp_setup_type_e setup_type)
+sdp_attr_set_setup_attribute(void *sdp_ptr, uint16_t level,
+    uint8_t cap_num, uint16_t inst_num, sdp_setup_type_e setup_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4291,8 +4292,8 @@ sdp_attr_set_setup_attribute(void *sdp_ptr, u16 level,
  *              SDP_INVALID_SDP_PTR   SDP pointer invalid
  *              SDP_INVALID_PARAMETER Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_get_connection_attribute (void *sdp_ptr, u16 level,
-    u8 cap_num, u16 inst_num, sdp_connection_type_e *connection_type)
+sdp_result_e sdp_attr_get_connection_attribute (void *sdp_ptr, uint16_t level,
+    uint8_t cap_num, uint16_t inst_num, sdp_connection_type_e *connection_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4331,8 +4332,8 @@ sdp_result_e sdp_attr_get_connection_attribute (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_connection_attribute(void *sdp_ptr, u16 level,
-    u8 cap_num, u16 inst_num, sdp_connection_type_e connection_type)
+sdp_attr_set_connection_attribute(void *sdp_ptr, uint16_t level,
+    uint8_t cap_num, uint16_t inst_num, sdp_connection_type_e connection_type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4370,8 +4371,8 @@ sdp_attr_set_connection_attribute(void *sdp_ptr, u16 level,
  *              SDP_INVALID_SDP_PTR   SDP pointer invalid
  *              SDP_INVALID_PARAMETER Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_get_dtls_fingerprint_attribute (void *sdp_ptr, u16 level,
-                                  u8 cap_num, sdp_attr_e sdp_attr, u16 inst_num,
+sdp_result_e sdp_attr_get_dtls_fingerprint_attribute (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, sdp_attr_e sdp_attr, uint16_t inst_num,
                                   char **out)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -4409,8 +4410,8 @@ sdp_result_e sdp_attr_get_dtls_fingerprint_attribute (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_dtls_fingerprint_attribute(void *sdp_ptr, u16 level,
-                              u8 cap_num, sdp_attr_e sdp_attr, u16 inst_num, const char *dtls_fingerprint)
+sdp_result_e sdp_attr_set_dtls_fingerprint_attribute(void *sdp_ptr, uint16_t level,
+                              uint8_t cap_num, sdp_attr_e sdp_attr, uint16_t inst_num, const char *dtls_fingerprint)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4449,9 +4450,9 @@ sdp_result_e sdp_attr_set_dtls_fingerprint_attribute(void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_rtpmap_clockrate (void *sdp_ptr, u16 level,
-                                            u8 cap_num, u16 inst_num,
-                                            u32 clockrate)
+sdp_result_e sdp_attr_set_rtpmap_clockrate (void *sdp_ptr, uint16_t level,
+                                            uint8_t cap_num, uint16_t inst_num,
+                                            uint32_t clockrate)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4486,9 +4487,9 @@ sdp_result_e sdp_attr_set_rtpmap_clockrate (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_rtpmap_num_chan (void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num,
-                                           u16 num_chan)
+sdp_result_e sdp_attr_set_rtpmap_num_chan (void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num,
+                                           uint16_t num_chan)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4525,13 +4526,13 @@ sdp_result_e sdp_attr_set_rtpmap_num_chan (void *sdp_ptr, u16 level,
  *                          found is returned via this param.
  * Returns:     TRUE or FALSE.
  */
-tinybool sdp_attr_sprtmap_payload_valid (void *sdp_ptr, u16 level, u8 cap_num,
-                                        u16 *inst_num, u16 payload_type)
+tinybool sdp_attr_sprtmap_payload_valid (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                        uint16_t *inst_num, uint16_t payload_type)
 {
-    u16          i;
+    uint16_t          i;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
-    u16          num_instances;
+    uint16_t          num_instances;
 
     *inst_num = 0;
 
@@ -4567,8 +4568,8 @@ tinybool sdp_attr_sprtmap_payload_valid (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Payload type value.
  */
-u16 sdp_attr_get_sprtmap_payload_type (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_sprtmap_payload_type (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4603,8 +4604,8 @@ u16 sdp_attr_get_sprtmap_payload_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Codec value or SDP_CODEC_INVALID.
  */
-const char *sdp_attr_get_sprtmap_encname (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num)
+const char *sdp_attr_get_sprtmap_encname (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4637,8 +4638,8 @@ const char *sdp_attr_get_sprtmap_encname (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Clockrate value.
  */
-u32 sdp_attr_get_sprtmap_clockrate (void *sdp_ptr, u16 level,
-                                   u8 cap_num, u16 inst_num)
+uint32_t sdp_attr_get_sprtmap_clockrate (void *sdp_ptr, uint16_t level,
+                                   uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4671,8 +4672,8 @@ u32 sdp_attr_get_sprtmap_clockrate (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Number of channels param or zero.
  */
-u16 sdp_attr_get_sprtmap_num_chan (void *sdp_ptr, u16 level,
-                                  u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_sprtmap_num_chan (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4706,9 +4707,9 @@ u16 sdp_attr_get_sprtmap_num_chan (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_sprtmap_payload_type (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
-                                               u16 payload_num)
+sdp_result_e sdp_attr_set_sprtmap_payload_type (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
+                                               uint16_t payload_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4743,8 +4744,8 @@ sdp_result_e sdp_attr_set_sprtmap_payload_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_sprtmap_encname (void *sdp_ptr, u16 level, u8 cap_num,
-                                          u16 inst_num, const char *encname)
+sdp_result_e sdp_attr_set_sprtmap_encname (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                          uint16_t inst_num, const char *encname)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4780,9 +4781,9 @@ sdp_result_e sdp_attr_set_sprtmap_encname (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_sprtmap_clockrate (void *sdp_ptr, u16 level,
-                                            u8 cap_num, u16 inst_num,
-                                            u16 clockrate)
+sdp_result_e sdp_attr_set_sprtmap_clockrate (void *sdp_ptr, uint16_t level,
+                                            uint8_t cap_num, uint16_t inst_num,
+                                            uint16_t clockrate)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4817,9 +4818,9 @@ sdp_result_e sdp_attr_set_sprtmap_clockrate (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_sprtmap_num_chan (void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num,
-                                           u16 num_chan)
+sdp_result_e sdp_attr_set_sprtmap_num_chan (void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num,
+                                           uint16_t num_chan)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4863,13 +4864,13 @@ sdp_result_e sdp_attr_set_sprtmap_num_chan (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     TRUE or FALSE.
  */
-tinybool sdp_attr_fmtp_payload_valid (void *sdp_ptr, u16 level, u8 cap_num,
-                                      u16 *inst_num, u16 payload_type)
+tinybool sdp_attr_fmtp_payload_valid (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                      uint16_t *inst_num, uint16_t payload_type)
 {
-    u16          i;
+    uint16_t          i;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
-    u16          num_instances;
+    uint16_t          num_instances;
 
     if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
         return (FALSE);
@@ -4903,8 +4904,8 @@ tinybool sdp_attr_fmtp_payload_valid (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Payload type value.
  */
-u16 sdp_attr_get_fmtp_payload_type (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_fmtp_payload_type (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -4944,14 +4945,14 @@ u16 sdp_attr_get_fmtp_payload_type (void *sdp_ptr, u16 level,
  *              high_val    High value of the range.
  * Returns:     SDP_FULL_MATCH, SDP_PARTIAL_MATCH, SDP_NO_MATCH
  */
-sdp_ne_res_e sdp_attr_fmtp_is_range_set (void *sdp_ptr, u16 level, u8 cap_num,
-                                         u16 inst_num, u8 low_val, u8 high_val)
+sdp_ne_res_e sdp_attr_fmtp_is_range_set (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                         uint16_t inst_num, uint8_t low_val, uint8_t high_val)
 {
-    u16          i;
-    u32          mapword;
-    u32          bmap;
-    u32          num_vals = 0;
-    u32          num_vals_set = 0;
+    uint16_t          i;
+    uint32_t          mapword;
+    uint32_t          bmap;
+    uint32_t          num_vals = 0;
+    uint32_t          num_vals_set = 0;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_fmtp_t  *fmtp_p;
@@ -5008,11 +5009,11 @@ sdp_ne_res_e sdp_attr_fmtp_is_range_set (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     TRUE, FALSE
  */
 tinybool
-sdp_attr_fmtp_valid(void *sdp_ptr, u16 level, u8 cap_num,
-                    u16 inst_num, u16 appl_maxval, u32* evt_array)
+sdp_attr_fmtp_valid(void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                    uint16_t inst_num, uint16_t appl_maxval, uint32_t* evt_array)
 {
-    u16          i;
-    u32          mapword;
+    uint16_t          i;
+    uint32_t          mapword;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_fmtp_t  *fmtp_p;
@@ -5062,9 +5063,9 @@ sdp_attr_fmtp_valid(void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_payload_type (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num,
-                                             u16 payload_num)
+sdp_result_e sdp_attr_set_fmtp_payload_type (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num,
+                                             uint16_t payload_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5097,8 +5098,8 @@ sdp_result_e sdp_attr_set_fmtp_payload_type (void *sdp_ptr, u16 level,
  *              bmap        The 8 word data array holding the bitmap
  * Returns:     SDP_SUCCESS
  */
-sdp_result_e sdp_attr_set_fmtp_bitmap(void *sdp_ptr, u16 level,
-                           u8 cap_num, u16 inst_num, u32 *bmap, u32 maxval)
+sdp_result_e sdp_attr_set_fmtp_bitmap(void *sdp_ptr, uint16_t level,
+                           uint8_t cap_num, uint16_t inst_num, uint32_t *bmap, uint32_t maxval)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5120,7 +5121,7 @@ sdp_result_e sdp_attr_set_fmtp_bitmap(void *sdp_ptr, u16 level,
 
     fmtp_p = &(attr_p->attr.fmtp);
     fmtp_p->maxval = maxval;
-    memcpy(fmtp_p->bmap, bmap, SDP_NE_NUM_BMAP_WORDS * sizeof(u32) );
+    memcpy(fmtp_p->bmap, bmap, SDP_NE_NUM_BMAP_WORDS * sizeof(uint32_t) );
 
     return (SDP_SUCCESS);
 }
@@ -5135,8 +5136,8 @@ sdp_result_e sdp_attr_set_fmtp_bitmap(void *sdp_ptr, u16 level,
  *              bmap        The 8 word data array holding the bitmap
  * Returns:     SDP_SUCCESS
  */
-sdp_result_e sdp_attr_get_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
-                                      u16 inst_num, u32 *bmap)
+sdp_result_e sdp_attr_get_fmtp_range (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                      uint16_t inst_num, uint32_t *bmap)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5157,7 +5158,7 @@ sdp_result_e sdp_attr_get_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
     }
 
     fmtp_p = &(attr_p->attr.fmtp);
-    memcpy(bmap, fmtp_p->bmap, SDP_NE_NUM_BMAP_WORDS * sizeof(u32) );
+    memcpy(bmap, fmtp_p->bmap, SDP_NE_NUM_BMAP_WORDS * sizeof(uint32_t) );
 
     return (SDP_SUCCESS);
 }
@@ -5174,12 +5175,12 @@ sdp_result_e sdp_attr_get_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
  *              high_val    The high value of the range.  May be == low.
  * Returns:     SDP_SUCCESS
  */
-sdp_result_e sdp_attr_set_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
-                                      u16 inst_num, u8 low_val, u8 high_val)
+sdp_result_e sdp_attr_set_fmtp_range (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                      uint16_t inst_num, uint8_t low_val, uint8_t high_val)
 {
-    u16          i;
-    u32          mapword;
-    u32          bmap;
+    uint16_t          i;
+    uint32_t          mapword;
+    uint32_t          bmap;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_fmtp_t  *fmtp_p;
@@ -5223,12 +5224,12 @@ sdp_result_e sdp_attr_set_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
  *              high_val    The high value of the range.  May be == low.
  * Returns:     SDP_SUCCESS
  */
-sdp_result_e sdp_attr_clear_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
-                                        u16 inst_num, u8 low_val, u8 high_val)
+sdp_result_e sdp_attr_clear_fmtp_range (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                        uint16_t inst_num, uint8_t low_val, uint8_t high_val)
 {
-    u16          i;
-    u32          mapword;
-    u32          bmap;
+    uint16_t          i;
+    uint32_t          mapword;
+    uint32_t          bmap;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_fmtp_t  *fmtp_p;
@@ -5276,13 +5277,13 @@ sdp_result_e sdp_attr_clear_fmtp_range (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_FULL_MATCH, SDP_PARTIAL_MATCH, SDP_NO_MATCH.
  */
 sdp_ne_res_e sdp_attr_compare_fmtp_ranges (void *src_sdp_ptr,void *dst_sdp_ptr,
-                                           u16 src_level, u16 dst_level,
-                                           u8 src_cap_num, u8 dst_cap_num,
-                                           u16 src_inst_num, u16 dst_inst_num)
+                                           uint16_t src_level, uint16_t dst_level,
+                                           uint8_t src_cap_num, uint8_t dst_cap_num,
+                                           uint16_t src_inst_num, uint16_t dst_inst_num)
 {
-    u16          i,j;
-    u32          bmap;
-    u32          num_vals_match = 0;
+    uint16_t          i,j;
+    uint32_t          bmap;
+    uint32_t          num_vals_match = 0;
     sdp_t       *src_sdp_p = (sdp_t *)src_sdp_ptr;
     sdp_t       *dst_sdp_p = (sdp_t *)dst_sdp_ptr;
     sdp_attr_t  *src_attr_p;
@@ -5344,11 +5345,11 @@ sdp_ne_res_e sdp_attr_compare_fmtp_ranges (void *src_sdp_ptr,void *dst_sdp_ptr,
  * Returns:     SDP_SUCCESS
  */
 sdp_result_e sdp_attr_copy_fmtp_ranges (void *src_sdp_ptr, void *dst_sdp_ptr,
-                                        u16 src_level, u16 dst_level,
-                                        u8 src_cap_num, u8 dst_cap_num,
-                                        u16 src_inst_num, u16 dst_inst_num)
+                                        uint16_t src_level, uint16_t dst_level,
+                                        uint8_t src_cap_num, uint8_t dst_cap_num,
+                                        uint16_t src_inst_num, uint16_t dst_inst_num)
 {
-    u16          i;
+    uint16_t          i;
     sdp_t       *src_sdp_p = (sdp_t *)src_sdp_ptr;
     sdp_t       *dst_sdp_p = (sdp_t *)dst_sdp_ptr;
     sdp_attr_t  *src_attr_p;
@@ -5395,8 +5396,8 @@ sdp_result_e sdp_attr_copy_fmtp_ranges (void *src_sdp_ptr, void *dst_sdp_ptr,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_annexa (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_annexa (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        tinybool annexa)
 {
 
@@ -5438,8 +5439,8 @@ sdp_result_e sdp_attr_set_fmtp_annexa (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_annexb  (void *sdp_ptr, u16 level,
-                                        u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_annexb  (void *sdp_ptr, uint16_t level,
+                                        uint8_t cap_num, uint16_t inst_num,
                                         tinybool annexb)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -5477,10 +5478,10 @@ sdp_result_e sdp_attr_set_fmtp_annexb  (void *sdp_ptr, u16 level,
  *              payload_type payload type.
  * Returns:     mode value
  */
-u32 sdp_attr_get_fmtp_mode_for_payload_type (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u32 payload_type)
+uint32_t sdp_attr_get_fmtp_mode_for_payload_type (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint32_t payload_type)
 {
-    u16          num_a_lines = 0;
+    uint16_t          num_a_lines = 0;
     int          i;
     sdp_t       *sdp_p = sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5496,7 +5497,7 @@ u32 sdp_attr_get_fmtp_mode_for_payload_type (void *sdp_ptr, u16 level,
     for (i = 0; i < num_a_lines; i++) {
         attr_p = sdp_find_attr(sdp_p, level, cap_num, SDP_ATTR_FMTP, (uint16_t) (i + 1));
         if ((attr_p != NULL) &&
-            (attr_p->attr.fmtp.payload_num == (u16)payload_type)) {
+            (attr_p->attr.fmtp.payload_num == (uint16_t)payload_type)) {
             if (attr_p->attr.fmtp.fmtp_format == SDP_FMTP_MODE) {
                 return attr_p->attr.fmtp.mode;
             }
@@ -5517,9 +5518,9 @@ u32 sdp_attr_get_fmtp_mode_for_payload_type (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_mode  (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num,
-                                      u32 mode)
+sdp_result_e sdp_attr_set_fmtp_mode  (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num,
+                                      uint32_t mode)
 {
     sdp_t       *sdp_p = sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5557,9 +5558,9 @@ sdp_result_e sdp_attr_set_fmtp_mode  (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_bitrate_type  (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num,
-                                             u32 bitrate)
+sdp_result_e sdp_attr_set_fmtp_bitrate_type  (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num,
+                                             uint32_t bitrate)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5601,9 +5602,9 @@ sdp_result_e sdp_attr_set_fmtp_bitrate_type  (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_cif  (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num,
-                                     u16 cif)
+sdp_result_e sdp_attr_set_fmtp_cif  (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num,
+                                     uint16_t cif)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5645,9 +5646,9 @@ sdp_result_e sdp_attr_set_fmtp_cif  (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS       Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_qcif  (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num,
-                                     u16 qcif)
+sdp_result_e sdp_attr_set_fmtp_qcif  (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num,
+                                     uint16_t qcif)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5688,9 +5689,9 @@ sdp_result_e sdp_attr_set_fmtp_qcif  (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS       Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_sqcif  (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u16 sqcif)
+sdp_result_e sdp_attr_set_fmtp_sqcif  (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint16_t sqcif)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5733,9 +5734,9 @@ sdp_result_e sdp_attr_set_fmtp_sqcif  (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS       Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_cif4  (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u16 cif4)
+sdp_result_e sdp_attr_set_fmtp_cif4  (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint16_t cif4)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5777,9 +5778,9 @@ sdp_result_e sdp_attr_set_fmtp_cif4  (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS       Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_fmtp_cif16  (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u16 cif16)
+sdp_result_e sdp_attr_set_fmtp_cif16  (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint16_t cif16)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5823,9 +5824,9 @@ sdp_result_e sdp_attr_set_fmtp_cif16  (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
 */
 
-sdp_result_e sdp_attr_set_fmtp_maxbr  (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u16 maxbr)
+sdp_result_e sdp_attr_set_fmtp_maxbr  (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint16_t maxbr)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5868,9 +5869,9 @@ sdp_result_e sdp_attr_set_fmtp_maxbr  (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
 */
 
-sdp_result_e sdp_attr_set_fmtp_custom  (void *sdp_ptr, u16 level,
-                                        u8 cap_num, u16 inst_num,
-                                        u16 custom_x, u16 custom_y, u16 custom_mpi)
+sdp_result_e sdp_attr_set_fmtp_custom  (void *sdp_ptr, uint16_t level,
+                                        uint8_t cap_num, uint16_t inst_num,
+                                        uint16_t custom_x, uint16_t custom_y, uint16_t custom_mpi)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5915,9 +5916,9 @@ sdp_result_e sdp_attr_set_fmtp_custom  (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
 */
 
-sdp_result_e sdp_attr_set_fmtp_par  (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num,
-                                     u16 par_width, u16 par_height)
+sdp_result_e sdp_attr_set_fmtp_par  (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num,
+                                     uint16_t par_width, uint16_t par_height)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -5961,9 +5962,9 @@ sdp_result_e sdp_attr_set_fmtp_par  (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
 */
 
-sdp_result_e sdp_attr_set_fmtp_cpcf (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num,
-                                     u16 cpcf)
+sdp_result_e sdp_attr_set_fmtp_cpcf (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num,
+                                     uint16_t cpcf)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6006,9 +6007,9 @@ sdp_result_e sdp_attr_set_fmtp_cpcf (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
 */
 
-sdp_result_e sdp_attr_set_fmtp_bpp (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num,
-                                    u16 bpp)
+sdp_result_e sdp_attr_set_fmtp_bpp (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num,
+                                    uint16_t bpp)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6051,8 +6052,8 @@ sdp_result_e sdp_attr_set_fmtp_bpp (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 
-sdp_result_e sdp_attr_set_fmtp_hrd (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num, u16 hrd)
+sdp_result_e sdp_attr_set_fmtp_hrd (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num, uint16_t hrd)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6082,10 +6083,10 @@ sdp_result_e sdp_attr_set_fmtp_hrd (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_h263_num_params (void *sdp_ptr, int16 level,
-                                                u8 cap_num, u16 inst_num,
-                                                int16 profile,
-                                                u16 h263_level,
+sdp_result_e sdp_attr_set_fmtp_h263_num_params (void *sdp_ptr, int16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
+                                                int16_t profile,
+                                                uint16_t h263_level,
                                                 tinybool interlace)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6129,8 +6130,8 @@ sdp_result_e sdp_attr_set_fmtp_h263_num_params (void *sdp_ptr, int16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_profile_level_id (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_profile_level_id (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
                                                 const char *profile_level_id)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6161,8 +6162,8 @@ sdp_result_e sdp_attr_set_fmtp_profile_level_id (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_parameter_sets (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_parameter_sets (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
                                                const char *parameter_sets)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6192,9 +6193,9 @@ sdp_result_e sdp_attr_set_fmtp_parameter_sets (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_pack_mode (void *sdp_ptr, u16 level,
-                                          u8 cap_num, u16 inst_num,
-                                          u16 pack_mode)
+sdp_result_e sdp_attr_set_fmtp_pack_mode (void *sdp_ptr, uint16_t level,
+                                          uint8_t cap_num, uint16_t inst_num,
+                                          uint16_t pack_mode)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6225,9 +6226,9 @@ sdp_result_e sdp_attr_set_fmtp_pack_mode (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_level_asymmetry_allowed (void *sdp_ptr, u16 level,
-                                          u8 cap_num, u16 inst_num,
-                                          u16 asym_allowed)
+sdp_result_e sdp_attr_set_fmtp_level_asymmetry_allowed (void *sdp_ptr, uint16_t level,
+                                          uint8_t cap_num, uint16_t inst_num,
+                                          uint16_t asym_allowed)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6254,9 +6255,9 @@ sdp_result_e sdp_attr_set_fmtp_level_asymmetry_allowed (void *sdp_ptr, u16 level
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_deint_buf_req (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
-                                                u32 deint_buf_req)
+sdp_result_e sdp_attr_set_fmtp_deint_buf_req (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
+                                                uint32_t deint_buf_req)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6285,9 +6286,9 @@ sdp_result_e sdp_attr_set_fmtp_deint_buf_req (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_init_buf_time (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
-                                                u32 init_buf_time)
+sdp_result_e sdp_attr_set_fmtp_init_buf_time (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
+                                                uint32_t init_buf_time)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6316,9 +6317,9 @@ sdp_result_e sdp_attr_set_fmtp_init_buf_time (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_don_diff (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
-                                                u32 max_don_diff)
+sdp_result_e sdp_attr_set_fmtp_max_don_diff (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
+                                                uint32_t max_don_diff)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6346,9 +6347,9 @@ sdp_result_e sdp_attr_set_fmtp_max_don_diff (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_interleaving_depth (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
-                                                u16 interleaving_depth)
+sdp_result_e sdp_attr_set_fmtp_interleaving_depth (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
+                                                uint16_t interleaving_depth)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6376,8 +6377,8 @@ sdp_result_e sdp_attr_set_fmtp_interleaving_depth (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_redundant_pic_cap (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_redundant_pic_cap (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
                                                tinybool redundant_pic_cap)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6410,9 +6411,9 @@ sdp_result_e sdp_attr_set_fmtp_redundant_pic_cap (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_mbps (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num,
-                                         u32 max_mbps)
+sdp_result_e sdp_attr_set_fmtp_max_mbps (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num,
+                                         uint32_t max_mbps)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6443,9 +6444,9 @@ sdp_result_e sdp_attr_set_fmtp_max_mbps (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_fs (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u32 max_fs)
+sdp_result_e sdp_attr_set_fmtp_max_fs (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint32_t max_fs)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6476,9 +6477,9 @@ sdp_result_e sdp_attr_set_fmtp_max_fs (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_fr (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u32 max_fr)
+sdp_result_e sdp_attr_set_fmtp_max_fr (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint32_t max_fr)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6509,9 +6510,9 @@ sdp_result_e sdp_attr_set_fmtp_max_fr (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_br (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u32 max_br)
+sdp_result_e sdp_attr_set_fmtp_max_br (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint32_t max_br)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6542,9 +6543,9 @@ sdp_result_e sdp_attr_set_fmtp_max_br (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_average_bitrate (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u32 maxaveragebitrate)
+sdp_result_e sdp_attr_set_fmtp_max_average_bitrate (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint32_t maxaveragebitrate)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6585,8 +6586,8 @@ sdp_result_e sdp_attr_set_fmtp_max_average_bitrate (void *sdp_ptr, u16 level,
  * Returns:     max-br value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_average_bitrate (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, u32* val)
+sdp_result_e sdp_attr_get_fmtp_max_average_bitrate (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, uint32_t* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6610,8 +6611,8 @@ sdp_result_e sdp_attr_get_fmtp_max_average_bitrate (void *sdp_ptr, u16 level,
 }
 
 
-sdp_result_e sdp_attr_set_fmtp_usedtx (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_usedtx (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        tinybool usedtx)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6654,8 +6655,8 @@ sdp_result_e sdp_attr_set_fmtp_usedtx (void *sdp_ptr, u16 level,
  * Returns:     usedtx value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_usedtx (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, tinybool* val)
+sdp_result_e sdp_attr_get_fmtp_usedtx (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, tinybool* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6679,8 +6680,8 @@ sdp_result_e sdp_attr_get_fmtp_usedtx (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_stereo (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_stereo (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        tinybool stereo)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6723,8 +6724,8 @@ sdp_result_e sdp_attr_set_fmtp_stereo (void *sdp_ptr, u16 level,
  * Returns:     stereo value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_stereo (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, tinybool* val)
+sdp_result_e sdp_attr_get_fmtp_stereo (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, tinybool* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6748,8 +6749,8 @@ sdp_result_e sdp_attr_get_fmtp_stereo (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_useinbandfec (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_useinbandfec (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        tinybool useinbandfec)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6792,8 +6793,8 @@ sdp_result_e sdp_attr_set_fmtp_useinbandfec (void *sdp_ptr, u16 level,
  * Returns:     useinbandfec value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_useinbandfec (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, tinybool* val)
+sdp_result_e sdp_attr_get_fmtp_useinbandfec (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, tinybool* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6817,8 +6818,8 @@ sdp_result_e sdp_attr_get_fmtp_useinbandfec (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_maxcodedaudiobandwidth (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_maxcodedaudiobandwidth (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
                                                 const char *maxcodedaudiobandwidth)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6858,8 +6859,8 @@ sdp_result_e sdp_attr_set_fmtp_maxcodedaudiobandwidth (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     maxcodedaudiobandwidth value.
  */
-char* sdp_attr_get_fmtp_maxcodedaudiobandwidth (void *sdp_ptr, u16 level,
-                                          u8 cap_num, u16 inst_num)
+char* sdp_attr_get_fmtp_maxcodedaudiobandwidth (void *sdp_ptr, uint16_t level,
+                                          uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6883,8 +6884,8 @@ char* sdp_attr_get_fmtp_maxcodedaudiobandwidth (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_cbr (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_cbr (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        tinybool cbr)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -6927,8 +6928,8 @@ sdp_result_e sdp_attr_set_fmtp_cbr (void *sdp_ptr, u16 level,
  * Returns:     cbr value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_cbr (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, tinybool* val)
+sdp_result_e sdp_attr_get_fmtp_cbr (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, tinybool* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6952,8 +6953,8 @@ sdp_result_e sdp_attr_get_fmtp_cbr (void *sdp_ptr, u16 level,
     }
 }
 
-u16 sdp_attr_get_sctpmap_port(void *sdp_ptr, u16 level,
-                              u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_sctpmap_port(void *sdp_ptr, uint16_t level,
+                              uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -6975,9 +6976,9 @@ u16 sdp_attr_get_sctpmap_port(void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_sctpmap_port(void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u16 port)
+sdp_result_e sdp_attr_set_sctpmap_port(void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint16_t port)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7000,8 +7001,8 @@ sdp_result_e sdp_attr_set_sctpmap_port(void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_get_sctpmap_streams (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, u32* val)
+sdp_result_e sdp_attr_get_sctpmap_streams (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, uint32_t* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7025,9 +7026,9 @@ sdp_result_e sdp_attr_get_sctpmap_streams (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_sctpmap_streams (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
-                                       u32 streams)
+sdp_result_e sdp_attr_set_sctpmap_streams (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
+                                       uint32_t streams)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7058,8 +7059,8 @@ sdp_result_e sdp_attr_set_sctpmap_streams (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_sctpmap_protocol(void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_sctpmap_protocol(void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num,
                                            const char *protocol)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7090,8 +7091,8 @@ sdp_result_e sdp_attr_set_sctpmap_protocol(void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_get_sctpmap_protocol (void *sdp_ptr, u16 level,
-                                            u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_get_sctpmap_protocol (void *sdp_ptr, uint16_t level,
+                                            uint8_t cap_num, uint16_t inst_num,
                                             char* protocol)
 {
 
@@ -7117,9 +7118,9 @@ sdp_result_e sdp_attr_get_sctpmap_protocol (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_cpb (void *sdp_ptr, u16 level,
-                                        u8 cap_num, u16 inst_num,
-                                        u32 max_cpb)
+sdp_result_e sdp_attr_set_fmtp_max_cpb (void *sdp_ptr, uint16_t level,
+                                        uint8_t cap_num, uint16_t inst_num,
+                                        uint32_t max_cpb)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7150,9 +7151,9 @@ sdp_result_e sdp_attr_set_fmtp_max_cpb (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_dpb (void *sdp_ptr, u16 level,
-                                        u8 cap_num, u16 inst_num,
-                                        u32 max_dpb)
+sdp_result_e sdp_attr_set_fmtp_max_dpb (void *sdp_ptr, uint16_t level,
+                                        uint8_t cap_num, uint16_t inst_num,
+                                        uint32_t max_dpb)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7183,9 +7184,9 @@ sdp_result_e sdp_attr_set_fmtp_max_dpb (void *sdp_ptr, u16 level,
     }
 }
 
-sdp_result_e sdp_attr_set_fmtp_max_rcmd_nalu_size (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
-                                               u32 max_rcmd_nalu_size)
+sdp_result_e sdp_attr_set_fmtp_max_rcmd_nalu_size (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
+                                               uint32_t max_rcmd_nalu_size)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7214,9 +7215,9 @@ sdp_result_e sdp_attr_set_fmtp_max_rcmd_nalu_size (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_deint_buf_cap (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
-                                               u32 deint_buf_cap)
+sdp_result_e sdp_attr_set_fmtp_deint_buf_cap (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
+                                               uint32_t deint_buf_cap)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7245,9 +7246,9 @@ sdp_result_e sdp_attr_set_fmtp_deint_buf_cap (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_h264_parameter_add (void *sdp_ptr, u16 level,
-                                              u8 cap_num, u16 inst_num,
-                                              u16 parameter_add)
+sdp_result_e sdp_attr_set_fmtp_h264_parameter_add (void *sdp_ptr, uint16_t level,
+                                              uint8_t cap_num, uint16_t inst_num,
+                                              uint16_t parameter_add)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7275,8 +7276,8 @@ sdp_result_e sdp_attr_set_fmtp_h264_parameter_add (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_h261_annex_params (void *sdp_ptr, u16 level,
-                                                  u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_h261_annex_params (void *sdp_ptr, uint16_t level,
+                                                  uint8_t cap_num, uint16_t inst_num,
                                                   tinybool annex_d) {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7304,16 +7305,16 @@ sdp_result_e sdp_attr_set_fmtp_h261_annex_params (void *sdp_ptr, u16 level,
     return (SDP_SUCCESS);
 }
 
-sdp_result_e sdp_attr_set_fmtp_h263_annex_params (void *sdp_ptr, u16 level,
-                                                  u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_fmtp_h263_annex_params (void *sdp_ptr, uint16_t level,
+                                                  uint8_t cap_num, uint16_t inst_num,
                                                   tinybool annex_f,
                                                   tinybool annex_i,
                                                   tinybool annex_j,
                                                   tinybool annex_t,
-                                                  u16 annex_k_val,
-                                                  u16 annex_n_val,
-                                                  u16 annex_p_val_picture_resize,
-                                                  u16 annex_p_val_warp)
+                                                  uint16_t annex_k_val,
+                                                  uint16_t annex_n_val,
+                                                  uint16_t annex_p_val_picture_resize,
+                                                  uint16_t annex_p_val_warp)
 
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7366,8 +7367,8 @@ sdp_result_e sdp_attr_set_fmtp_h263_annex_params (void *sdp_ptr, u16 level,
  *
  * Returns:     TRUE or FALSE.
  */
-tinybool sdp_attr_fmtp_is_annexb_set (void *sdp_ptr, u16 level, u8 cap_num,
-                                      u16 inst_num)
+tinybool sdp_attr_fmtp_is_annexb_set (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                      uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7403,8 +7404,8 @@ tinybool sdp_attr_fmtp_is_annexb_set (void *sdp_ptr, u16 level, u8 cap_num,
  *
  * Returns:     TRUE or FALSE.
  */
-tinybool sdp_attr_fmtp_is_annexa_set (void *sdp_ptr, u16 level, u8 cap_num,
-                                      u16 inst_num)
+tinybool sdp_attr_fmtp_is_annexa_set (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                      uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -7437,8 +7438,8 @@ tinybool sdp_attr_fmtp_is_annexa_set (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Bitrate type value.
  */
-int32 sdp_attr_get_fmtp_bitrate_type (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_bitrate_type (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7472,8 +7473,8 @@ int32 sdp_attr_get_fmtp_bitrate_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     QCIF value.
  */
-int32 sdp_attr_get_fmtp_qcif (void *sdp_ptr, u16 level,
-                            u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_qcif (void *sdp_ptr, uint16_t level,
+                            uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7506,8 +7507,8 @@ int32 sdp_attr_get_fmtp_qcif (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     CIF value.
  */
-int32 sdp_attr_get_fmtp_cif (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_cif (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7542,8 +7543,8 @@ int32 sdp_attr_get_fmtp_cif (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     sqcif value.
  */
-int32 sdp_attr_get_fmtp_sqcif (void *sdp_ptr, u16 level,
-                               u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_sqcif (void *sdp_ptr, uint16_t level,
+                               uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7577,8 +7578,8 @@ int32 sdp_attr_get_fmtp_sqcif (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     CIF4 value.
  */
-int32 sdp_attr_get_fmtp_cif4 (void *sdp_ptr, u16 level,
-                              u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_cif4 (void *sdp_ptr, uint16_t level,
+                              uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7613,8 +7614,8 @@ int32 sdp_attr_get_fmtp_cif4 (void *sdp_ptr, u16 level,
  * Returns:     CIF16 value.
  */
 
-int32 sdp_attr_get_fmtp_cif16 (void *sdp_ptr, u16 level,
-                               u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_cif16 (void *sdp_ptr, uint16_t level,
+                               uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7649,8 +7650,8 @@ int32 sdp_attr_get_fmtp_cif16 (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     MAXBR value.
  */
-int32 sdp_attr_get_fmtp_maxbr (void *sdp_ptr, u16 level,
-                               u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_maxbr (void *sdp_ptr, uint16_t level,
+                               uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7685,8 +7686,8 @@ int32 sdp_attr_get_fmtp_maxbr (void *sdp_ptr, u16 level,
  * Returns:     CUSTOM x value.
  */
 
-int32 sdp_attr_get_fmtp_custom_x (void *sdp_ptr, u16 level,
-                                  u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_custom_x (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7720,8 +7721,8 @@ int32 sdp_attr_get_fmtp_custom_x (void *sdp_ptr, u16 level,
  * Returns:     CUSTOM Y-AXIS value.
  */
 
-int32 sdp_attr_get_fmtp_custom_y (void *sdp_ptr, u16 level,
-                                  u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_custom_y (void *sdp_ptr, uint16_t level,
+                                  uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7756,8 +7757,8 @@ int32 sdp_attr_get_fmtp_custom_y (void *sdp_ptr, u16 level,
  * Returns:     CUSTOM MPI value.
  */
 
-int32 sdp_attr_get_fmtp_custom_mpi (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_custom_mpi (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7790,8 +7791,8 @@ int32 sdp_attr_get_fmtp_custom_mpi (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     PAR - width value.
  */
-int32 sdp_attr_get_fmtp_par_width (void *sdp_ptr, u16 level,
-                                   u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_par_width (void *sdp_ptr, uint16_t level,
+                                   uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7824,8 +7825,8 @@ int32 sdp_attr_get_fmtp_par_width (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     PAR - height value.
  */
-int32 sdp_attr_get_fmtp_par_height (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_par_height (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7858,8 +7859,8 @@ int32 sdp_attr_get_fmtp_par_height (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     CPCF value.
  */
-int32 sdp_attr_get_fmtp_cpcf (void *sdp_ptr, u16 level,
-                              u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_cpcf (void *sdp_ptr, uint16_t level,
+                              uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7892,8 +7893,8 @@ int32 sdp_attr_get_fmtp_cpcf (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     BPP value.
  */
-int32 sdp_attr_get_fmtp_bpp (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_bpp (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7926,8 +7927,8 @@ int32 sdp_attr_get_fmtp_bpp (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     HRD value.
  */
-int32 sdp_attr_get_fmtp_hrd (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_hrd (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7960,8 +7961,8 @@ int32 sdp_attr_get_fmtp_hrd (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     PROFILE value.
  */
-int32 sdp_attr_get_fmtp_profile (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_profile (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -7994,8 +7995,8 @@ int32 sdp_attr_get_fmtp_profile (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     LEVEL value.
  */
-int32 sdp_attr_get_fmtp_level (void *sdp_ptr, u16 level,
-                               u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_level (void *sdp_ptr, uint16_t level,
+                               uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8028,8 +8029,8 @@ int32 sdp_attr_get_fmtp_level (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     TRUE if INTERLACE is present and FALSE if INTERLACE is absent.
  */
-tinybool sdp_attr_get_fmtp_interlace (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_fmtp_interlace (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8063,8 +8064,8 @@ tinybool sdp_attr_get_fmtp_interlace (void *sdp_ptr, u16 level,
  * Returns:     packetization-mode value in the range 0 - 2.
  */
 
-sdp_result_e sdp_attr_get_fmtp_pack_mode (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num, u16 *val)
+sdp_result_e sdp_attr_get_fmtp_pack_mode (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num, uint16_t *val)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8104,8 +8105,8 @@ sdp_result_e sdp_attr_get_fmtp_pack_mode (void *sdp_ptr, u16 level,
  * Returns:     level asymmetry allowed value (0 or 1).
  */
 
-sdp_result_e sdp_attr_get_fmtp_level_asymmetry_allowed (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num, u16 *val)
+sdp_result_e sdp_attr_get_fmtp_level_asymmetry_allowed (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num, uint16_t *val)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8139,8 +8140,8 @@ sdp_result_e sdp_attr_get_fmtp_level_asymmetry_allowed (void *sdp_ptr, u16 level
  *              inst_num    The attribute instance number to check.
  * Returns:     profile-level-id value.
  */
-const char* sdp_attr_get_fmtp_profile_id (void *sdp_ptr, u16 level,
-                                          u8 cap_num, u16 inst_num)
+const char* sdp_attr_get_fmtp_profile_id (void *sdp_ptr, uint16_t level,
+                                          uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8173,8 +8174,8 @@ const char* sdp_attr_get_fmtp_profile_id (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     parameter-sets value.
  */
-const char* sdp_attr_get_fmtp_param_sets (void *sdp_ptr, u16 level,
-                                          u8 cap_num, u16 inst_num)
+const char* sdp_attr_get_fmtp_param_sets (void *sdp_ptr, uint16_t level,
+                                          uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8208,8 +8209,8 @@ const char* sdp_attr_get_fmtp_param_sets (void *sdp_ptr, u16 level,
  * Returns:     interleaving_depth value
  */
 
-sdp_result_e sdp_attr_get_fmtp_interleaving_depth (void *sdp_ptr, u16 level,
-                                            u8 cap_num, u16 inst_num, u16* val)
+sdp_result_e sdp_attr_get_fmtp_interleaving_depth (void *sdp_ptr, uint16_t level,
+                                            uint8_t cap_num, uint16_t inst_num, uint16_t* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8243,9 +8244,9 @@ sdp_result_e sdp_attr_get_fmtp_interleaving_depth (void *sdp_ptr, u16 level,
  * Returns:     deint-buf-req value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_deint_buf_req (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num,
-                                             u32 *val)
+sdp_result_e sdp_attr_get_fmtp_deint_buf_req (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num,
+                                             uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8282,9 +8283,9 @@ sdp_result_e sdp_attr_get_fmtp_deint_buf_req (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     max-don-diff value.
  */
-sdp_result_e sdp_attr_get_fmtp_max_don_diff (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num,
-                                      u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_don_diff (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num,
+                                      uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8317,9 +8318,9 @@ sdp_result_e sdp_attr_get_fmtp_max_don_diff (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     init-buf-time value.
  */
-sdp_result_e sdp_attr_get_fmtp_init_buf_time (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num,
-                                             u32 *val)
+sdp_result_e sdp_attr_get_fmtp_init_buf_time (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num,
+                                             uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8357,9 +8358,9 @@ sdp_result_e sdp_attr_get_fmtp_init_buf_time (void *sdp_ptr, u16 level,
  * Returns:     max-mbps value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_mbps (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num,
-                                u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_mbps (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num,
+                                uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8393,8 +8394,8 @@ sdp_result_e sdp_attr_get_fmtp_max_mbps (void *sdp_ptr, u16 level,
  * Returns:     max-fs value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_fs (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_fs (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8428,8 +8429,8 @@ sdp_result_e sdp_attr_get_fmtp_max_fs (void *sdp_ptr, u16 level,
  * Returns:     max-fr value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_fr (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_fr (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8463,8 +8464,8 @@ sdp_result_e sdp_attr_get_fmtp_max_fr (void *sdp_ptr, u16 level,
  * Returns:     max-cpb value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_cpb (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num, u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_cpb (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num, uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8498,8 +8499,8 @@ sdp_result_e sdp_attr_get_fmtp_max_cpb (void *sdp_ptr, u16 level,
  * Returns:     max-dpb value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_dpb (void *sdp_ptr, u16 level,
-                               u8 cap_num, u16 inst_num, u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_dpb (void *sdp_ptr, uint16_t level,
+                               uint8_t cap_num, uint16_t inst_num, uint32_t *val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8534,8 +8535,8 @@ sdp_result_e sdp_attr_get_fmtp_max_dpb (void *sdp_ptr, u16 level,
  * Returns:     max-br value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_max_br (void *sdp_ptr, u16 level,
-                             u8 cap_num, u16 inst_num, u32* val)
+sdp_result_e sdp_attr_get_fmtp_max_br (void *sdp_ptr, uint16_t level,
+                             uint8_t cap_num, uint16_t inst_num, uint32_t* val)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8568,8 +8569,8 @@ sdp_result_e sdp_attr_get_fmtp_max_br (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     redundant-pic-cap value.
  */
-tinybool sdp_attr_fmtp_is_redundant_pic_cap (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num)
+tinybool sdp_attr_fmtp_is_redundant_pic_cap (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8603,9 +8604,9 @@ tinybool sdp_attr_fmtp_is_redundant_pic_cap (void *sdp_ptr, u16 level,
  * Returns:     deint-buf-cap value.
  */
 
-sdp_result_e sdp_attr_get_fmtp_deint_buf_cap (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num,
-                                             u32 *val)
+sdp_result_e sdp_attr_get_fmtp_deint_buf_cap (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num,
+                                             uint32_t *val)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8643,9 +8644,9 @@ sdp_result_e sdp_attr_get_fmtp_deint_buf_cap (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     max-rcmd-nalu-size value.
  */
-sdp_result_e sdp_attr_get_fmtp_max_rcmd_nalu_size (void *sdp_ptr, u16 level,
-                                                  u8 cap_num, u16 inst_num,
-                                                  u32 *val)
+sdp_result_e sdp_attr_get_fmtp_max_rcmd_nalu_size (void *sdp_ptr, uint16_t level,
+                                                  uint8_t cap_num, uint16_t inst_num,
+                                                  uint32_t *val)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8683,8 +8684,8 @@ sdp_result_e sdp_attr_get_fmtp_max_rcmd_nalu_size (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     TRUE/FALSE ( parameter-add is boolean)
  */
-tinybool sdp_attr_fmtp_is_parameter_add (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num)
+tinybool sdp_attr_fmtp_is_parameter_add (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8723,8 +8724,8 @@ tinybool sdp_attr_fmtp_is_parameter_add (void *sdp_ptr, u16 level,
  * Returns:     Annex value
  */
 
-tinybool sdp_attr_get_fmtp_annex_d (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_fmtp_annex_d (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8748,8 +8749,8 @@ tinybool sdp_attr_get_fmtp_annex_d (void *sdp_ptr, u16 level,
     }
 }
 
-tinybool sdp_attr_get_fmtp_annex_f (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_fmtp_annex_f (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8773,8 +8774,8 @@ tinybool sdp_attr_get_fmtp_annex_f (void *sdp_ptr, u16 level,
     }
 }
 
-tinybool sdp_attr_get_fmtp_annex_i (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_fmtp_annex_i (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8798,8 +8799,8 @@ tinybool sdp_attr_get_fmtp_annex_i (void *sdp_ptr, u16 level,
     }
 }
 
-tinybool sdp_attr_get_fmtp_annex_j (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_fmtp_annex_j (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8823,8 +8824,8 @@ tinybool sdp_attr_get_fmtp_annex_j (void *sdp_ptr, u16 level,
     }
 }
 
-tinybool sdp_attr_get_fmtp_annex_t (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_fmtp_annex_t (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8848,8 +8849,8 @@ tinybool sdp_attr_get_fmtp_annex_t (void *sdp_ptr, u16 level,
     }
 }
 
-int32 sdp_attr_get_fmtp_annex_k_val (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_annex_k_val (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8873,8 +8874,8 @@ int32 sdp_attr_get_fmtp_annex_k_val (void *sdp_ptr, u16 level,
     }
 }
 
-int32 sdp_attr_get_fmtp_annex_n_val (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_annex_n_val (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8898,8 +8899,8 @@ int32 sdp_attr_get_fmtp_annex_n_val (void *sdp_ptr, u16 level,
     }
 }
 
-int32 sdp_attr_get_fmtp_annex_p_picture_resize (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_annex_p_picture_resize (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num)
 {
 
 
@@ -8924,8 +8925,8 @@ int32 sdp_attr_get_fmtp_annex_p_picture_resize (void *sdp_ptr, u16 level,
     }
 }
 
-int32 sdp_attr_get_fmtp_annex_p_warp (void *sdp_ptr, u16 level,
-                                      u8 cap_num, u16 inst_num)
+int32_t sdp_attr_get_fmtp_annex_p_warp (void *sdp_ptr, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -8963,8 +8964,8 @@ int32 sdp_attr_get_fmtp_annex_p_warp (void *sdp_ptr, u16 level,
  * Returns:     Enum type sdp_fmtp_format_type_e
  */
 sdp_fmtp_format_type_e  sdp_attr_fmtp_get_fmtp_format (void *sdp_ptr,
-                                                       u16 level, u8 cap_num,
-                                                       u16 inst_num)
+                                                       uint16_t level, uint8_t cap_num,
+                                                       uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -8998,8 +8999,8 @@ sdp_fmtp_format_type_e  sdp_attr_fmtp_get_fmtp_format (void *sdp_ptr,
  *              inst_num    The attribute instance number to check.
  * Returns:     Number of payload types.
  */
-u16 sdp_attr_get_pccodec_num_payload_types (void *sdp_ptr, u16 level,
-                                            u8 cap_num, u16 inst_num)
+uint16_t sdp_attr_get_pccodec_num_payload_types (void *sdp_ptr, uint16_t level,
+                                            uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9035,8 +9036,8 @@ u16 sdp_attr_get_pccodec_num_payload_types (void *sdp_ptr, u16 level,
  *                          max num payloads).
  * Returns:     Payload type.
  */
-u16 sdp_attr_get_pccodec_payload_type (void *sdp_ptr, u16 level, u8 cap_num,
-                                       u16 inst_num, u16 payload_num)
+uint16_t sdp_attr_get_pccodec_payload_type (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                       uint16_t inst_num, uint16_t payload_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9084,11 +9085,11 @@ u16 sdp_attr_get_pccodec_payload_type (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS            Payload type was added successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_add_pccodec_payload_type (void *sdp_ptr, u16 level,
-                                                u8 cap_num, u16 inst_num,
-                                                u16 payload_type)
+sdp_result_e sdp_attr_add_pccodec_payload_type (void *sdp_ptr, uint16_t level,
+                                                uint8_t cap_num, uint16_t inst_num,
+                                                uint16_t payload_type)
 {
-    u16          payload_num;
+    uint16_t          payload_num;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
 
@@ -9122,10 +9123,10 @@ sdp_result_e sdp_attr_add_pccodec_payload_type (void *sdp_ptr, u16 level,
  *              inst_num    The X-cap instance number to check.
  * Returns:     Capability number or zero.
  */
-u16 sdp_attr_get_xcap_first_cap_num (void *sdp_ptr, u16 level, u16 inst_num)
+uint16_t sdp_attr_get_xcap_first_cap_num (void *sdp_ptr, uint16_t level, uint16_t inst_num)
 {
-    u16          cap_num=1;
-    u16          attr_count=0;
+    uint16_t          cap_num=1;
+    uint16_t          attr_count=0;
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_mca_t   *mca_p;
@@ -9183,8 +9184,8 @@ u16 sdp_attr_get_xcap_first_cap_num (void *sdp_ptr, u16 level, u16 inst_num)
  *              inst_num    The attribute instance number to check.
  * Returns:     Media type or SDP_MEDIA_INVALID.
  */
-sdp_media_e sdp_attr_get_xcap_media_type (void *sdp_ptr, u16 level,
-                                          u16 inst_num)
+sdp_media_e sdp_attr_get_xcap_media_type (void *sdp_ptr, uint16_t level,
+                                          uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9218,8 +9219,8 @@ sdp_media_e sdp_attr_get_xcap_media_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Media type or SDP_TRANSPORT_INVALID.
  */
-sdp_transport_e sdp_attr_get_xcap_transport_type (void *sdp_ptr, u16 level,
-                                                  u16 inst_num)
+sdp_transport_e sdp_attr_get_xcap_transport_type (void *sdp_ptr, uint16_t level,
+                                                  uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9257,8 +9258,8 @@ sdp_transport_e sdp_attr_get_xcap_transport_type (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Number of payload types or zero.
  */
-u16 sdp_attr_get_xcap_num_payload_types (void *sdp_ptr, u16 level,
-                                         u16 inst_num)
+uint16_t sdp_attr_get_xcap_num_payload_types (void *sdp_ptr, uint16_t level,
+                                         uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9295,8 +9296,8 @@ u16 sdp_attr_get_xcap_num_payload_types (void *sdp_ptr, u16 level,
  *                          (1 - max num payloads).
  * Returns:     Payload type or zero.
  */
-u16 sdp_attr_get_xcap_payload_type (void *sdp_ptr, u16 level,
-                                    u16 inst_num, u16 payload_num,
+uint16_t sdp_attr_get_xcap_payload_type (void *sdp_ptr, uint16_t level,
+                                    uint16_t inst_num, uint16_t payload_num,
                                     sdp_payload_ind_e *indicator)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -9344,8 +9345,8 @@ u16 sdp_attr_get_xcap_payload_type (void *sdp_ptr, u16 level,
  *              media       Media type for the X-cap attribute.
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER
  */
-sdp_result_e sdp_attr_set_xcap_media_type (void *sdp_ptr, u16 level,
-                                           u16 inst_num, sdp_media_e media)
+sdp_result_e sdp_attr_set_xcap_media_type (void *sdp_ptr, uint16_t level,
+                                           uint16_t inst_num, sdp_media_e media)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9380,8 +9381,8 @@ sdp_result_e sdp_attr_set_xcap_media_type (void *sdp_ptr, u16 level,
  *              transport   Transport type for the X-cap attribute.
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER
  */
-sdp_result_e sdp_attr_set_xcap_transport_type(void *sdp_ptr, u16 level,
-                                              u16 inst_num,
+sdp_result_e sdp_attr_set_xcap_transport_type(void *sdp_ptr, uint16_t level,
+                                              uint16_t inst_num,
                                               sdp_transport_e transport)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -9418,8 +9419,8 @@ sdp_result_e sdp_attr_set_xcap_transport_type(void *sdp_ptr, u16 level,
  *              payload_type The new payload type.
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER
  */
-sdp_result_e sdp_attr_add_xcap_payload_type(void *sdp_ptr, u16 level,
-                                            u16 inst_num, u16 payload_type,
+sdp_result_e sdp_attr_add_xcap_payload_type(void *sdp_ptr, uint16_t level,
+                                            uint16_t inst_num, uint16_t payload_type,
                                             sdp_payload_ind_e indicator)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -9456,10 +9457,10 @@ sdp_result_e sdp_attr_add_xcap_payload_type(void *sdp_ptr, u16 level,
  *              inst_num    The CDSC instance number to check.
  * Returns:     Capability number or zero.
  */
-u16 sdp_attr_get_cdsc_first_cap_num(void *sdp_ptr, u16 level, u16 inst_num)
+uint16_t sdp_attr_get_cdsc_first_cap_num(void *sdp_ptr, uint16_t level, uint16_t inst_num)
 {
-    u16          cap_num=1;
-    u16          attr_count=0;
+    uint16_t          cap_num=1;
+    uint16_t          attr_count=0;
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
     sdp_mca_t   *mca_p;
@@ -9517,8 +9518,8 @@ u16 sdp_attr_get_cdsc_first_cap_num(void *sdp_ptr, u16 level, u16 inst_num)
  *              inst_num    The attribute instance number to check.
  * Returns:     Media type or SDP_MEDIA_INVALID.
  */
-sdp_media_e sdp_attr_get_cdsc_media_type(void *sdp_ptr, u16 level,
-                                         u16 inst_num)
+sdp_media_e sdp_attr_get_cdsc_media_type(void *sdp_ptr, uint16_t level,
+                                         uint16_t inst_num)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9552,8 +9553,8 @@ sdp_media_e sdp_attr_get_cdsc_media_type(void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Media type or SDP_TRANSPORT_INVALID.
  */
-sdp_transport_e sdp_attr_get_cdsc_transport_type(void *sdp_ptr, u16 level,
-                                                 u16 inst_num)
+sdp_transport_e sdp_attr_get_cdsc_transport_type(void *sdp_ptr, uint16_t level,
+                                                 uint16_t inst_num)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9591,8 +9592,8 @@ sdp_transport_e sdp_attr_get_cdsc_transport_type(void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Number of payload types or zero.
  */
-u16 sdp_attr_get_cdsc_num_payload_types (void *sdp_ptr, u16 level,
-                                         u16 inst_num)
+uint16_t sdp_attr_get_cdsc_num_payload_types (void *sdp_ptr, uint16_t level,
+                                         uint16_t inst_num)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9629,8 +9630,8 @@ u16 sdp_attr_get_cdsc_num_payload_types (void *sdp_ptr, u16 level,
  *                          (1 - max num payloads).
  * Returns:     Payload type or zero.
  */
-u16 sdp_attr_get_cdsc_payload_type (void *sdp_ptr, u16 level,
-                                    u16 inst_num, u16 payload_num,
+uint16_t sdp_attr_get_cdsc_payload_type (void *sdp_ptr, uint16_t level,
+                                    uint16_t inst_num, uint16_t payload_num,
                                     sdp_payload_ind_e *indicator)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
@@ -9677,8 +9678,8 @@ u16 sdp_attr_get_cdsc_payload_type (void *sdp_ptr, u16 level,
  *              media       Media type for the CDSC attribute.
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER
  */
-sdp_result_e sdp_attr_set_cdsc_media_type (void *sdp_ptr, u16 level,
-                                           u16 inst_num, sdp_media_e media)
+sdp_result_e sdp_attr_set_cdsc_media_type (void *sdp_ptr, uint16_t level,
+                                           uint16_t inst_num, sdp_media_e media)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9713,8 +9714,8 @@ sdp_result_e sdp_attr_set_cdsc_media_type (void *sdp_ptr, u16 level,
  *              transport   Transport type for the CDSC attribute.
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER
  */
-sdp_result_e sdp_attr_set_cdsc_transport_type (void *sdp_ptr, u16 level,
-                                      u16 inst_num, sdp_transport_e transport)
+sdp_result_e sdp_attr_set_cdsc_transport_type (void *sdp_ptr, uint16_t level,
+                                      uint16_t inst_num, sdp_transport_e transport)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9750,8 +9751,8 @@ sdp_result_e sdp_attr_set_cdsc_transport_type (void *sdp_ptr, u16 level,
  *              payload_type The new payload type.
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER
  */
-sdp_result_e sdp_attr_add_cdsc_payload_type (void *sdp_ptr, u16 level,
-                                             u16 inst_num, u16 payload_type,
+sdp_result_e sdp_attr_add_cdsc_payload_type (void *sdp_ptr, uint16_t level,
+                                             uint16_t inst_num, uint16_t payload_type,
                                              sdp_payload_ind_e indicator)
 {
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
@@ -9788,10 +9789,10 @@ sdp_result_e sdp_attr_add_cdsc_payload_type (void *sdp_ptr, u16 level,
  *              media line, else returns FALSE
  */
 
-tinybool sdp_media_dynamic_payload_valid (void *sdp_ptr, u16 payload_type,
-                                          u16 m_line)
+tinybool sdp_media_dynamic_payload_valid (void *sdp_ptr, uint16_t payload_type,
+                                          uint16_t m_line)
 {
-   u16 p_type,m_ptype;
+   uint16_t p_type,m_ptype;
    ushort num_payload_types;
    sdp_payload_ind_e ind;
    tinybool payload_matches = FALSE;
@@ -9812,7 +9813,7 @@ tinybool sdp_media_dynamic_payload_valid (void *sdp_ptr, u16 payload_type,
 
    for(p_type=1; p_type <=num_payload_types;p_type++){
 
-       m_ptype = (u16)sdp_get_media_payload_type(sdp_p,
+       m_ptype = (uint16_t)sdp_get_media_payload_type(sdp_p,
                                             m_line, p_type, &ind);
        if (payload_type == m_ptype) {
            payload_matches = TRUE;
@@ -9844,8 +9845,8 @@ tinybool sdp_media_dynamic_payload_valid (void *sdp_ptr, u16 payload_type,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_rtr_confirm (void *sdp_ptr, u16 level, u8 cap_num,
-                                       u16 inst_num,
+sdp_result_e sdp_attr_set_rtr_confirm (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                       uint16_t inst_num,
                                        tinybool confirm)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -9881,8 +9882,8 @@ sdp_result_e sdp_attr_set_rtr_confirm (void *sdp_ptr, u16 level, u8 cap_num,
  *              inst_num    The attribute instance number to check.
  * Returns:     Boolean value.
  */
-tinybool sdp_attr_get_rtr_confirm (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_rtr_confirm (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9907,8 +9908,8 @@ tinybool sdp_attr_get_rtr_confirm (void *sdp_ptr, u16 level,
 
 
 
-sdp_mediadir_role_e sdp_attr_get_comediadir_role (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num)
+sdp_mediadir_role_e sdp_attr_get_comediadir_role (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -9943,8 +9944,8 @@ sdp_mediadir_role_e sdp_attr_get_comediadir_role (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_comediadir_role (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_comediadir_role (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        sdp_mediadir_role_e comediadir_role)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -9980,8 +9981,8 @@ sdp_result_e sdp_attr_set_comediadir_role (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Boolean value.
  */
-tinybool sdp_attr_get_silencesupp_enabled (void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num)
+tinybool sdp_attr_get_silencesupp_enabled (void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10017,8 +10018,8 @@ tinybool sdp_attr_get_silencesupp_enabled (void *sdp_ptr, u16 level,
  * Returns:     16-bit timer value
  *              boolean null_ind
  */
-u16 sdp_attr_get_silencesupp_timer (void *sdp_ptr, u16 level,
-                                    u8 cap_num, u16 inst_num,
+uint16_t sdp_attr_get_silencesupp_timer (void *sdp_ptr, uint16_t level,
+                                    uint8_t cap_num, uint16_t inst_num,
                                     tinybool *null_ind)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10057,8 +10058,8 @@ u16 sdp_attr_get_silencesupp_timer (void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_silencesupp_pref_e sdp_attr_get_silencesupp_pref (void *sdp_ptr,
-                                                      u16 level, u8 cap_num,
-                                                      u16 inst_num)
+                                                      uint16_t level, uint8_t cap_num,
+                                                      uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10094,9 +10095,9 @@ sdp_silencesupp_pref_e sdp_attr_get_silencesupp_pref (void *sdp_ptr,
  * Returns:     silencesupp siduse enum.
  */
 sdp_silencesupp_siduse_e sdp_attr_get_silencesupp_siduse (void *sdp_ptr,
-                                                          u16 level,
-                                                          u8 cap_num,
-                                                          u16 inst_num)
+                                                          uint16_t level,
+                                                          uint8_t cap_num,
+                                                          uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10132,8 +10133,8 @@ sdp_silencesupp_siduse_e sdp_attr_get_silencesupp_siduse (void *sdp_ptr,
  * Returns:     7-bit fxns value
  *              boolean null_ind
  */
-u8 sdp_attr_get_silencesupp_fxnslevel (void *sdp_ptr, u16 level,
-                                       u8 cap_num, u16 inst_num,
+uint8_t sdp_attr_get_silencesupp_fxnslevel (void *sdp_ptr, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst_num,
                                        tinybool *null_ind)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10169,8 +10170,8 @@ u8 sdp_attr_get_silencesupp_fxnslevel (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_silencesupp_enabled (void *sdp_ptr, u16 level,
-                                               u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_silencesupp_enabled (void *sdp_ptr, uint16_t level,
+                                               uint8_t cap_num, uint16_t inst_num,
                                                tinybool enable)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10208,9 +10209,9 @@ sdp_result_e sdp_attr_set_silencesupp_enabled (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_silencesupp_timer (void *sdp_ptr, u16 level,
-                                             u8 cap_num, u16 inst_num,
-                                             u16 value, tinybool null_ind)
+sdp_result_e sdp_attr_set_silencesupp_timer (void *sdp_ptr, uint16_t level,
+                                             uint8_t cap_num, uint16_t inst_num,
+                                             uint16_t value, tinybool null_ind)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10246,8 +10247,8 @@ sdp_result_e sdp_attr_set_silencesupp_timer (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_silencesupp_pref (void *sdp_ptr, u16 level,
-                                            u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_silencesupp_pref (void *sdp_ptr, uint16_t level,
+                                            uint8_t cap_num, uint16_t inst_num,
                                             sdp_silencesupp_pref_e pref)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10283,8 +10284,8 @@ sdp_result_e sdp_attr_set_silencesupp_pref (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_silencesupp_siduse (void *sdp_ptr, u16 level,
-                                              u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_silencesupp_siduse (void *sdp_ptr, uint16_t level,
+                                              uint8_t cap_num, uint16_t inst_num,
                                               sdp_silencesupp_siduse_e siduse)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10322,9 +10323,9 @@ sdp_result_e sdp_attr_set_silencesupp_siduse (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_silencesupp_fxnslevel (void *sdp_ptr, u16 level,
-                                                 u8 cap_num, u16 inst_num,
-                                                 u16 value, tinybool null_ind)
+sdp_result_e sdp_attr_set_silencesupp_fxnslevel (void *sdp_ptr, uint16_t level,
+                                                 uint8_t cap_num, uint16_t inst_num,
+                                                 uint16_t value, tinybool null_ind)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10343,7 +10344,7 @@ sdp_result_e sdp_attr_set_silencesupp_fxnslevel (void *sdp_ptr, u16 level,
         sdp_p->conf_p->num_invalid_param++;
         return (SDP_INVALID_PARAMETER);
     } else {
-        attr_p->attr.silencesupp.fxnslevel = (u8)value;
+        attr_p->attr.silencesupp.fxnslevel = (uint8_t)value;
         attr_p->attr.silencesupp.fxnslevel_null = null_ind;
         return (SDP_SUCCESS);
     }
@@ -10361,11 +10362,11 @@ sdp_result_e sdp_attr_set_silencesupp_fxnslevel (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Number of intervals.
  */
-u16 sdp_attr_get_mptime_num_intervals (
+uint16_t sdp_attr_get_mptime_num_intervals (
     void *sdp_ptr,
-    u16 level,
-    u8 cap_num,
-    u16 inst_num) {
+    uint16_t level,
+    uint8_t cap_num,
+    uint16_t inst_num) {
 
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -10400,12 +10401,12 @@ u16 sdp_attr_get_mptime_num_intervals (
  *                          max num payloads).
  * Returns:     Interval.
  */
-u16 sdp_attr_get_mptime_interval (
+uint16_t sdp_attr_get_mptime_interval (
     void *sdp_ptr,
-    u16 level,
-    u8 cap_num,
-    u16 inst_num,
-    u16 interval_num) {
+    uint16_t level,
+    uint8_t cap_num,
+    uint16_t inst_num,
+    uint16_t interval_num) {
 
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -10454,12 +10455,12 @@ u16 sdp_attr_get_mptime_interval (
  */
 sdp_result_e sdp_attr_add_mptime_interval (
     void *sdp_ptr,
-    u16 level,
-    u8 cap_num,
-    u16 inst_num,
-    u16 mp_interval) {
+    uint16_t level,
+    uint8_t cap_num,
+    uint16_t inst_num,
+    uint16_t mp_interval) {
 
-    u16 interval_num;
+    uint16_t interval_num;
     sdp_t *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
 
@@ -10503,8 +10504,8 @@ sdp_result_e sdp_attr_add_mptime_interval (
  *              level       SDP_SESSION_LEVEL
  * Returns:     Valid attrib value or SDP_GROUP_ATTR_UNSUPPORTED.
  */
-sdp_group_attr_e sdp_get_group_attr (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+sdp_group_attr_e sdp_get_group_attr (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
@@ -10541,8 +10542,8 @@ sdp_group_attr_e sdp_get_group_attr (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER/SDP_INVALID_SDP_PTR
 */
 
-sdp_result_e sdp_set_group_attr (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num,
+sdp_result_e sdp_set_group_attr (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num,
                                  sdp_group_attr_e group_attr)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10572,8 +10573,8 @@ sdp_result_e sdp_set_group_attr (void *sdp_ptr, u16 level,
  *              level       SDP_SESSION_LEVEL
  * Returns:    Num of group ids present or 0 if there is an error.
  */
-u16 sdp_get_group_num_id (void *sdp_ptr, u16 level,
-                          u8 cap_num, u16 inst_num)
+uint16_t sdp_get_group_num_id (void *sdp_ptr, uint16_t level,
+                          uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
@@ -10612,9 +10613,9 @@ u16 sdp_get_group_num_id (void *sdp_ptr, u16 level,
  *              the a=group line.
 */
 
-sdp_result_e sdp_set_group_num_id (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num,
-                                 u16 group_num_id)
+sdp_result_e sdp_set_group_num_id (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num,
+                                 uint16_t group_num_id)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -10653,8 +10654,8 @@ sdp_result_e sdp_set_group_num_id (void *sdp_ptr, u16 level,
  * Returns:    Value of the group id at the index specified or
  *             NULL if an error
  */
-const char* sdp_get_group_id (void *sdp_ptr, u16 level,
-                        u8 cap_num, u16 inst_num, u16 id_num)
+const char* sdp_get_group_id (void *sdp_ptr, uint16_t level,
+                        uint8_t cap_num, uint16_t inst_num, uint16_t id_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
@@ -10692,13 +10693,13 @@ const char* sdp_get_group_id (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER/SDP_INVALID_SDP_PTR
 */
 
-sdp_result_e sdp_set_group_id (void *sdp_ptr, u16 level,
-                               u8 cap_num, u16 inst_num,
+sdp_result_e sdp_set_group_id (void *sdp_ptr, uint16_t level,
+                               uint8_t cap_num, uint16_t inst_num,
                                char* group_id)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
-    u16 num_group_id;
+    uint16_t num_group_id;
 
     if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
         return (SDP_INVALID_SDP_PTR);
@@ -10740,8 +10741,8 @@ sdp_result_e sdp_set_group_id (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Pointer to sidin or NULL.
  */
-const char* sdp_attr_get_x_sidin (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+const char* sdp_attr_get_x_sidin (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
@@ -10783,8 +10784,8 @@ const char* sdp_attr_get_x_sidin (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_x_sidin (void *sdp_ptr, u16 level,
-                                   u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_x_sidin (void *sdp_ptr, uint16_t level,
+                                   uint8_t cap_num, uint16_t inst_num,
                                    const char *sidin)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10820,8 +10821,8 @@ sdp_result_e sdp_attr_set_x_sidin (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Pointer to sidout or NULL.
  */
-const char* sdp_attr_get_x_sidout (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+const char* sdp_attr_get_x_sidout (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
@@ -10863,8 +10864,8 @@ const char* sdp_attr_get_x_sidout (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_x_sidout (void *sdp_ptr, u16 level,
-                                   u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_x_sidout (void *sdp_ptr, uint16_t level,
+                                   uint8_t cap_num, uint16_t inst_num,
                                    const char *sidout)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10900,8 +10901,8 @@ sdp_result_e sdp_attr_set_x_sidout (void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     Pointer to confid or NULL.
  */
-const char* sdp_attr_get_x_confid (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+const char* sdp_attr_get_x_confid (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t               *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t          *attr_p;
@@ -10943,8 +10944,8 @@ const char* sdp_attr_get_x_confid (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS            Attribute param was set successfully.
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
-sdp_result_e sdp_attr_set_x_confid (void *sdp_ptr, u16 level,
-                                   u8 cap_num, u16 inst_num,
+sdp_result_e sdp_attr_set_x_confid (void *sdp_ptr, uint16_t level,
+                                   uint8_t cap_num, uint16_t inst_num,
                                    const char *confid)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -10987,14 +10988,14 @@ sdp_result_e sdp_attr_set_x_confid (void *sdp_ptr, u16 level,
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER/SDP_INVALID_SDP_PTR
  */
 sdp_result_e
-sdp_set_source_filter (void *sdp_ptr, u16 level, u8 cap_num,
-                       u16 inst_num, sdp_src_filter_mode_e mode,
+sdp_set_source_filter (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                       uint16_t inst_num, sdp_src_filter_mode_e mode,
                        sdp_nettype_e nettype, sdp_addrtype_e addrtype,
                        const char *dest_addr, const char *src_addr)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
-    u16 index;
+    uint16_t index;
 
     if (sdp_verify_sdp_ptr(sdp_p) == FALSE) {
         return (SDP_INVALID_SDP_PTR);
@@ -11044,8 +11045,8 @@ sdp_set_source_filter (void *sdp_ptr, u16 level, u8 cap_num,
  */
 
 sdp_result_e
-sdp_include_new_filter_src_addr (void *sdp_ptr, u16 level, u8 cap_num,
-                                 u16 inst_num, const char *src_addr)
+sdp_include_new_filter_src_addr (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                 uint16_t inst_num, const char *src_addr)
 {
     sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -11088,8 +11089,8 @@ sdp_include_new_filter_src_addr (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     Filter mode (incl/excl/not present)
  */
 sdp_src_filter_mode_e
-sdp_get_source_filter_mode (void *sdp_ptr, u16 level, u8 cap_num,
-                            u16 inst_num)
+sdp_get_source_filter_mode (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                            uint16_t inst_num)
 {
     sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -11119,8 +11120,8 @@ sdp_get_source_filter_mode (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     SDP_SUCCESS or SDP_INVALID_PARAMETER/SDP_INVALID_SDP_PTR
  */
 sdp_result_e
-sdp_get_filter_destination_attributes (void *sdp_ptr, u16 level, u8 cap_num,
-                                       u16 inst_num, sdp_nettype_e *nettype,
+sdp_get_filter_destination_attributes (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                                       uint16_t inst_num, sdp_nettype_e *nettype,
                                        sdp_addrtype_e *addrtype,
                                        char *dest_addr)
 {
@@ -11160,9 +11161,9 @@ sdp_get_filter_destination_attributes (void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     Source-list count
  */
 
-int32
-sdp_get_filter_source_address_count (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+int32_t
+sdp_get_filter_source_address_count (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -11195,8 +11196,8 @@ sdp_get_filter_source_address_count (void *sdp_ptr, u16 level,
  *                        with source address corresponding to the index
  */
 sdp_result_e
-sdp_get_filter_source_address (void *sdp_ptr, u16 level, u8 cap_num,
-                               u16 inst_num, u16 src_addr_id,
+sdp_get_filter_source_address (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                               uint16_t inst_num, uint16_t src_addr_id,
                                char *src_addr)
 {
     sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
@@ -11230,8 +11231,8 @@ sdp_get_filter_source_address (void *sdp_ptr, u16 level, u8 cap_num,
 }
 
 sdp_result_e
-sdp_set_rtcp_unicast_mode (void *sdp_ptr, u16 level, u8 cap_num,
-                           u16 inst_num, sdp_rtcp_unicast_mode_e mode)
+sdp_set_rtcp_unicast_mode (void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                           uint16_t inst_num, sdp_rtcp_unicast_mode_e mode)
 {
     sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -11259,8 +11260,8 @@ sdp_set_rtcp_unicast_mode (void *sdp_ptr, u16 level, u8 cap_num,
 }
 
 sdp_rtcp_unicast_mode_e
-sdp_get_rtcp_unicast_mode(void *sdp_ptr, u16 level, u8 cap_num,
-                          u16 inst_num)
+sdp_get_rtcp_unicast_mode(void *sdp_ptr, uint16_t level, uint8_t cap_num,
+                          uint16_t inst_num)
 {
     sdp_t      *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t *attr_p;
@@ -11294,9 +11295,9 @@ sdp_get_rtcp_unicast_mode(void *sdp_ptr, u16 level, u8 cap_num,
  * Returns:     Tag value or SDP_INVALID_VALUE (-2) if error encountered.
  */
 
-int32
-sdp_attr_get_sdescriptions_tag (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num)
+int32_t
+sdp_attr_get_sdescriptions_tag (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11340,8 +11341,8 @@ sdp_attr_get_sdescriptions_tag (void *sdp_ptr, u16 level,
  */
 
 sdp_srtp_crypto_suite_t
-sdp_attr_get_sdescriptions_crypto_suite (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num)
+sdp_attr_get_sdescriptions_crypto_suite (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11392,8 +11393,8 @@ sdp_attr_get_sdescriptions_crypto_suite (void *sdp_ptr, u16 level,
  */
 
 const char*
-sdp_attr_get_sdescriptions_key (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num)
+sdp_attr_get_sdescriptions_key (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11444,8 +11445,8 @@ sdp_attr_get_sdescriptions_key (void *sdp_ptr, u16 level,
  */
 
 const char*
-sdp_attr_get_sdescriptions_salt (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num)
+sdp_attr_get_sdescriptions_salt (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11498,8 +11499,8 @@ sdp_attr_get_sdescriptions_salt (void *sdp_ptr, u16 level,
  */
 
 const char*
-sdp_attr_get_sdescriptions_lifetime (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num)
+sdp_attr_get_sdescriptions_lifetime (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11555,10 +11556,10 @@ sdp_attr_get_sdescriptions_lifetime (void *sdp_ptr, u16 level,
  */
 
 sdp_result_e
-sdp_attr_get_sdescriptions_mki (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num,
+sdp_attr_get_sdescriptions_mki (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num,
                                 const char **mki_value,
-                                u16 *mki_length)
+                                uint16_t *mki_length)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11616,8 +11617,8 @@ sdp_attr_get_sdescriptions_mki (void *sdp_ptr, u16 level,
  */
 
 const char*
-sdp_attr_get_sdescriptions_session_params (void *sdp_ptr, u16 level,
-                                           u8 cap_num, u16 inst_num)
+sdp_attr_get_sdescriptions_session_params (void *sdp_ptr, uint16_t level,
+                                           uint8_t cap_num, uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11668,9 +11669,9 @@ sdp_attr_get_sdescriptions_session_params (void *sdp_ptr, u16 level,
 
 unsigned char
 sdp_attr_get_sdescriptions_key_size (void *sdp_ptr,
-                                     u16 level,
-                                     u8 cap_num,
-                                     u16 inst_num)
+                                     uint16_t level,
+                                     uint8_t cap_num,
+                                     uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -11723,9 +11724,9 @@ sdp_attr_get_sdescriptions_key_size (void *sdp_ptr,
 
 unsigned char
 sdp_attr_get_sdescriptions_salt_size (void *sdp_ptr,
-                                      u16 level,
-                                      u8 cap_num,
-                                      u16 inst_num)
+                                      uint16_t level,
+                                      uint8_t cap_num,
+                                      uint16_t inst_num)
 {
 
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -11779,9 +11780,9 @@ sdp_attr_get_sdescriptions_salt_size (void *sdp_ptr,
 
 unsigned long
 sdp_attr_get_srtp_crypto_selection_flags (void *sdp_ptr,
-                                          u16 level,
-                                          u8 cap_num,
-                                          u16 inst_num)
+                                          uint16_t level,
+                                          uint8_t cap_num,
+                                          uint16_t inst_num)
 {
 
 
@@ -11829,9 +11830,9 @@ sdp_attr_get_srtp_crypto_selection_flags (void *sdp_ptr,
  */
 
 sdp_result_e
-sdp_attr_set_sdescriptions_tag (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num,
-                                int32 tag_num)
+sdp_attr_set_sdescriptions_tag (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num,
+                                int32_t tag_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -11876,8 +11877,8 @@ sdp_attr_set_sdescriptions_tag (void *sdp_ptr, u16 level,
  */
 
 sdp_result_e
-sdp_attr_set_sdescriptions_crypto_suite (void *sdp_ptr, u16 level,
-                                         u8 cap_num, u16 inst_num,
+sdp_attr_set_sdescriptions_crypto_suite (void *sdp_ptr, uint16_t level,
+                                         uint8_t cap_num, uint16_t inst_num,
                                          sdp_srtp_crypto_suite_t crypto_suite)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -11949,8 +11950,8 @@ sdp_attr_set_sdescriptions_crypto_suite (void *sdp_ptr, u16 level,
  */
 
 sdp_result_e
-sdp_attr_set_sdescriptions_key (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num,
+sdp_attr_set_sdescriptions_key (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num,
                                 char *key)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -11979,8 +11980,9 @@ sdp_attr_set_sdescriptions_key (void *sdp_ptr, u16 level,
 
     }
 
-    bcopy(key, attr_p->attr.srtp_context.master_key,
-          SDP_SRTP_MAX_KEY_SIZE_BYTES);
+    memcpy(attr_p->attr.srtp_context.master_key,
+           key,
+           SDP_SRTP_MAX_KEY_SIZE_BYTES);
 
     return SDP_SUCCESS;
 
@@ -12007,8 +12009,8 @@ sdp_attr_set_sdescriptions_key (void *sdp_ptr, u16 level,
  */
 
 sdp_result_e
-sdp_attr_set_sdescriptions_salt (void *sdp_ptr, u16 level,
-                                 u8 cap_num, u16 inst_num,
+sdp_attr_set_sdescriptions_salt (void *sdp_ptr, uint16_t level,
+                                 uint8_t cap_num, uint16_t inst_num,
                                  char *salt)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -12037,8 +12039,9 @@ sdp_attr_set_sdescriptions_salt (void *sdp_ptr, u16 level,
 
     }
 
-    bcopy(salt, attr_p->attr.srtp_context.master_salt,
-          SDP_SRTP_MAX_SALT_SIZE_BYTES);
+    memcpy(attr_p->attr.srtp_context.master_salt,
+           salt,
+           SDP_SRTP_MAX_SALT_SIZE_BYTES);
 
     return SDP_SUCCESS;
 }
@@ -12064,8 +12067,8 @@ sdp_attr_set_sdescriptions_salt (void *sdp_ptr, u16 level,
  */
 
 sdp_result_e
-sdp_attr_set_sdescriptions_lifetime (void *sdp_ptr, u16 level,
-                                     u8 cap_num, u16 inst_num,
+sdp_attr_set_sdescriptions_lifetime (void *sdp_ptr, uint16_t level,
+                                     uint8_t cap_num, uint16_t inst_num,
                                      char *lifetime)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -12122,10 +12125,10 @@ sdp_attr_set_sdescriptions_lifetime (void *sdp_ptr, u16 level,
  */
 
 sdp_result_e
-sdp_attr_set_sdescriptions_mki (void *sdp_ptr, u16 level,
-                                u8 cap_num, u16 inst_num,
+sdp_attr_set_sdescriptions_mki (void *sdp_ptr, uint16_t level,
+                                uint8_t cap_num, uint16_t inst_num,
                                 char *mki_value,
-                                u16 mki_length)
+                                uint16_t mki_length)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12180,9 +12183,9 @@ sdp_attr_set_sdescriptions_mki (void *sdp_ptr, u16 level,
 
 sdp_result_e
 sdp_attr_set_sdescriptions_key_size (void *sdp_ptr,
-                                     u16 level,
-                                     u8 cap_num,
-                                     u16 inst_num,
+                                     uint16_t level,
+                                     uint8_t cap_num,
+                                     uint16_t inst_num,
                                      unsigned char key_size)
 
 {
@@ -12238,9 +12241,9 @@ sdp_attr_set_sdescriptions_key_size (void *sdp_ptr,
 
 sdp_result_e
 sdp_attr_set_sdescriptions_salt_size (void *sdp_ptr,
-                                      u16 level,
-                                      u8 cap_num,
-                                      u16 inst_num,
+                                      uint16_t level,
+                                      uint8_t cap_num,
+                                      uint16_t inst_num,
                                       unsigned char salt_size)
 {
 
@@ -12287,12 +12290,12 @@ sdp_attr_set_sdescriptions_salt_size (void *sdp_ptr,
 
 sdp_attr_t *
 sdp_find_rtcp_fb_attr (sdp_t *sdp_p,
-                       u16 level,
-                       u16 payload_type,
+                       uint16_t level,
+                       uint16_t payload_type,
                        sdp_rtcp_fb_type_e fb_type,
-                       u16 inst_num)
+                       uint16_t inst_num)
 {
-    u16          attr_count=0;
+    uint16_t          attr_count=0;
     sdp_mca_t   *mca_p;
     sdp_attr_t  *attr_p;
 
@@ -12323,7 +12326,7 @@ sdp_find_rtcp_fb_attr (sdp_t *sdp_p,
  * Returns:     ACK type (SDP_RTCP_FB_ACK_NOT_FOUND if not present)
  */
 sdp_rtcp_fb_ack_type_e
-sdp_attr_get_rtcp_fb_ack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst)
+sdp_attr_get_rtcp_fb_ack(void *sdp_ptr, uint16_t level, uint16_t payload_type, uint16_t inst)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12355,7 +12358,7 @@ sdp_attr_get_rtcp_fb_ack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst)
  * Returns:     NACK type (SDP_RTCP_FB_NACK_NOT_FOUND if not present)
  */
 sdp_rtcp_fb_nack_type_e
-sdp_attr_get_rtcp_fb_nack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst)
+sdp_attr_get_rtcp_fb_nack(void *sdp_ptr, uint16_t level, uint16_t payload_type, uint16_t inst)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12386,9 +12389,9 @@ sdp_attr_get_rtcp_fb_nack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst)
  *              inst_num    The attribute instance number to check.
  * Returns:     trr-int interval (0xFFFFFFFF if not found)
  */
-u32
-sdp_attr_get_rtcp_fb_trr_int(void *sdp_ptr, u16 level,
-                             u16 payload_type, u16 inst)
+uint32_t
+sdp_attr_get_rtcp_fb_trr_int(void *sdp_ptr, uint16_t level,
+                             uint16_t payload_type, uint16_t inst)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12420,7 +12423,7 @@ sdp_attr_get_rtcp_fb_trr_int(void *sdp_ptr, u16 level,
  * Returns:     CCM type (SDP_RTCP_FB_CCM_NOT_FOUND if not present)
  */
 sdp_rtcp_fb_ccm_type_e
-sdp_attr_get_rtcp_fb_ccm(void *sdp_ptr, u16 level, u16 payload_type, u16 inst)
+sdp_attr_get_rtcp_fb_ccm(void *sdp_ptr, uint16_t level, uint16_t payload_type, uint16_t inst)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12455,7 +12458,7 @@ sdp_attr_get_rtcp_fb_ccm(void *sdp_ptr, u16 level, u16 payload_type, u16 inst)
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_rtcp_fb_ack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst,
+sdp_attr_set_rtcp_fb_ack(void *sdp_ptr, uint16_t level, uint16_t payload_type, uint16_t inst,
                          sdp_rtcp_fb_ack_type_e type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -12496,7 +12499,7 @@ sdp_attr_set_rtcp_fb_ack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_rtcp_fb_nack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst,
+sdp_attr_set_rtcp_fb_nack(void *sdp_ptr, uint16_t level, uint16_t payload_type, uint16_t inst,
                           sdp_rtcp_fb_nack_type_e type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -12536,8 +12539,8 @@ sdp_attr_set_rtcp_fb_nack(void *sdp_ptr, u16 level, u16 payload_type, u16 inst,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_rtcp_fb_trr_int(void *sdp_ptr, u16 level, u16 payload_type,
-                             u16 inst, u32 interval)
+sdp_attr_set_rtcp_fb_trr_int(void *sdp_ptr, uint16_t level, uint16_t payload_type,
+                             uint16_t inst, uint32_t interval)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12576,7 +12579,7 @@ sdp_attr_set_rtcp_fb_trr_int(void *sdp_ptr, u16 level, u16 payload_type,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_rtcp_fb_ccm(void *sdp_ptr, u16 level, u16 payload_type, u16 inst,
+sdp_attr_set_rtcp_fb_ccm(void *sdp_ptr, uint16_t level, uint16_t payload_type, uint16_t inst,
                          sdp_rtcp_fb_ccm_type_e type)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
@@ -12614,8 +12617,8 @@ sdp_attr_set_rtcp_fb_ccm(void *sdp_ptr, u16 level, u16 payload_type, u16 inst,
  *              inst_num    The attribute instance number to check.
  * Returns:     Codec value or SDP_CODEC_INVALID.
  */
-const char *sdp_attr_get_extmap_uri(void *sdp_ptr, u16 level,
-                                    u16 inst_num)
+const char *sdp_attr_get_extmap_uri(void *sdp_ptr, uint16_t level,
+                                    uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12646,8 +12649,8 @@ const char *sdp_attr_get_extmap_uri(void *sdp_ptr, u16 level,
  *              inst_num    The attribute instance number to check.
  * Returns:     The id of the extmap attribute.
  */
-u16 sdp_attr_get_extmap_id(void *sdp_ptr, u16 level,
-                           u16 inst_num)
+uint16_t sdp_attr_get_extmap_id(void *sdp_ptr, uint16_t level,
+                           uint16_t inst_num)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12680,7 +12683,7 @@ u16 sdp_attr_get_extmap_id(void *sdp_ptr, u16 level,
  *              SDP_INVALID_PARAMETER  Specified attribute is not defined.
  */
 sdp_result_e
-sdp_attr_set_extmap(void *sdp_ptr, u16 level, u16 id, const char* uri, u16 inst)
+sdp_attr_set_extmap(void *sdp_ptr, uint16_t level, uint16_t id, const char* uri, uint16_t inst)
 {
     sdp_t       *sdp_p = (sdp_t *)sdp_ptr;
     sdp_attr_t  *attr_p;
@@ -12705,8 +12708,8 @@ sdp_attr_set_extmap(void *sdp_ptr, u16 level, u16 id, const char* uri, u16 inst)
     return (SDP_SUCCESS);
 }
 
-const char *sdp_attr_get_msid_identifier(sdp_t *sdp_p, u16 level,
-                                       u8 cap_num, u16 inst)
+const char *sdp_attr_get_msid_identifier(sdp_t *sdp_p, uint16_t level,
+                                       uint8_t cap_num, uint16_t inst)
 {
     sdp_attr_t  *attr_p = sdp_find_attr(sdp_p, level, cap_num,
                                         SDP_ATTR_MSID, inst);
@@ -12716,8 +12719,8 @@ const char *sdp_attr_get_msid_identifier(sdp_t *sdp_p, u16 level,
     return attr_p->attr.msid.identifier;
 }
 
-const char *sdp_attr_get_msid_appdata(sdp_t *sdp_p, u16 level,
-                                      u8 cap_num, u16 inst)
+const char *sdp_attr_get_msid_appdata(sdp_t *sdp_p, uint16_t level,
+                                      uint8_t cap_num, uint16_t inst)
 {
     sdp_attr_t  *attr_p = sdp_find_attr(sdp_p, level, cap_num,
                                         SDP_ATTR_MSID, inst);

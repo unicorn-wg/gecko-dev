@@ -42,9 +42,9 @@ struct JsepCodecDescription {
 
   bool GetPtAsInt(uint16_t* pt_outparam) const {
     char* end;
-    int pt = strtol(mDefaultPt.c_str(), &end, 10);
+    unsigned long pt = strtoul(mDefaultPt.c_str(), &end, 10);
     size_t length = static_cast<size_t>(end - mDefaultPt.c_str());
-    if ((pt < 0) || (pt > UINT16_MAX) || (length != mDefaultPt.size())) {
+    if ((pt > UINT16_MAX) || (length != mDefaultPt.size())) {
       return false;
     }
     *pt_outparam = pt;

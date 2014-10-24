@@ -3319,8 +3319,6 @@
     ['OS=="win"', {
       'target_defaults': {
         'defines': [
-          '_WIN32_WINNT=0x0602',
-          'WINVER=0x0602',
           'WIN32',
           '_WINDOWS',
           'NOMINMAX',
