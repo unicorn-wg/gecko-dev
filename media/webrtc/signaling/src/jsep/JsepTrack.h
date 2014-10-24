@@ -36,6 +36,8 @@ class JsepTrack {
   virtual nsresult get_codec(size_t index,
                              const JsepCodecDescription** config)
       const = 0;
+  virtual const SdpExtmapAttributeList::Extmap* get_ext(
+      const std::string& ext_name) const = 0;
 };
 
 

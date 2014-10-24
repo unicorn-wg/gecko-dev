@@ -46,6 +46,36 @@ class JsepSessionImpl : public JsepSession {
                                      const std::string& pwd) MOZ_OVERRIDE;
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::vector<uint8_t>& value) MOZ_OVERRIDE;
+  virtual nsresult AddAudioRtpExtension(
+      const std::string& extensionName) MOZ_OVERRIDE {
+    if (mAudioRtpExtensions.size() + 1 > UINT16_MAX) {
+      return NS_ERROR_FAILURE;
+    }
+
+    mAudioRtpExtensions.push_back({
+        static_cast<uint16_t>(mAudioRtpExtensions.size() + 1),
+        SdpDirectionAttribute::kSendrecv,
+        false, // don't actually specify direction
+        extensionName,
+        ""});
+    return NS_OK;
+  }
+
+  virtual nsresult AddVideoRtpExtension(
+      const std::string& extensionName) MOZ_OVERRIDE {
+    if (mVideoRtpExtensions.size() + 1 > UINT16_MAX) {
+      return NS_ERROR_FAILURE;
+    }
+
+    mVideoRtpExtensions.push_back({
+        static_cast<uint16_t>(mVideoRtpExtensions.size() + 1),
+        SdpDirectionAttribute::kSendrecv,
+        false, // don't actually specify direction
+        extensionName,
+        ""});
+    return NS_OK;
+  }
+
   virtual std::vector<JsepCodecDescription*>& Codecs() MOZ_OVERRIDE {
     return mCodecs;
   }
@@ -153,13 +183,18 @@ class JsepSessionImpl : public JsepSession {
   void Init();
   nsresult CreateGenericSDP(UniquePtr<Sdp>* sdp);
   void AddCodecs(SdpMediaSection::MediaType mediatype,
-                 SdpMediaSection* msection);
+                 SdpMediaSection* msection) const;
+  void AddExtmap(SdpMediaSection::MediaType mediatype,
+                 SdpMediaSection* msection) const;
   JsepCodecDescription* FindMatchingCodec(
       const std::string& pt,
       const SdpMediaSection& msection) const;
+  const std::vector<SdpExtmapAttributeList::Extmap>* GetRtpExtensions(
+      SdpMediaSection::MediaType type) const;
   void AddCommonCodecs(const SdpMediaSection& remote_section,
                        SdpMediaSection* msection);
   void SetupDefaultCodecs();
+  void SetupDefaultRtpExtensions();
   void SetState(JsepSignalingState state);
   nsresult ParseSdp(const std::string& sdp, UniquePtr<Sdp>* parsedp);
   nsresult SetLocalDescriptionOffer(UniquePtr<Sdp> offer);
@@ -228,6 +263,8 @@ class JsepSessionImpl : public JsepSession {
   std::vector<JsepDtlsFingerprint> mDtlsFingerprints;
   uint64_t mSessionId;
   uint64_t mSessionVersion;
+  std::vector<SdpExtmapAttributeList::Extmap> mAudioRtpExtensions;
+  std::vector<SdpExtmapAttributeList::Extmap> mVideoRtpExtensions;
   UniquePtr<Sdp> mGeneratedLocalDescription; // Created but not set.
   UniquePtr<Sdp> mCurrentLocalDescription;
   UniquePtr<Sdp> mCurrentRemoteDescription;

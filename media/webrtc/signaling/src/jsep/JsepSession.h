@@ -60,10 +60,11 @@ class JsepSession {
   // Set up the ICE And DTLS data.
   virtual nsresult SetIceCredentials(const std::string& ufrag,
                                      const std::string& pwd) = 0;
-  // TODO(ekr@rtfm.com): Need code to add candidates and to set
-  // the negotiated candidate. Issue 153.
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::vector<uint8_t>& value) = 0;
+
+  virtual nsresult AddAudioRtpExtension(const std::string& extensionName) = 0;
+  virtual nsresult AddVideoRtpExtension(const std::string& extensionName) = 0;
 
   // Kinda gross to be locking down the data structure type like this, but
   // returning by value is problematic due to the lack of stl move semantics in
