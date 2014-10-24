@@ -5,6 +5,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "signaling/src/sdp/SipccSdpParser.h"
+#include "signaling/src/sdp/SipccSdp.h"
 
 #include <utility>
 extern "C" {
@@ -32,7 +33,7 @@ SipccSdpParser::Parse(const std::string& sdpText)
 
   sdp_conf_options_t *sipcc_config = sdp_init_config();
   if (!sipcc_config) {
-    return nullptr;
+    return UniquePtr<Sdp>();
   }
 
   sdp_nettype_supported(sipcc_config, SDP_NT_INTERNET, true);
@@ -56,14 +57,14 @@ SipccSdpParser::Parse(const std::string& sdpText)
   sdp_t *sdp = sdp_init_description(sipcc_config);
   if (!sdp) {
     sdp_free_config(sipcc_config);
-    return nullptr;
+    return UniquePtr<Sdp>();
   }
 
   const char* rawString = sdpText.c_str();
   sdp_result_e sdpres = sdp_parse(sdp, rawString, sdpText.length());
   if (sdpres != SDP_SUCCESS) {
     sdp_free_description(sdp);
-    return nullptr;
+    return UniquePtr<Sdp>();
   }
 
   SipccSdp* sipccSdp = new SipccSdp();
@@ -71,7 +72,7 @@ SipccSdpParser::Parse(const std::string& sdpText)
   sdp_free_description(sdp);
   if (!success) {
     delete sipccSdp;
-    return nullptr;
+    return UniquePtr<Sdp>();
   }
 
   return UniquePtr<Sdp, DefaultDelete<Sdp>>(sipccSdp);
