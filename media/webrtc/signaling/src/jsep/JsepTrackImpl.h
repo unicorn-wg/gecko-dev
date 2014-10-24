@@ -5,6 +5,8 @@
 #ifndef _JSEPTRACKIMPL_H_
 #define _JSEPTRACKIMPL_H_
 
+#include <map>
+
 #include <mozilla/RefPtr.h>
 #include <mozilla/UniquePtr.h>
 
@@ -46,6 +48,15 @@ class JsepTrackImpl : public JsepTrack {
     return NS_OK;
   }
 
+  virtual const SdpExtmapAttributeList::Extmap* get_ext(
+      const std::string& ext_name) const MOZ_OVERRIDE {
+    auto it = mExtmap.find(ext_name);
+    if (it != mExtmap.end()) {
+      return &it->second;
+    }
+    return nullptr;
+  }
+
  private:
   // Make these friends to JsepSessionImpl to avoid having to
   // write setters.
@@ -56,6 +67,7 @@ class JsepTrackImpl : public JsepTrack {
   mozilla::SdpMediaSection::Protocol mProtocol;
   Maybe<std::string> mBandwidth;
   std::vector<JsepCodecDescription*> mCodecs;
+  std::map<std::string, SdpExtmapAttributeList::Extmap> mExtmap;
 };
 
 

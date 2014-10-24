@@ -513,8 +513,18 @@ nsresult MediaPipelineFactory::CreateAudioConduit(
       return NS_ERROR_FAILURE;
     }
 
+    const auto* audio_level_ext =
+      track->get_ext("urn:ietf:params:rtp-hdrext:ssrc-audio-level");
 
-    // TODO(ekr@rtfm.com): Audio level extension. Issue 169.
+    if (audio_level_ext) {
+      MOZ_MTLOG(ML_DEBUG, "Calling EnableAudioLevelExtension");
+      error = conduit->EnableAudioLevelExtension(true, audio_level_ext->entry);
+
+      if (error) {
+        MOZ_MTLOG(ML_ERROR, "EnableAudioLevelExtension failed: " << error);
+        return NS_ERROR_FAILURE;
+      }
+    }
   }
 
   *conduitp = conduit;
