@@ -1009,6 +1009,9 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
 
 nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
   MOZ_ASSERT(mState == kJsepStateStable);
+
+  // TODO(ekr@rtfm.com): Note that we create remote tracks even when
+  // They contain only codecs we can't negotiate or other craziness.
   SetRemoteTracksFromDescription(*offer);
   mPendingRemoteDescription = Move(offer);
 
@@ -1022,6 +1025,8 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
              mState == kJsepStateHaveRemotePranswer);
   mPendingRemoteDescription = Move(answer);
 
+  // TODO(ekr@rtfm.com): Note that this creates remote tracks even if
+  // we offered sendonly and other side offered sendrecv or recvonly.
   nsresult rv = SetRemoteTracksFromDescription(*mPendingRemoteDescription);
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1062,8 +1067,8 @@ nsresult JsepSessionImpl::CreateReceivingTrack(
   std::string stream_id;
   std::string track_id;
 
-  // Generate random ids. TODO(ekr@rtfm.com): Pull these out of SDP if
-  // available.
+  // Generate random track ids.
+  // TODO(ekr@rtfm.com): Pull track and stream IDs out of SDP if available.
   if (!mUuidGen->Generate(&track_id))
     return NS_ERROR_FAILURE;
 
