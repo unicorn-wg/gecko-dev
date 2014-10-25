@@ -1163,7 +1163,7 @@ PeerConnectionImpl::CreateDataChannel(const nsAString& aLabel,
     std::string stream_id;
     std::string track_id;
 
-    // Generate random ids.
+    // Generate random ids because these aren't linked to any local streams.
     if (!mUuidGen->Generate(&stream_id))
       return NS_ERROR_FAILURE;
     if (!mUuidGen->Generate(&track_id))
@@ -1867,6 +1867,7 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
   uint32_t num = mMedia->LocalStreamsLength();
 
   std::string stream_id;
+  // TODO(ekr@rtfm.com): These ids should really come from the MS.
   nsresult res = mMedia->AddStream(&aMediaStream, hints, &stream_id);
   if (NS_FAILED(res)) {
     return res;
@@ -1876,7 +1877,6 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
     aMediaStream.AddPrincipalChangeObserver(this);
   }
 
-  // TODO(ekr@rtfm.com): these integers should be the track IDs. Issue 167.
   if (hints & DOMMediaStream::HINT_CONTENTS_AUDIO) {
     res = mJsepSession->AddTrack(new JsepMediaStreamTrackStatic(
         mozilla::SdpMediaSection::kAudio, stream_id, "audio_track_id"));

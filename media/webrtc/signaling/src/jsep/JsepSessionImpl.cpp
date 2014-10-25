@@ -639,7 +639,7 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 }
 
 
-// Helper function to find the track in question.
+// Helper function to find the track for a given m= section.
 template <class T> nsresult FindMSTForMSection(
     const SdpMediaSection& msection,
     const std::vector<T>& tracks,
@@ -658,7 +658,7 @@ template <class T> nsresult FindMSTForMSection(
     }
   }
 
-  return NS_ERROR_FAILURE;
+  return NS_ERROR_NOT_AVAILABLE;
 }
 
 nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
@@ -705,10 +705,10 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     }
     transport = mTransports[i];
 
-    // TODO(ekr@rtfm.com): What if direction attribute is missing?
-
     // If the answer says it's inactive we're not doing anything with it.
     // TODO(ekr@rtfm.com): Need to handle renegotiation somehow. Issue 155.
+    // Note: the SDP engine guarantees the presence of an SDP direction
+    // attribute (with sendrecv as the default if one isn't in the SDP).
     if (answer.GetDirectionAttribute().mValue ==
         SdpDirectionAttribute::kInactive &&
         answer.GetPort() == 0) {
@@ -739,7 +739,6 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     if (sending) {
       rv = FindMSTForMSection(lm, mLocalTracks, i, &mst);
       MOZ_MTLOG_ENSURE_SUCCESS(rv, "Couldn't find m-line");
-      NS_ENSURE_SUCCESS(rv, rv);
 
       rv = CreateTrack(rm, JsepTrack::kJsepTrackSending, mst,
                        &jpair->mSending);
@@ -1064,6 +1063,7 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
 
   // TODO(ekr@rtfm.com): Note that this creates remote tracks even if
   // we offered sendonly and other side offered sendrecv or recvonly.
+  // Issue 276.
   nsresult rv = SetRemoteTracksFromDescription(*mPendingRemoteDescription);
   NS_ENSURE_SUCCESS(rv, rv);
 
@@ -1087,7 +1087,7 @@ nsresult JsepSessionImpl::SetRemoteTracksFromDescription(
     auto direction = msection.GetDirectionAttribute().mValue;
 
     // TODO(ekr@rtfm.com): Suppress new track creation on renegotiation
-    // of existing tracks.
+    // of existing tracks. Issue 155.
     if (direction == SdpDirectionAttribute::kSendrecv ||
         direction == SdpDirectionAttribute::kSendonly) {
       nsresult rv = CreateReceivingTrack(i, msection);
@@ -1106,6 +1106,7 @@ nsresult JsepSessionImpl::CreateReceivingTrack(
 
   // Generate random track ids.
   // TODO(ekr@rtfm.com): Pull track and stream IDs out of SDP if available.
+  // Issue 277.
   if (!mUuidGen->Generate(&track_id))
     return NS_ERROR_FAILURE;
 
