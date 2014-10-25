@@ -393,7 +393,6 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
           mPC->GetSTSThread(),
           stream->GetMediaStream(),
           trackPair.mLevel,
-          trackPair.mLevel,
           track->media_type() == SdpMediaSection::kVideo,
           conduit, rtp_flow, rtcp_flow);
 
