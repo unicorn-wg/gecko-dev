@@ -62,6 +62,7 @@ void JsepSessionImpl::Init() {
   }
 
   SetupDefaultCodecs();
+  SetupDefaultRtpExtensions();
 }
 
 nsresult JsepSessionImpl::AddTrack(const RefPtr<JsepMediaStreamTrack>& track) {
@@ -240,9 +241,20 @@ std::string JsepSessionImpl::GetRemoteDescription() const {
 }
 
 void JsepSessionImpl::AddCodecs(SdpMediaSection::MediaType mediatype,
-                                SdpMediaSection* msection) {
+                                SdpMediaSection* msection) const {
   for (auto c = mCodecs.begin(); c != mCodecs.end(); ++c) {
     (*c)->AddToMediaSection(*msection);
+  }
+}
+
+void JsepSessionImpl::AddExtmap(SdpMediaSection::MediaType mediatype,
+                                SdpMediaSection* msection) const {
+  const auto* extensions = GetRtpExtensions(mediatype);
+
+  if (extensions && !extensions->empty()) {
+    SdpExtmapAttributeList* extmap = new SdpExtmapAttributeList;
+    extmap->mExtmaps = *extensions;
+    msection->GetAttributeList().SetAttribute(extmap);
   }
 }
 
@@ -257,6 +269,18 @@ JsepCodecDescription* JsepSessionImpl::FindMatchingCodec(
   }
 
   return nullptr;
+}
+
+const std::vector<SdpExtmapAttributeList::Extmap>*
+JsepSessionImpl::GetRtpExtensions(SdpMediaSection::MediaType type) const {
+  switch (type) {
+    case SdpMediaSection::kAudio:
+      return &mAudioRtpExtensions;
+    case SdpMediaSection::kVideo:
+      return &mVideoRtpExtensions;
+    default:
+      return nullptr;
+  }
 }
 
 void JsepSessionImpl::AddCommonCodecs(const SdpMediaSection& remote_section,
@@ -352,6 +376,8 @@ nsresult JsepSessionImpl::CreateOfferMSection(
   NS_ENSURE_SUCCESS(rv, rv);
 
   AddCodecs(mediatype, msection);
+
+  AddExtmap(mediatype, msection);
 
   if (msection_outparam) {
     *msection_outparam = msection;
@@ -775,6 +801,17 @@ nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
     }
   }
 
+  if (direction == JsepTrack::kJsepTrackSending) {
+    // Insert the rtp extensions we support
+    const auto* extensions = GetRtpExtensions(remote_msection.GetMediaType());
+
+    if (extensions) {
+      for (auto i = extensions->begin(); i != extensions->end(); ++i) {
+        track->mExtmap[i->extensionname] = *i;
+      }
+    }
+  }
+
   *trackp = Move(track);
   return NS_OK;
 }
@@ -1141,6 +1178,10 @@ void JsepSessionImpl::SetupDefaultCodecs() {
       "webrtc-datachannel",
       16
                       ));
+}
+
+void JsepSessionImpl::SetupDefaultRtpExtensions() {
+  AddAudioRtpExtension("urn:ietf:params:rtp-hdrext:ssrc-audio-level");
 }
 
 void JsepSessionImpl::SetState(JsepSignalingState state) {
