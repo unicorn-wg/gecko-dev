@@ -70,11 +70,8 @@ class JsepTrackImpl : public JsepTrack {
   mozilla::SdpMediaSection::Protocol mProtocol;
   Maybe<std::string> mBandwidth;
   std::vector<JsepCodecDescription*> mCodecs;
-<<<<<<< HEAD
   std::map<std::string, SdpExtmapAttributeList::Extmap> mExtmap;
-=======
   RefPtr<JsepMediaStreamTrack> mMediaStreamTrack;
->>>>>>> Change to named streams
 };
 
 
