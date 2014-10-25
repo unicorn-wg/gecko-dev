@@ -322,7 +322,8 @@ nsresult MediaPipelineFactory::CreateMediaPipelineReceiving(
         mPC->GetMainThread().get(),
         mPC->GetSTSThread(),
         stream->GetMediaStream()->GetStream(),
-        trackPair.mLevel,  // Use the level as the track ID.
+        // Use the level + 1 as the track id. 0 is forbidden
+        trackPair.mLevel + 1,
         trackPair.mLevel,
         static_cast<AudioSessionConduit*>(conduit.get()),  // Ugly downcast.
         rtp_flow,
@@ -337,7 +338,8 @@ nsresult MediaPipelineFactory::CreateMediaPipelineReceiving(
         mPC->GetMainThread().get(),
         mPC->GetSTSThread(),
         stream->GetMediaStream()->GetStream(),
-        trackPair.mLevel,   // Use the level as the track ID.
+        // Use the level + 1 as the track id. 0 is forbidden
+        trackPair.mLevel + 1,
         trackPair.mLevel,
         static_cast<VideoSessionConduit*>(conduit.get()),  // Ugly downcast.
         rtp_flow,
@@ -390,7 +392,7 @@ nsresult MediaPipelineFactory::CreateMediaPipelineSending(
           mPC->GetMainThread().get(),
           mPC->GetSTSThread(),
           stream->GetMediaStream(),
-          -1,   // TODO(ekr@rtfm.com): Ignored.
+          trackPair.mLevel,
           trackPair.mLevel,
           track->media_type() == SdpMediaSection::kVideo,
           conduit, rtp_flow, rtcp_flow);
