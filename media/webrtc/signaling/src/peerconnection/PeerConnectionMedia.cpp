@@ -211,10 +211,6 @@ PeerConnectionMedia::PeerConnectionMedia(PeerConnectionImpl *parent)
       mDNSResolver(new mozilla::NrIceResolver()),
       mMainThread(mParent->GetMainThread()),
       mSTSThread(mParent->GetSTSThread()) {
-#ifdef MOZILLA_INTERNAL_API
-  mAllowIceLoopback = Preferences::GetBool(
-    "media.peerconnection.ice.loopback", false);
-#endif
 }
 
 nsresult PeerConnectionMedia::Init(const std::vector<NrIceStunServer>& stun_servers,
