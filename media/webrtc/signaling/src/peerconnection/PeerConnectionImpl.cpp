@@ -327,6 +327,10 @@ PeerConnectionImpl::PeerConnectionImpl(const GlobalObject* aGlobal)
   CSFLogInfo(logTag, "%s: PeerConnectionImpl constructor for %s",
              __FUNCTION__, mHandle.c_str());
   STAMP_TIMECARD(mTimeCard, "Constructor Completed");
+#ifdef MOZILLA_INTERNAL_API
+  mAllowIceLoopback = Preferences::GetBool(
+    "media.peerconnection.ice.loopback", false);
+#endif
 }
 
 PeerConnectionImpl::~PeerConnectionImpl()
