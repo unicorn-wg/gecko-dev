@@ -180,10 +180,10 @@ protected:
     std::string track_id;
 
     ASSERT_TRUE(uuid_gen.Generate(&stream_id));
-    ASSERT_TRUE(uuid_gen.Generate(&track_id));
-
 
     for (auto track = mediatypes.begin(); track != mediatypes.end(); ++track) {
+      ASSERT_TRUE(uuid_gen.Generate(&track_id));
+
       RefPtr<JsepMediaStreamTrack> mst(new JsepMediaStreamTrackStatic(
           *track, stream_id, track_id));
       side->AddTrack(mst);
@@ -673,18 +673,12 @@ TEST_F(JsepSessionTest, OfferAnswerSendOnlyLines) {
 }
 
 TEST_F(JsepSessionTest, CreateOfferNoDatachannelDefault) {
-  FakeUuidGenerator uuid_gen;
-  std::string stream_id;
-  std::string track_id;
-
-  ASSERT_TRUE(uuid_gen.Generate(&stream_id));
-  ASSERT_TRUE(uuid_gen.Generate(&track_id));
   RefPtr<JsepMediaStreamTrack> msta(new JsepMediaStreamTrackStatic(
-      SdpMediaSection::kAudio, stream_id, track_id));
+      SdpMediaSection::kAudio, "offerer_stream", "a1"));
   mSessionOff.AddTrack(msta);
-  ASSERT_TRUE(uuid_gen.Generate(&track_id));
+
   RefPtr<JsepMediaStreamTrack> mstv1(new JsepMediaStreamTrackStatic(
-      SdpMediaSection::kVideo, stream_id, track_id));
+      SdpMediaSection::kVideo, "offerer_stream", "v1"));
   mSessionOff.AddTrack(mstv1);
 
   std::string offer = CreateOffer();
