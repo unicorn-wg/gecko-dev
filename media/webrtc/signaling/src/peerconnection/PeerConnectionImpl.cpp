@@ -1541,7 +1541,6 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
     // a new stream id, go through the rest of the tracks and deal with
     // them at once.
     size_t num_tracks = mJsepSession->num_remote_tracks();
-    MOZ_ASSERT(num_tracks <= 3);
     bool hasAudio = false;
     bool hasVideo = false;
 
@@ -1589,12 +1588,10 @@ PeerConnectionImpl::SetRemoteDescription(int32_t action, const char* aSDP)
         }
 
         if (track2->media_type() == mozilla::SdpMediaSection::kAudio) {
-          MOZ_ASSERT(!hasAudio);
           (void)hasAudio;
           hasAudio = true;
           info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_AUDIO;
         } else if (track2->media_type() == mozilla::SdpMediaSection::kVideo) {
-          MOZ_ASSERT(!hasVideo);
           (void)hasVideo;
           hasVideo = true;
           info->mTrackTypeHints |= DOMMediaStream::HINT_CONTENTS_VIDEO;
@@ -1844,26 +1841,6 @@ PeerConnectionImpl::AddTrack(MediaStreamTrack& aTrack,
   uint32_t hints = aMediaStream.GetHintContents() &
       ((aTrack.AsAudioStreamTrack()? DOMMediaStream::HINT_CONTENTS_AUDIO : 0) |
        (aTrack.AsVideoStreamTrack()? DOMMediaStream::HINT_CONTENTS_VIDEO : 0));
-
-  // XXX Remove this check once addStream has an error callback
-  // available and/or we have plumbing to handle multiple
-  // local audio streams.  bug 1056650
-  if ((hints & DOMMediaStream::HINT_CONTENTS_AUDIO) &&
-      mNumAudioStreams > 0) {
-    CSFLogError(logTag, "%s: Only one local audio stream is supported for now",
-                __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  }
-
-  // XXX Remove this check once addStream has an error callback
-  // available and/or we have plumbing to handle multiple
-  // local video streams. bug 1056650
-  if ((hints & DOMMediaStream::HINT_CONTENTS_VIDEO) &&
-      mNumVideoStreams > 0) {
-    CSFLogError(logTag, "%s: Only one local video stream is supported for now",
-                __FUNCTION__);
-    return NS_ERROR_FAILURE;
-  }
 
   uint32_t num = mMedia->LocalStreamsLength();
 
