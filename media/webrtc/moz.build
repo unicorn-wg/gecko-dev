@@ -51,7 +51,7 @@ if CONFIG['MOZ_WEBRTC_SIGNALING']:
         build_for_test=0
     )
     GYP_DIRS['signaling'].sandbox_vars['FINAL_LIBRARY'] = 'xul'
-    # These files cannot be built in unified mode because they force NSPR logging.
+    # Excluded for various symbol conflicts
     signaling_non_unified_sources = [
         'signaling/src/common/browser_logging/CSFLog.cpp',
         'signaling/src/jsep/JsepSessionImpl.cpp',
@@ -79,10 +79,6 @@ if CONFIG['MOZ_WEBRTC_SIGNALING']:
         'signaling/src/sdp/sipcc/sdp_services_unix.c',
         'signaling/src/sdp/sipcc/sdp_token.c',
         'signaling/src/sdp/sipcc/sdp_utils.c',
-    ]
-
-    # Excluded for various symbol conflicts
-    signaling_non_unified_sources_2 = [
         'signaling/src/mediapipeline/MediaPipelineFilter.cpp',
         'signaling/src/mediapipeline/SrtpFlow.cpp',
         'signaling/src/sipcc/core/ccapp/ccapi_call_info.c',
