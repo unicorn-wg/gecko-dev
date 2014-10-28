@@ -472,11 +472,9 @@ void nr_ice_initialize_finished_cb(NR_SOCKET s, int h, void *cb_arg)
       if (ctx->trickle_cb && !was_pruned) {
         ctx->trickle_cb(ctx->trickle_cb_arg, ctx, cand->stream, cand->component_id, cand);
 
-        if (cand->stream->ice_state != NR_ICE_MEDIA_STREAM_UNPAIRED) {
-          if (r=nr_ice_ctx_pair_new_trickle_candidates(ctx, cand)) {
-            r_log(LOG_ICE,LOG_ERR, "ICE(%s): All could not pair new trickle candidate",ctx->label);
-            /* But continue */
-          }
+        if (nr_ice_ctx_pair_new_trickle_candidates(ctx, cand)) {
+          r_log(LOG_ICE,LOG_ERR, "ICE(%s): All could not pair new trickle candidate",ctx->label);
+          /* But continue */
         }
       }
     }
