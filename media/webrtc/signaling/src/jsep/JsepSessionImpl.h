@@ -30,6 +30,9 @@ class JsepSessionImpl : public JsepSession {
   JsepSessionImpl(const std::string& name,
                   UniquePtr<JsepUuidGenerator> uuidgen) :
       JsepSession(name),
+      mIsOfferer(false),
+      mIceControlling(false),
+      mRemoteIsIceLite(false),
       mSessionId(0),
       mSessionVersion(0),
       mUuidGen(Move(uuidgen)) {
@@ -46,6 +49,14 @@ class JsepSessionImpl : public JsepSession {
   }
   virtual nsresult SetIceCredentials(const std::string& ufrag,
                                      const std::string& pwd) MOZ_OVERRIDE;
+  virtual bool RemoteIsIceLite() const MOZ_OVERRIDE {
+    return mRemoteIsIceLite;
+  }
+
+  virtual std::vector<std::string> GetIceOptions() const MOZ_OVERRIDE {
+    return mIceOptions;
+  }
+
   virtual nsresult AddDtlsFingerprint(const std::string& algorithm,
                                       const std::vector<uint8_t>& value) MOZ_OVERRIDE;
   virtual nsresult AddAudioRtpExtension(
@@ -262,6 +273,8 @@ class JsepSessionImpl : public JsepSession {
   bool mIceControlling;
   std::string mIceUfrag;
   std::string mIcePwd;
+  bool mRemoteIsIceLite;
+  std::vector<std::string> mIceOptions;
   std::vector<JsepDtlsFingerprint> mDtlsFingerprints;
   uint64_t mSessionId;
   uint64_t mSessionVersion;

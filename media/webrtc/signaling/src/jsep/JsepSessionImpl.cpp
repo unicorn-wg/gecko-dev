@@ -71,6 +71,7 @@ nsresult JsepSessionImpl::SetIceCredentials(const std::string& ufrag,
 
   return NS_OK;
 }
+
 nsresult JsepSessionImpl::AddDtlsFingerprint(const std::string& algorithm,
                                              const std::vector<uint8_t>& value) {
   JsepDtlsFingerprint fp;
@@ -624,6 +625,14 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
 
   rv = NS_ERROR_FAILURE;
 
+  bool iceLite = parsed->GetAttributeList().HasAttribute(
+      SdpAttribute::kIceLiteAttribute);
+  std::vector<std::string> iceOptions;
+  if (parsed->GetAttributeList().HasAttribute(
+        SdpAttribute::kIceOptionsAttribute)) {
+    iceOptions = parsed->GetAttributeList().GetIceOptions().mValues;
+  }
+
   // TODO: What additional validation should we do here? Issue 161.
   switch (type) {
     case kJsepSdpOffer:
@@ -633,6 +642,11 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
     case kJsepSdpPranswer:
       rv = SetRemoteDescriptionAnswer(type, Move(parsed));
       break;
+  }
+
+  if (NS_SUCCEEDED(rv)) {
+    mRemoteIsIceLite = iceLite;
+    mIceOptions = iceOptions;
   }
 
   return rv;
@@ -869,7 +883,6 @@ nsresult JsepSessionImpl::SetupTransport(const SdpAttributeList& remote,
                                          transport) {
   UniquePtr<JsepIceTransportImpl> ice = MakeUnique<JsepIceTransportImpl>();
 
-  // TODO(ekr@rtfm.com): ICE lite, ICE trickle. Issue 163.
   // We do sanity-checking for these in ParseSdp
   ice->mUfrag = remote.GetIceUfrag();
   ice->mPwd = remote.GetIcePwd();
@@ -1143,7 +1156,6 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
 
   UniquePtr<Sdp> sdp = MakeUnique<SipccSdp>(origin.release());
 
-
   if (mDtlsFingerprints.empty()) {
     MOZ_MTLOG(ML_ERROR, "Missing DTLS fingerprint");
     mLastError = "Missing DTLS fingerprint";
@@ -1157,6 +1169,10 @@ nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
     fpl->PushEntry(fp->mAlgorithm, fp->mValue);
   }
   sdp->GetAttributeList().SetAttribute(fpl.release());
+
+  auto* iceOpts = new SdpOptionsAttribute(SdpAttribute::kIceOptionsAttribute);
+  iceOpts->PushEntry("trickle");
+  sdp->GetAttributeList().SetAttribute(iceOpts);
 
   *sdpp = Move(sdp);
   return NS_OK;
