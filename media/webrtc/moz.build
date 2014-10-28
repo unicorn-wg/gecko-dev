@@ -62,6 +62,8 @@ if CONFIG['MOZ_WEBRTC_SIGNALING']:
         'signaling/src/media/CSFVideoControlWrapper.cpp',
         'signaling/src/media/VcmSIPCCBinding.cpp',
         'signaling/src/mediapipeline/MediaPipeline.cpp',
+        'signaling/src/mediapipeline/MediaPipelineFilter.cpp',
+        'signaling/src/mediapipeline/SrtpFlow.cpp',
         'signaling/src/peerconnection/MediaPipelineFactory.cpp',
         'signaling/src/peerconnection/MediaStreamList.cpp',
         'signaling/src/peerconnection/PeerConnectionCtx.cpp',
@@ -79,21 +81,6 @@ if CONFIG['MOZ_WEBRTC_SIGNALING']:
         'signaling/src/sdp/sipcc/sdp_services_unix.c',
         'signaling/src/sdp/sipcc/sdp_token.c',
         'signaling/src/sdp/sipcc/sdp_utils.c',
-        'signaling/src/mediapipeline/MediaPipelineFilter.cpp',
-        'signaling/src/mediapipeline/SrtpFlow.cpp',
-        'signaling/src/sipcc/core/ccapp/ccapi_call_info.c',
-        'signaling/src/sipcc/core/ccapp/ccprovider.c',
-        'signaling/src/sipcc/core/common/platform_api.c',
-        'signaling/src/sipcc/core/common/ui.c',
-        'signaling/src/sipcc/core/gsm/ccapi_strings.c',
-        'signaling/src/sipcc/core/gsm/fsm.c',
-        'signaling/src/sipcc/core/gsm/fsmcac.c',
-        'signaling/src/sipcc/core/gsm/fsmdef.c',
-        'signaling/src/sipcc/core/sdp/sdp_base64.c',      # Because of name clash with the macro PADDING
-        'signaling/src/sipcc/core/sipstack/ccsip_cc.c',
-        'signaling/src/sipcc/core/sipstack/sip_common_transport.c',
-        'signaling/src/sipcc/core/sipstack/sip_platform_task.c',
-        'signaling/src/sipcc/core/src-common/string_lib.c',
     ]
 
     GYP_DIRS['signaling'].non_unified_sources += signaling_non_unified_sources
