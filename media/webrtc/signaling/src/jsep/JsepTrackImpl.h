@@ -47,6 +47,9 @@ class JsepTrackImpl : public JsepTrack {
     *config = mCodecs[index];
     return NS_OK;
   }
+  virtual RefPtr<JsepMediaStreamTrack> media_stream_track() const MOZ_OVERRIDE {
+    return mMediaStreamTrack;
+  }
 
   virtual const SdpExtmapAttributeList::Extmap* get_ext(
       const std::string& ext_name) const MOZ_OVERRIDE {
@@ -68,6 +71,7 @@ class JsepTrackImpl : public JsepTrack {
   Maybe<std::string> mBandwidth;
   std::vector<JsepCodecDescription*> mCodecs;
   std::map<std::string, SdpExtmapAttributeList::Extmap> mExtmap;
+  RefPtr<JsepMediaStreamTrack> mMediaStreamTrack;
 };
 
 

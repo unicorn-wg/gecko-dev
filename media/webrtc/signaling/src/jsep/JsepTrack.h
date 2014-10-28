@@ -38,6 +38,7 @@ class JsepTrack {
       const = 0;
   virtual const SdpExtmapAttributeList::Extmap* get_ext(
       const std::string& ext_name) const = 0;
+  virtual RefPtr<JsepMediaStreamTrack> media_stream_track() const = 0;
 };
 
 

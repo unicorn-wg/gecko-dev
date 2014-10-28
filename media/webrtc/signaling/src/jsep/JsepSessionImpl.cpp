@@ -16,6 +16,7 @@
 #include <mozilla/Move.h>
 #include <mozilla/UniquePtr.h>
 
+#include "signaling/src/jsep/JsepMediaStreamTrackStatic.h"
 #include "signaling/src/jsep/JsepTrack.h"
 #include "signaling/src/jsep/JsepTrackImpl.h"
 #include "signaling/src/jsep/JsepTransport.h"
@@ -29,23 +30,6 @@ namespace jsep {
 
 MOZ_MTLOG_MODULE("jsep")
 
-
-// Represents a remote track. Only exposed via the abstract interface.
-class JsepMediaStreamTrackRemote : public JsepMediaStreamTrack {
- public:
-  JsepMediaStreamTrackRemote(mozilla::SdpMediaSection::MediaType type) :
-      mType(type) {}
-
-  virtual mozilla::SdpMediaSection::MediaType media_type() const MOZ_OVERRIDE {
-    return mType;
-  }
-
- private:
-  virtual ~JsepMediaStreamTrackRemote() {}
-
-  mozilla::SdpMediaSection::MediaType mType;
-};
-
 JsepSessionImpl::~JsepSessionImpl() {
   ClearNegotiatedPairs();
   for (auto i = mCodecs.begin(); i != mCodecs.end(); ++i) {
@@ -53,7 +37,7 @@ JsepSessionImpl::~JsepSessionImpl() {
   }
 }
 
-void JsepSessionImpl::Init() {
+nsresult JsepSessionImpl::Init() {
   SECStatus rv = PK11_GenerateRandom(
       reinterpret_cast<unsigned char *>(&mSessionId), sizeof(mSessionId));
   mSessionId >>= 2; // Discard high order bits.
@@ -61,8 +45,14 @@ void JsepSessionImpl::Init() {
     MOZ_CRASH();
   }
 
+  if (!mUuidGen->Generate(&mDefaultRemoteStreamId)) {
+    return NS_ERROR_FAILURE;
+  }
+
   SetupDefaultCodecs();
   SetupDefaultRtpExtensions();
+
+  return NS_OK;
 }
 
 nsresult JsepSessionImpl::AddTrack(const RefPtr<JsepMediaStreamTrack>& track) {
@@ -592,7 +582,7 @@ nsresult JsepSessionImpl::SetLocalDescriptionAnswer(JsepSdpType type,
 
   nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
                                         mPendingRemoteDescription);
-  NS_ENSURE_SUCCESS(rv, rv);
+  MOZ_MTLOG_ENSURE_SUCCESS(rv, "Couldn't handle negotiated session");
 
   mCurrentRemoteDescription = Move(mPendingRemoteDescription);
   mCurrentLocalDescription = Move(mPendingLocalDescription);
@@ -648,6 +638,29 @@ nsresult JsepSessionImpl::SetRemoteDescription(JsepSdpType type,
   return rv;
 }
 
+
+// Helper function to find the track for a given m= section.
+template <class T> nsresult FindMSTForMSection(
+    const SdpMediaSection& msection,
+    const std::vector<T>& tracks,
+    size_t mLine,
+    RefPtr<JsepMediaStreamTrack>* mst) {
+  if (msection.GetMediaType() == SdpMediaSection::kApplication) {
+    *mst = nullptr;
+    return NS_OK;
+  }
+
+  for (auto t = tracks.begin(); t != tracks.end(); ++t) {
+    if (t->mAssignedMLine.isSome() &&
+        (*t->mAssignedMLine == msection.GetLevel())) {
+      *mst = t->mTrack;
+      return NS_OK;
+    }
+  }
+
+  return NS_ERROR_NOT_AVAILABLE;
+}
+
 nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
                                                   const UniquePtr<Sdp>& remote) {
   bool remote_ice_lite = remote->GetAttributeList().HasAttribute(
@@ -694,6 +707,8 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
     // If the answer says it's inactive we're not doing anything with it.
     // TODO(ekr@rtfm.com): Need to handle renegotiation somehow. Issue 155.
+    // Note: the SDP engine guarantees the presence of an SDP direction
+    // attribute (with sendrecv as the default if one isn't in the SDP).
     if (answer.GetDirectionAttribute().mValue ==
         SdpDirectionAttribute::kInactive &&
         answer.GetPort() == 0) {
@@ -720,13 +735,20 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
     // TODO(ekr@rtfm.com): Set the bundle level. Issue 159.
     jpair->mLevel = i;
 
+    RefPtr<JsepMediaStreamTrack> mst;
     if (sending) {
-      rv = CreateTrack(rm, JsepTrack::kJsepTrackSending,
+      rv = FindMSTForMSection(lm, mLocalTracks, i, &mst);
+      MOZ_MTLOG_ENSURE_SUCCESS(rv, "Couldn't find m-line");
+
+      rv = CreateTrack(rm, JsepTrack::kJsepTrackSending, mst,
                        &jpair->mSending);
       NS_ENSURE_SUCCESS(rv, rv);
     }
     if (receiving) {
-      rv = CreateTrack(rm, JsepTrack::kJsepTrackReceiving,
+      rv = FindMSTForMSection(lm, mRemoteTracks, i, &mst);
+      NS_ENSURE_SUCCESS(rv, rv);
+
+      rv = CreateTrack(rm, JsepTrack::kJsepTrackReceiving, mst,
                        &jpair->mReceiving);
       NS_ENSURE_SUCCESS(rv, rv);
     }
@@ -770,9 +792,11 @@ nsresult JsepSessionImpl::HandleNegotiatedSession(const UniquePtr<Sdp>& local,
 
 nsresult JsepSessionImpl::CreateTrack(const SdpMediaSection& remote_msection,
                                       JsepTrack::Direction direction,
+                                      const RefPtr<JsepMediaStreamTrack>& mst,
                                       UniquePtr<JsepTrack>* trackp) {
   UniquePtr<JsepTrackImpl> track = MakeUnique<JsepTrackImpl>();
   track->mDirection = direction;
+  track->mMediaStreamTrack = mst;
   track->mMediaType = remote_msection.GetMediaType();
   track->mProtocol = remote_msection.GetProtocol();
 
@@ -1021,6 +1045,9 @@ nsresult JsepSessionImpl::ParseSdp(const std::string& sdp,
 
 nsresult JsepSessionImpl::SetRemoteDescriptionOffer(UniquePtr<Sdp> offer) {
   MOZ_ASSERT(mState == kJsepStateStable);
+
+  // TODO(ekr@rtfm.com): Note that we create remote tracks even when
+  // They contain only codecs we can't negotiate or other craziness.
   SetRemoteTracksFromDescription(*offer);
   mPendingRemoteDescription = Move(offer);
 
@@ -1034,11 +1061,15 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
              mState == kJsepStateHaveRemotePranswer);
   mPendingRemoteDescription = Move(answer);
 
-  nsresult rv = HandleNegotiatedSession(mPendingLocalDescription,
-                                        mPendingRemoteDescription);
+  // TODO(ekr@rtfm.com): Note that this creates remote tracks even if
+  // we offered sendonly and other side offered sendrecv or recvonly.
+  // Issue 276.
+  nsresult rv = SetRemoteTracksFromDescription(*mPendingRemoteDescription);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  SetRemoteTracksFromDescription(*mPendingRemoteDescription);
+  rv = HandleNegotiatedSession(mPendingLocalDescription,
+                                        mPendingRemoteDescription);
+  NS_ENSURE_SUCCESS(rv, rv);
 
   mCurrentRemoteDescription = Move(mPendingRemoteDescription);
   mCurrentLocalDescription = Move(mPendingLocalDescription);
@@ -1047,7 +1078,7 @@ nsresult JsepSessionImpl::SetRemoteDescriptionAnswer(
   return NS_OK;
 }
 
-void JsepSessionImpl::SetRemoteTracksFromDescription(
+nsresult JsepSessionImpl::SetRemoteTracksFromDescription(
     const Sdp& remote_description) {
   size_t num_m_lines = remote_description.GetMediaSectionCount();
 
@@ -1055,15 +1086,38 @@ void JsepSessionImpl::SetRemoteTracksFromDescription(
     const SdpMediaSection& msection = remote_description.GetMediaSection(i);
     auto direction = msection.GetDirectionAttribute().mValue;
 
+    // TODO(ekr@rtfm.com): Suppress new track creation on renegotiation
+    // of existing tracks. Issue 155.
     if (direction == SdpDirectionAttribute::kSendrecv ||
         direction == SdpDirectionAttribute::kSendonly) {
-      JsepMediaStreamTrackRemote* remote = new JsepMediaStreamTrackRemote(
-          msection.GetMediaType());
-      JsepReceivingTrack rtrack;
-      rtrack.mTrack = remote;
-      mRemoteTracks.push_back(rtrack);
+      nsresult rv = CreateReceivingTrack(i, msection);
+      NS_ENSURE_SUCCESS(rv, rv);
     }
   }
+
+  return NS_OK;
+}
+
+nsresult JsepSessionImpl::CreateReceivingTrack(
+  size_t m_line,
+  const SdpMediaSection& msection) {
+  std::string stream_id;
+  std::string track_id;
+
+  // Generate random track ids.
+  // TODO(ekr@rtfm.com): Pull track and stream IDs out of SDP if available.
+  // Issue 277.
+  if (!mUuidGen->Generate(&track_id))
+    return NS_ERROR_FAILURE;
+
+  JsepMediaStreamTrackStatic* remote = new JsepMediaStreamTrackStatic(
+    msection.GetMediaType(), mDefaultRemoteStreamId, track_id);
+  JsepReceivingTrack rtrack;
+  rtrack.mTrack = remote;
+  rtrack.mAssignedMLine = Some(m_line);
+  mRemoteTracks.push_back(rtrack);
+
+  return NS_OK;
 }
 
 nsresult JsepSessionImpl::CreateGenericSDP(UniquePtr<Sdp>* sdpp) {
