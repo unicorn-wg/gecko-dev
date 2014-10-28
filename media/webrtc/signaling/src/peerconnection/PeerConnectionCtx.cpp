@@ -454,16 +454,14 @@ bool PeerConnectionCtx::gmpHasH264() {
 
   bool has_gmp;
   nsresult rv;
-  rv = mGMPService->HasPluginForAPI(NS_LITERAL_STRING(""),
-                                    NS_LITERAL_CSTRING("encode-video"),
+  rv = mGMPService->HasPluginForAPI(NS_LITERAL_CSTRING("encode-video"),
                                     &tags,
                                     &has_gmp);
   if (NS_FAILED(rv) || !has_gmp) {
     return false;
   }
 
-  rv = mGMPService->HasPluginForAPI(NS_LITERAL_STRING(""),
-                                    NS_LITERAL_CSTRING("decode-video"),
+  rv = mGMPService->HasPluginForAPI(NS_LITERAL_CSTRING("decode-video"),
                                     &tags,
                                     &has_gmp);
   if (NS_FAILED(rv) || !has_gmp) {
