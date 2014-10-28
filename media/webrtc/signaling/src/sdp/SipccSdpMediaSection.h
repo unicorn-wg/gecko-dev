@@ -29,7 +29,7 @@ class SipccSdpMediaSection MOZ_FINAL : public SdpMediaSection
 public:
   ~SipccSdpMediaSection() {}
 
-  virtual sdp::MediaType
+  virtual MediaType
   GetMediaType() const MOZ_OVERRIDE
   {
     return mMediaType;
