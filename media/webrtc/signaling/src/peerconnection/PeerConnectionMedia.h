@@ -302,6 +302,7 @@ class PeerConnectionMedia : public sigslot::has_slots<> {
   ~PeerConnectionMedia() {}
 
  public:
+  typedef mozilla::DOMMediaStream DOMMediaStream;
   explicit PeerConnectionMedia(PeerConnectionImpl *parent);
 
   PeerConnectionImpl* GetPC() { return mParent; }

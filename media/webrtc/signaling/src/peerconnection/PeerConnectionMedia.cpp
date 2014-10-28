@@ -205,7 +205,6 @@ PeerConnectionImpl* PeerConnectionImpl::CreatePeerConnection()
 PeerConnectionMedia::PeerConnectionMedia(PeerConnectionImpl *parent)
     : mParent(parent),
       mParentHandle(parent->GetHandle()),
-      mAllowIceLoopback(false),
       mParentName(parent->GetName()),
       mAllowIceLoopback(false),
       mIceCtx(nullptr),
@@ -464,7 +463,7 @@ PeerConnectionMedia::UpdateIceMediaStream_s(size_t index,
     stream->SetLevel(index);
     stream->SignalReady.connect(this, &PeerConnectionMedia::IceStreamReady);
     stream->SignalCandidate.connect(this,
-                                    &PeerConnectionMedia::OnCandidateFound);
+                                    &PeerConnectionMedia::OnCandidateFound_s);
 
     mIceStreams.push_back(stream);
   } else {
@@ -536,7 +535,7 @@ PeerConnectionMedia::AddStream(DOMMediaStream* aMediaStream,
     std::string id;
     if (!mUuidGen->Generate(&id))
       return NS_ERROR_FAILURE;
-    localSourceStream = new LocalSourceStreamInfo(stream, this, id);
+    localSourceStream = new LocalSourceStreamInfo(aMediaStream, this, id);
     mLocalSourceStreams.AppendElement(localSourceStream);
     *stream_id = id;
   }
