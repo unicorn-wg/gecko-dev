@@ -139,19 +139,26 @@ bool SipccSdpMediaSection::LoadProtocol(sdp_t* sdp, uint16_t level,
 
 void
 SipccSdpMediaSection::LoadFormats(sdp_t* sdp, uint16_t level) {
-  uint16_t count = sdp_get_media_num_payload_types(sdp, level);
   sdp_media_e mtype = sdp_get_media_type(sdp, level);
-  for (uint16_t i = 0; i < count; ++i) {
-    sdp_payload_ind_e indicator; // we ignore this, which might be bad
-    uint32_t ptype = sdp_get_media_payload_type(sdp, level, i + 1, &indicator);
 
+  if (mtype == SDP_MEDIA_APPLICATION) {
+    uint32_t ptype = sdp_get_media_sctp_port(sdp, level);
     std::ostringstream ospt;
-    if (mtype == SDP_MEDIA_APPLICATION) {
-      ospt << ptype;
-    } else {
-      ospt << ((ptype & 0xff00) ? ((ptype >> 8) & 0xff) : ptype); // OMFG
-    }
+    ospt << ptype;
     mFormats.push_back(ospt.str());
+  } else {
+    uint16_t count = sdp_get_media_num_payload_types(sdp, level);
+    for (uint16_t i = 0; i < count; ++i) {
+      sdp_payload_ind_e indicator; // we ignore this, which might be bad
+      uint32_t ptype = sdp_get_media_payload_type(sdp,
+                                                  level,
+                                                  i + 1,
+                                                  &indicator);
+
+      std::ostringstream ospt;
+      ospt << ((ptype & 0xff00) ? ((ptype >> 8) & 0xff) : ptype); // OMFG
+      mFormats.push_back(ospt.str());
+    }
   }
 }
 
