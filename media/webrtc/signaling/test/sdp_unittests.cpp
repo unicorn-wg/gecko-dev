@@ -892,6 +892,7 @@ class NewSdpTest : public ::testing::Test,
                       const SdpSctpmapAttributeList& sctpmaps) {
       ASSERT_TRUE(sctpmaps.HasEntry(search_pt));
       auto attr = sctpmaps.GetEntry(search_pt);
+      ASSERT_EQ(expected_pt, search_pt);
       ASSERT_EQ(expected_pt, attr.pt);
       ASSERT_EQ(name, attr.name);
       ASSERT_EQ(streams, attr.streams);
@@ -1871,10 +1872,6 @@ TEST_P(NewSdpTest, CheckSctpmap) {
               sctpmap);
 }
 
-// TODO: Tests that parse above SDP, and check various things
-// For media sections 1 and 2: Issue 193.
-//  Check fmtp
-
 const std::string kNewSctpmapOfferDraft07 =
 "v=0" CRLF
 "o=Mozilla-SIPUA-35.0a1 27987 0 IN IP4 0.0.0.0" CRLF
@@ -1891,7 +1888,6 @@ const std::string kNewSctpmapOfferDraft07 =
 
 TEST_P(NewSdpTest, NewSctpmapSdpParse) {
   ParseSdp(kNewSctpmapOfferDraft07, false);
-  ASSERT_EQ(2U, mParser.GetParseErrors().size()) << "Missing parser errors";
 }
 
 INSTANTIATE_TEST_CASE_P(RoundTripSerialize,
